@@ -1,0 +1,10 @@
+{
+  "name": "quiz-advanced",
+  "version": "1.0.0",
+  "description": "Quiz Advanced Discloud Deploy",
+  "main": "backend/src/index.js",
+  "scripts": {
+    "start": "node backend/src/index.js",
+    "postinstall": "cd backend && npm install"
+  }
+}

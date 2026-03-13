@@ -1,0 +1,759 @@
+import React, { useState, useRef, useEffect } from 'react';
+
+// Constrói o background CSS baseado no tipo configurado
+function buildBackground(theme) {
+  const bgType = theme.bgType || 'solid';
+
+  if (bgType === 'gradient') {
+    const angle = theme.gradientAngle ?? 135;
+    const from = theme.gradientFrom || '#0f172a';
+    const to = theme.gradientTo || '#6366f1';
+    return `linear-gradient(${angle}deg, ${from}, ${to})`;
+  }
+
+  if (bgType === 'image' && theme.bgImage) {
+    const pos = theme.bgPosition || 'center center';
+    const size = theme.bgSize || 'cover';
+    return `url(${theme.bgImage}) ${pos} / ${size} no-repeat`;
+  }
+
+  return theme.bg || '#0f172a';
+}
+
+// ─── AUDIO PLAYER COMPONENT (totalmente funcional) ───────────────────────────
+function AudioBlockPlayer({ block, compact }) {
+  const audioRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration]       = useState(0);
+
+  const bubbleBg  = block.bubbleColor || '#dcf8c6';
+  const chatBg    = block.bgColor     || '#075e54';
+  const txtColor  = block.textColor   || '#111b21';
+  const green     = '#25d366';
+  const sz        = compact ? 32 : 44;
+
+  useEffect(() => {
+    if (audioRef.current && block.src) {
+      audioRef.current.load();
+    }
+  }, [block.src]);
+
+  const toggle = async () => {
+    if (!audioRef.current) return;
+    try {
+      if (playing) {
+        audioRef.current.pause();
+        setPlaying(false);
+      } else {
+        await audioRef.current.play();
+        setPlaying(true);
+      }
+    } catch (e) {
+      console.error('Audio play error:', e);
+    }
+  };
+
+  const fmt = (s) => {
+    if (!s || isNaN(s)) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60).toString().padStart(2, '0');
+    return `${m}:${sec}`;
+  };
+
+  const progress = duration > 0 ? currentTime / duration : 0;
+  const waveCount = compact ? 16 : 28;
+  const waveHeights = [0.3,0.6,0.4,0.9,0.5,0.7,0.35,0.8,0.45,0.65,0.55,0.75,0.4,0.85,0.5,0.6,
+                       0.3,0.7,0.45,0.9,0.35,0.65,0.5,0.8,0.4,0.6,0.55,0.75];
+
+  return (
+    <div style={{ background: chatBg, borderRadius: compact ? 12 : 16, padding: compact ? 8 : 12, width: '100%' }}>
+      {/* Se tiver src, cria o elemento audio escondido */}
+      {block.src && (
+        <audio ref={audioRef} src={block.src} preload="auto"
+          onTimeUpdate={e => setCurrentTime(e.target.currentTime)}
+          onLoadedMetadata={e => setDuration(e.target.duration)}
+          onEnded={() => { setPlaying(false); setCurrentTime(0); }} />
+      )}
+
+      <div style={{ display:'flex', alignItems:'flex-end', gap: compact?6:10, justifyContent:'flex-end' }}>
+        {/* Bolha */}
+        <div style={{ position:'relative', background: bubbleBg, borderRadius:`${compact?10:14}px ${compact?10:14}px 2px ${compact?10:14}px`, padding: compact?'6px 10px':'8px 14px', maxWidth:'85%', boxShadow:'0 1px 3px rgba(0,0,0,0.2)', minWidth: compact?120:200 }}>
+          {block.senderName && (
+            <p style={{ color: green, fontSize: compact?8:11, fontWeight:700, marginBottom:4 }}>{block.senderName}</p>
+          )}
+          <div style={{ display:'flex', alignItems:'center', gap: compact?6:10 }}>
+            {/* Botão Play/Pause */}
+            <button onClick={toggle}
+              style={{ width:sz, height:sz, borderRadius:'50%', background: green, border:'none', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, boxShadow:`0 2px 10px ${green}60`, transition:'transform 0.1s' }}>
+              {playing ? (
+                <svg width={compact?10:16} height={compact?10:16} viewBox="0 0 24 24" fill="white">
+                  <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                </svg>
+              ) : (
+                <svg width={compact?10:16} height={compact?10:16} viewBox="0 0 24 24" fill="white">
+                  <polygon points="5,3 19,12 5,21"/>
+                </svg>
+              )}
+            </button>
+
+            {/* Waveform com progresso */}
+            {block.showWave !== false ? (
+              <div style={{ display:'flex', alignItems:'center', gap:2, flex:1 }}>
+                {Array.from({length: waveCount}, (_,i) => {
+                  const h = waveHeights[i % 28];
+                  const barProgress = i / waveCount;
+                  const played = barProgress < progress;
+                  return (
+                    <div key={i} style={{
+                      width: compact?2:3,
+                      height:`${h * (compact?20:32)}px`,
+                      background: played ? green : `${green}55`,
+                      borderRadius:2, flexShrink:0,
+                      transition: playing ? 'height 0.15s ease' : 'none',
+                      height: playing ? `${(h + Math.sin(Date.now()/200 + i) * 0.2) * (compact?20:32)}px` : `${h * (compact?20:32)}px`,
+                    }} />
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ flex:1, height:2, background:`${txtColor}30`, borderRadius:2, position:'relative' }}>
+                <div style={{ position:'absolute', left:0, top:0, height:'100%', width:`${progress*100}%`, background: green, borderRadius:2 }} />
+              </div>
+            )}
+
+            {/* Timer */}
+            <span style={{ color:`${txtColor}80`, fontSize: compact?8:11, flexShrink:0, fontVariantNumeric:'tabular-nums' }}>
+              {duration > 0 ? `${fmt(currentTime)} / ${fmt(duration)}` : (block.duration || '0:00')}
+            </span>
+          </div>
+          {/* Rabinho */}
+          <div style={{ position:'absolute', right:-8, bottom:0, width:0, height:0, borderLeft:`8px solid ${bubbleBg}`, borderTop:'8px solid transparent' }} />
+        </div>
+
+        {/* Avatar */}
+        <div style={{ width: compact?28:38, height: compact?28:38, borderRadius:'50%', overflow:'hidden', flexShrink:0, border:`2px solid ${green}` }}>
+          {block.avatarSrc ? (
+            <img src={block.avatarSrc} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+          ) : (
+            <div style={{ width:'100%', height:'100%', background:'#128c7e', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <svg width={compact?12:18} height={compact?12:18} viewBox="0 0 24 24" fill="white">
+                <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/>
+              </svg>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── VIDEO PLAYER COMPONENT (totalmente funcional) ────────────────────────────
+function VideoBlockPlayer({ block, compact }) {
+  const videoRef   = useRef(null);
+  const startedRef = useRef(false);
+  const [playing, setPlaying]             = useState(false);
+  const [showThumb, setShowThumb]         = useState(true);
+  const [currentTime, setCurrentTime]     = useState(0);
+  const [duration, setDuration]           = useState(0);
+  const [ended, setEnded]                 = useState(false);
+  // showUnmuteOverlay is computed directly from block config — NEVER stored as state
+  // This ensures it always renders correctly after page reload or prop changes
+
+  const ar       = block.aspectRatio || '16/9';
+  const radius   = block.rounded ? (compact?10:16) : 0;
+  const src      = block.src || '';
+  const isYT     = src.includes('youtube') || src.includes('youtu.be');
+  const isVimeo  = src.includes('vimeo');
+  const isEmbed  = isYT || isVimeo;
+
+  // Se usar duração fake, OBRIGATORIAMENTE ocultamos controles nativos
+  // (pois os nativos revelariam a duração real)
+  const isControlsHidden = block.hideControls || block.useFakeDuration;
+
+  const getEmbedUrl = (url) => {
+    if (!url) return '';
+    if (url.includes('youtube.com/watch?v=')) return url.replace('watch?v=','embed/');
+    if (url.includes('youtu.be/'))            return url.replace('youtu.be/','www.youtube.com/embed/');
+    if (url.includes('vimeo.com/'))           return url.replace('vimeo.com/','player.vimeo.com/video/');
+    return url;
+  };
+
+  const embedUrl = isEmbed
+    ? getEmbedUrl(src) + `?autoplay=${block.autoplay?1:0}&mute=${block.muted?1:0}&loop=${block.loop?1:0}&controls=${isControlsHidden?0:1}&enablejsapi=1`
+    : '';
+
+  const fmt = (s) => {
+    if (!s || isNaN(s)) return '0:00';
+    const m = Math.floor(s/60);
+    return `${m}:${Math.floor(s%60).toString().padStart(2,'0')}`;
+  };
+
+  // Reset when src changes
+  useEffect(() => {
+    startedRef.current = false;
+    setPlaying(false); setShowThumb(true); setCurrentTime(0);
+    setDuration(0); setEnded(false);
+  }, [src]);
+
+  // The overlay is shown when: video is configured as autoplay+muted AND user hasn't unmuted yet
+  const [userUnmuted, setUserUnmuted] = useState(false);
+  const showUnmuteOverlay = !!(block.autoplay && block.muted && src && !isEmbed && !userUnmuted);
+
+  // Reset userUnmuted when src or block config changes (so overlay comes back)
+  useEffect(() => {
+    setUserUnmuted(false);
+  }, [src, block.autoplay, block.muted]);
+
+  // onCanPlay fires once video data is loaded — safest place to autoplay
+  const handleCanPlay = () => {
+    const v = videoRef.current;
+    if (!v || startedRef.current || !block.autoplay || isEmbed) return;
+    startedRef.current = true;
+    v.muted = true;
+    v.play().then(() => {
+      setPlaying(true);
+      setShowThumb(false);
+    }).catch(() => {});
+  };
+
+  const handleUnmute = (e) => {
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = false;
+    v.currentTime = 0;
+    v.play().then(() => {
+      setPlaying(true);
+      setUserUnmuted(true);   // hides overlay
+      setShowThumb(false);
+    }).catch(console.error);
+  };
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (showUnmuteOverlay) { handleUnmute(); return; }
+    if (playing) { v.pause(); setPlaying(false); }
+    else {
+      v.play().then(() => { setPlaying(true); setShowThumb(false); setEnded(false); }).catch(console.error);
+    }
+  };
+
+  const progress = duration > 0 ? currentTime / duration : 0;
+  const displayDuration = block.useFakeDuration ? (block.fakeDuration || 120) : duration;
+  const displayCurrentTime = block.useFakeDuration ? (progress * displayDuration) : currentTime;
+
+  return (
+    <div style={{ width:'100%', borderRadius:radius, overflow:'hidden', position:'relative', background:'#000', boxShadow: compact?'none':'0 8px 40px rgba(0,0,0,0.6)' }}>
+      <style>{`
+        @keyframes vslMutePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+        @keyframes vslMuteBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+        @keyframes vslRipple    { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(2.6);opacity:0} }
+      `}</style>
+      {/* Vídeo com aspect ratio */}
+      <div style={{ width:'100%', aspectRatio:ar, position:'relative', background:'#0a0a0a', overflow:'hidden', cursor: src && !isEmbed ? 'pointer' : 'default' }}
+           onClick={!isEmbed ? togglePlay : undefined}>
+
+        {/* Placeholder */}
+        {!src && (
+          <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8 }}>
+            <svg width={compact?32:56} height={compact?32:56} viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="1.5">
+              <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+            </svg>
+            <p style={{ color:'#374151', fontSize: compact?9:12 }}>VSL — Adicione o vídeo</p>
+          </div>
+        )}
+
+        {/* Embed YouTube/Vimeo */}
+        {src && isEmbed && (
+          <iframe src={embedUrl}
+            style={{ position:'absolute', inset:0, width:'100%', height:'100%', border:'none' }}
+            allow="autoplay; fullscreen" allowFullScreen />
+        )}
+
+        {/* MP4/base64 nativo — sem controles nativos nunca */}
+        {src && !isEmbed && (
+          <video ref={videoRef} src={src}
+            style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', pointerEvents:'none' }}
+            loop={block.loop}
+            playsInline
+            disablePictureInPicture
+            onCanPlay={handleCanPlay}
+            onTimeUpdate={e => setCurrentTime(e.target.currentTime)}
+            onLoadedMetadata={e => setDuration(e.target.duration)}
+            onEnded={() => { setPlaying(false); setEnded(true); }} />
+        )}
+
+        {/* Thumbnail overlay */}
+        {src && !isEmbed && block.thumbnailSrc && showThumb && (
+          <div style={{ position:'absolute', inset:0, background:`url(${block.thumbnailSrc}) center/cover`, pointerEvents:'none' }} />
+        )}
+
+        {/* ═══ ÍCONE MUDO CENTRALIZADO — PANDA VSL STYLE ═══ */}
+        {src && !isEmbed && showUnmuteOverlay && (
+          <div
+            onClick={handleUnmute}
+            style={{
+              position:'absolute', inset:0, zIndex:5,
+              display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+              gap: compact?8:14,
+              cursor:'pointer',
+            }}
+          >
+            {/* Ripple rings animados */}
+            <div style={{ position:'relative', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <div style={{
+                position:'absolute',
+                width:compact?52:90, height:compact?52:90,
+                borderRadius:'50%',
+                border:'2px solid rgba(0,213,230,0.4)',
+                animation:'vslRipple 2s ease-out infinite',
+                pointerEvents:'none',
+              }} />
+              <div style={{
+                position:'absolute',
+                width:compact?52:90, height:compact?52:90,
+                borderRadius:'50%',
+                border:'2px solid rgba(0,213,230,0.25)',
+                animation:'vslRipple 2s ease-out 0.9s infinite',
+                pointerEvents:'none',
+              }} />
+
+              {/* Círculo principal */}
+              <div style={{
+                width:compact?42:70, height:compact?42:70,
+                borderRadius:'50%',
+                background:'linear-gradient(145deg, #00d5e6, #0099b0)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                boxShadow:`0 0 ${compact?14:28}px rgba(0,213,230,0.6), 0 4px 16px rgba(0,0,0,0.5)`,
+                animation:'vslMutePulse 1.6s ease-in-out infinite',
+                position:'relative',
+              }}>
+                {/* Ícone de mudo piscando */}
+                <svg
+                  width={compact?18:32} height={compact?18:32}
+                  viewBox="0 0 24 24"
+                  fill="white"
+                  style={{ animation:'vslMuteBlink 1s step-end infinite', filter:'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}
+                >
+                  <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                  <line x1="23" y1="9" x2="17" y2="15" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                  <line x1="17" y1="9" x2="23" y2="15" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                </svg>
+              </div>
+            </div>
+
+            {/* Texto clicável abaixo */}
+            <div style={{
+              background:'rgba(0,0,0,0.6)',
+              backdropFilter:'blur(8px)',
+              border:'1px solid rgba(255,255,255,0.2)',
+              borderRadius:'999px',
+              padding:compact?'5px 14px':'8px 22px',
+              color:'#fff',
+              fontSize:compact?10:14,
+              fontWeight:700,
+              letterSpacing:'0.03em',
+              textShadow:'0 1px 4px rgba(0,0,0,0.5)',
+            }}>
+              {block.unmuteText || '🔊 Clique para ouvir'}
+            </div>
+          </div>
+        )}
+
+        {/* Botão Play Overlay (parado, sem overlay mudo) */}
+        {block.showPlayBtn !== false && src && !isEmbed && !playing && !showUnmuteOverlay && (
+          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>
+            <div style={{ width:compact?40:68, height:compact?40:68, borderRadius:'50%', background:'rgba(0,0,0,0.65)', backdropFilter:'blur(8px)', border:'2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 30px rgba(255,255,255,0.15)' }}>
+              <svg width={compact?16:28} height={compact?16:28} viewBox="0 0 24 24" fill="white">
+                <polygon points="5,3 19,12 5,21"/>
+              </svg>
+            </div>
+          </div>
+        )}
+
+        {/* Timer VSL (fake duration se ativado)
+            Mostra mesmo sem o vídeo tocar, usando fakeDuration como fallback */}
+        {block.showTimer !== false && src && (duration > 0 || block.useFakeDuration) && (
+          <div style={{ position:'absolute', bottom:compact?6:10, right:compact?6:10, background:'rgba(0,0,0,0.75)', borderRadius:4, padding:compact?'2px 5px':'3px 8px', fontSize:compact?8:11, color:'#fff', fontFamily:'monospace', zIndex:6 }}>
+            {fmt(displayCurrentTime)} / {fmt(displayDuration)}
+          </div>
+        )}
+
+        {/* Barra de progresso VSL customizada — mostra mesmo antes do vídeo tocar */}
+        {src && !isEmbed && isControlsHidden && (duration > 0 || block.useFakeDuration) && (
+          <div style={{ position:'absolute', bottom:0, left:0, right:0, height:compact?2:3, background:'rgba(255,255,255,0.15)', zIndex:6 }}>
+            <div style={{ height:'100%', width:`${progress*100}%`, background:'#e63946', transition:'width 0.5s linear' }} />
+          </div>
+        )}
+      </div>
+
+      {/* CTA pós-vídeo */}
+      {block.ctaText && (ended || !src) && (
+        <div style={{ padding: compact?'8px 10px':'14px 18px', background:'linear-gradient(135deg,#1e293b,#0f172a)', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
+          <button onClick={() => block.ctaUrl && window.open(block.ctaUrl,'_blank')}
+            style={{ width:'100%', padding: compact?'8px':'13px', background:'#e63946', color:'#fff', border:'none', borderRadius: compact?6:10, fontSize: compact?10:14, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 20px rgba(230,57,70,0.4)', letterSpacing:'0.01em' }}>
+            {block.ctaText}
+          </button>
+        </div>
+      )}
+
+      {/* CTA preview no editor (quando sem src) */}
+      {block.ctaText && src && !ended && (
+        <div style={{ padding: compact?'6px 10px':'10px 18px', background:'#0f172a', borderTop:'1px solid rgba(255,255,255,0.05)', opacity:0.5 }}>
+          <p style={{ color:'#475569', fontSize: compact?8:11, textAlign:'center' }}>CTA aparece após o vídeo terminar</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Renderizador fiel ao InLead: converte o config JSON em tela visual
+export default function QuizPreview({ config, stepIdx = 0, compact = false }) {
+  const step = config?.steps?.[stepIdx];
+  const theme = config?.theme || {};
+  const accent = theme.accent || '#6366f1';
+  const textColor = theme.text || '#f8fafc';
+  const bgType = theme.bgType || 'solid';
+  const hasImage = bgType === 'image' && theme.bgImage;
+  const hasGradient = bgType === 'gradient';
+
+  // Mostrar overlay apenas se for imagem
+  const showOverlay = hasImage;
+  const overlayColor = theme.overlayColor || '#000000';
+  const overlayOpacity = theme.overlayOpacity ?? 0.45;
+
+  const containerStyle = {
+    background: buildBackground(theme),
+    color: textColor,
+    fontFamily: 'Inter, system-ui, sans-serif',
+    position: 'relative',
+    overflow: 'hidden',
+  };
+
+
+  const width = compact ? 200 : 390;
+  const height = compact ? 380 : 680;
+
+  return (
+    <div
+      className="rounded-3xl overflow-hidden shadow-2xl"
+      style={{
+        width,
+        height,
+        border: compact ? '3px solid #1e293b' : '4px solid #1e293b',
+        ...containerStyle,
+      }}
+    >
+      {/* Overlay para imagem de fundo */}
+      {showOverlay && (
+        <div className="absolute inset-0"
+          style={{ background: overlayColor, opacity: overlayOpacity, zIndex: 0 }} />
+      )}
+
+      {/* Scrollable content */}
+      <div className="relative z-10 h-full flex flex-col overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className={`flex flex-col gap-${compact ? '2' : '3'} ${compact ? 'p-4' : 'p-6'} min-h-full`}>
+          {(step?.blocks || []).map(block => (
+            <BlockRenderer key={block.id} block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} />
+          ))}
+          {(!step?.blocks || step.blocks.length === 0) && (
+            <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30">
+              <p style={{ color: textColor, fontSize: compact ? 10 : 13 }}>
+                Adicione blocos<br />para ver o preview
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BlockRenderer({ block, theme, compact }) {
+  const scale = compact ? 0.6 : 1;
+  const { accent, textColor: defaultText } = theme;
+
+  switch (block.type) {
+
+    case 'progress': {
+      const pct = block.total > 0 ? Math.round((block.current / block.total) * 100) : 0;
+      return (
+        <div className="w-full" style={{ marginBottom: compact ? 2 : 4 }}>
+          {block.showLabel && (
+            <p style={{ color: defaultText, opacity: .6, fontSize: compact ? 8 : 11, marginBottom: 4, textAlign: 'right' }}>
+              {block.current}/{block.total}
+            </p>
+          )}
+          <div style={{ background: block.bg || '#1e293b', borderRadius: 99, height: compact ? 4 : 6, overflow: 'hidden' }}>
+            <div style={{ width: `${pct}%`, height: '100%', background: block.color || accent, borderRadius: 99, transition: 'width 0.4s ease' }} />
+          </div>
+        </div>
+      );
+    }
+
+    case 'heading': {
+      const sizes = { sm: compact ? 12 : 16, base: compact ? 13 : 18, lg: compact ? 14 : 20, xl: compact ? 16 : 24, '2xl': compact ? 18 : 28 };
+      return (
+        <p style={{
+          color: block.color || defaultText,
+          fontSize: sizes[block.size] || sizes.xl,
+          fontWeight: block.bold ? 700 : 600,
+          textAlign: block.align || 'center',
+          lineHeight: 1.25,
+          letterSpacing: '-0.01em',
+        }}>
+          {block.text || 'Título aqui'}
+        </p>
+      );
+    }
+
+    case 'text': {
+      const sizes = { sm: compact ? 9 : 12, base: compact ? 10 : 14, lg: compact ? 11 : 16 };
+      return (
+        <p style={{
+          color: block.color || defaultText,
+          opacity: .75,
+          fontSize: sizes[block.size] || sizes.base,
+          textAlign: block.align || 'center',
+          lineHeight: 1.6,
+        }}>
+          {block.text || 'Texto aqui'}
+        </p>
+      );
+    }
+
+    case 'image': {
+      const aspectRatio = block.aspectRatio || '16/9';
+      const scale = block.imgScale ? block.imgScale / 100 : 1;
+      const imageStyle = {
+        width: `${(block.imgScale || 100)}%`,
+        aspectRatio: block.height && !block.aspectRatio ? undefined : aspectRatio,
+        height: block.height && !block.aspectRatio ? (compact ? block.height * 0.5 : block.height) : undefined,
+        objectFit: block.fit || 'cover',
+        objectPosition: block.position || 'center center',
+        borderRadius: block.rounded ? (compact ? 8 : 12) : 0,
+        display: 'block',
+        margin: '0 auto',
+      };
+      if (!block.src) {
+        return (
+          <div style={{
+            width: `${(block.imgScale || 100)}%`,
+            aspectRatio,
+            background: '#1e293b',
+            borderRadius: block.rounded ? (compact ? 8 : 12) : 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto',
+          }}>
+            <p style={{ color: '#475569', fontSize: compact ? 9 : 12 }}>Imagem não configurada</p>
+          </div>
+        );
+      }
+      return <img src={block.src} alt={block.alt || ''} style={imageStyle} />;
+    }
+
+    case 'arrow_button': {
+      const arrowStyle = block.arrowStyle || 'chevron_down';
+      const color = block.color || '#f97316';
+      const animation = block.animation || 'bounce';
+      const align = block.align || 'center';
+      const sizeMap = { sm: compact ? 18 : 28, md: compact ? 24 : 40, lg: compact ? 30 : 52, xl: compact ? 38 : 68 };
+      const sz = sizeMap[block.size || 'lg'];
+
+      // Keyframes CSS inline por animação
+      const keyframes = {
+        bounce: `@keyframes arr_bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}`,
+        pulse:  `@keyframes arr_pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}`,
+        blink:  `@keyframes arr_blink{0%,49%{opacity:1}50%,100%{opacity:0}}`,
+        none:   '',
+      };
+      const animCSS = {
+        bounce: 'arr_bounce 1s ease-in-out infinite',
+        pulse:  'arr_pulse 1.2s ease-in-out infinite',
+        blink:  'arr_blink 1s step-end infinite',
+        none:   'none',
+      };
+
+      // 8 ícones SVG profissionais
+      const svgIcons = {
+        chevron_right: (
+          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        ),
+        arrow_right: (
+          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        ),
+        double_right: (
+          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="5 18 11 12 5 6"/>
+            <polyline points="13 18 19 12 13 6"/>
+          </svg>
+        ),
+        bold_right: (
+          <svg width={sz} height={sz} viewBox="0 0 24 24" fill={color}>
+            <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z"/>
+          </svg>
+        ),
+        arrow_down: (
+          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <polyline points="19 12 12 19 5 12"/>
+          </svg>
+        ),
+        chevron_down: (
+          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        ),
+        circle_right: (
+          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 8 16 12 12 16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+        ),
+        triangle_right: (
+          <svg width={sz} height={sz} viewBox="0 0 24 24" fill={color}>
+            <polygon points="5,3 19,12 5,21"/>
+          </svg>
+        ),
+      };
+
+      const icon = svgIcons[arrowStyle] || svgIcons.chevron_down;
+
+      return (
+        <>
+          {animation !== 'none' && (
+            <style>{keyframes[animation]}</style>
+          )}
+          <div style={{ display: 'flex', justifyContent: align, width: '100%' }}>
+            <button
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: compact ? 4 : 8,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                animation: animCSS[animation],
+                filter: `drop-shadow(0 0 ${compact ? 6 : 12}px ${color}80)`,
+              }}
+              aria-label="Navegar para próxima etapa"
+            >
+              {icon}
+            </button>
+          </div>
+        </>
+      );
+    }
+
+
+    case 'audio':
+      return <AudioBlockPlayer block={block} compact={compact} />;
+
+    case 'video':
+      return <VideoBlockPlayer block={block} compact={compact} />;
+
+    case 'button': {
+      return (
+        <button style={{
+          width: block.fullWidth ? '100%' : 'auto',
+          background: block.bg || accent,
+          color: block.textColor || '#ffffff',
+          padding: compact ? '8px 12px' : '14px 20px',
+          fontSize: compact ? 10 : 15,
+          fontWeight: 600,
+          borderRadius: block.rounded === 'full' ? 99 : block.rounded === 'xl' ? 14 : 8,
+          border: 'none',
+          cursor: 'pointer',
+          textAlign: 'center',
+          transition: 'opacity 0.15s ease',
+          boxShadow: `0 4px 20px ${block.bg || accent}40`,
+          letterSpacing: '0.01em',
+        }}>
+          {block.text || 'Avançar'}
+        </button>
+      );
+    }
+
+    case 'divider': {
+      return (
+        <div style={{
+          height: block.thickness || 1,
+          background: block.color || '#334155',
+          borderRadius: 1,
+          margin: compact ? '2px 0' : '4px 0',
+        }} />
+      );
+    }
+
+    case 'lead_capture': {
+      const fields = block.fields || ['name', 'email'];
+      const labels = { name: 'Seu nome completo', email: 'Seu melhor e-mail', phone: 'Seu WhatsApp', title: 'Seu cargo' };
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 6 : 10 }}>
+          {fields.map(f => (
+            <div key={f} style={{
+              padding: compact ? '6px 10px' : '12px 16px',
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 10,
+              fontSize: compact ? 9 : 13,
+              color: defaultText,
+              opacity: .6,
+            }}>
+              {labels[f] || f}...
+            </div>
+          ))}
+          <button style={{
+            background: block.buttonBg || accent,
+            color: '#fff',
+            padding: compact ? '8px 0' : '14px 0',
+            borderRadius: 10,
+            border: 'none',
+            fontSize: compact ? 10 : 14,
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: `0 4px 20px ${block.buttonBg || accent}50`,
+          }}>
+            {block.buttonText || 'Quero meu resultado →'}
+          </button>
+        </div>
+      );
+    }
+
+    case 'result': {
+      return (
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 8 : 16, alignItems: 'center' }}>
+          <p style={{ fontSize: compact ? 24 : 48 }}>{block.emoji || '🎉'}</p>
+          <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{block.heading || 'Parabéns!'}</p>
+          <p style={{ color: defaultText, opacity: .7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{block.text || ''}</p>
+          {block.buttonText && (
+            <button style={{
+              background: block.buttonBg || accent,
+              color: '#fff',
+              padding: compact ? '8px 16px' : '14px 28px',
+              borderRadius: 12,
+              border: 'none',
+              fontSize: compact ? 10 : 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}>
+              {block.buttonText}
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    default:
+      return null;
+  }
+}
