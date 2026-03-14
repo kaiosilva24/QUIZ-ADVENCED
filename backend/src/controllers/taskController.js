@@ -14,11 +14,11 @@ async function createTask(req, res) {
     const { title, description, status, priority } = req.body;
     try {
         const db = await getDB();
-        const result = await db.query(
+        const row = await db.get(
             'INSERT INTO tasks (title, description, status, priority) VALUES ($1, $2, $3, $4) RETURNING id',
             [title, description || '', status || 'todo', priority || 'medium']
         );
-        res.status(201).json({ id: result.rows[0].id, title });
+        res.status(201).json({ id: row.id, title });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

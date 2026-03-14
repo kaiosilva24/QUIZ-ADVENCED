@@ -23,11 +23,11 @@ async function createQuiz(req, res) {
         }
         if (!finalSlug) finalSlug = 'quiz-' + Date.now();
 
-        const result = await db.query(
+        const row = await db.get(
             'INSERT INTO quizzes (title, slug, config_json) VALUES ($1, $2, $3) RETURNING id',
             [title || 'Novo Quiz', finalSlug, config_json || '{}']
         );
-        res.status(201).json({ id: result.rows[0].id, title, slug: finalSlug });
+        res.status(201).json({ id: row.id, title, slug: finalSlug });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

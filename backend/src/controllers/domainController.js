@@ -22,11 +22,11 @@ async function createDomain(req, res) {
         // Garante que o usuario exista para constraint (mvp) em Postgres
         await db.run(`INSERT INTO users (id, email, password_hash) VALUES (1, 'admin@admin.com', 'admin') ON CONFLICT (id) DO NOTHING`);
 
-        const result = await db.query(
+        const row = await db.get(
             'INSERT INTO domains (user_id, hostname) VALUES ($1, $2) RETURNING id',
             [mockUserId, hostname]
         );
-        res.status(201).json({ id: result.rows[0].id, hostname });
+        res.status(201).json({ id: row.id, hostname });
     } catch (error) {
         // PG unique constraint violation code is 23505
         if (error.code === '23505') {

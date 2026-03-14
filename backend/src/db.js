@@ -127,7 +127,7 @@ async function runMigrations(db) {
     `);
 
 
-    // Tabela: Round Robin A/B (Configurar quais quizzes rotacionar no domínio raiz)
+    // Tabela: Round Robin A/B (Configurar quais quizzes rotacionar no domï¿½nio raiz)
     await db.query(`
         CREATE TABLE IF NOT EXISTS round_robin (
             id SERIAL PRIMARY KEY,
@@ -137,10 +137,10 @@ async function runMigrations(db) {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
-    // Garante que existe pelo menos 1 registro de configuração
+    // Garante que existe pelo menos 1 registro de configuraï¿½ï¿½o
     await db.query(`INSERT INTO round_robin (quiz_ids) SELECT '[]' WHERE NOT EXISTS (SELECT 1 FROM round_robin)`);
 
-    // Tabela: Round Robin A/B (Configurar quais quizzes rotacionar no domínio raiz)
+    // Tabela: Round Robin A/B (Configurar quais quizzes rotacionar no domï¿½nio raiz)
     await db.run(`
         CREATE TABLE IF NOT EXISTS round_robin (
             id SERIAL PRIMARY KEY,
@@ -150,8 +150,21 @@ async function runMigrations(db) {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
-    // Garante que existe pelo menos 1 registro de configuração
+    // Garante que existe pelo menos 1 registro de configuraï¿½ï¿½o
     await db.run(`INSERT INTO round_robin (quiz_ids) SELECT '[]' WHERE NOT EXISTS (SELECT 1 FROM round_robin)`);
+    
+    // Tabela: Round Robin A/B
+    await db.run(`
+        CREATE TABLE IF NOT EXISTS round_robin (
+            id SERIAL PRIMARY KEY,
+            quiz_ids TEXT NOT NULL DEFAULT '[]',
+            current_index INTEGER DEFAULT 0,
+            is_active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+    await db.run(`INSERT INTO round_robin (quiz_ids) SELECT '[]' WHERE NOT EXISTS (SELECT 1 FROM round_robin)`);
+
     console.log('[DB] Migrations executed successfully.');
 }
 
