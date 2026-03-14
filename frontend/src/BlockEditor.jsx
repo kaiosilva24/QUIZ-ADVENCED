@@ -183,8 +183,32 @@ function VideoEditor({ block, onChange }) {
   return (
     <>
       <Section title="Vídeo">
-        <Field label="URL do Vídeo (MP4 ou Embed)"><Input value={block.src} onChange={v => onChange({ src: v })} placeholder="https://example.com/video.mp4" /></Field>
+        <Field label="URL do Vídeo (YouTube, Vimeo ou MP4)"><Input value={block.src} onChange={v => onChange({ src: v })} placeholder="https://..." /></Field>
+        <Field label="Ou Carregar do Computador">
+          <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 hover:bg-slate-800/60 text-xs">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            {block.src?.startsWith('data:') ? '✅ Vídeo carregado do PC' : 'Clique para Carregar Vídeo (.mp4)'}
+            <input type="file" accept="video/*" className="hidden" onChange={e => {
+              const file = e.target.files[0]; if (!file) return;
+              const reader = new FileReader();
+              reader.onload = ev => onChange({ src: ev.target.result });
+              reader.readAsDataURL(file);
+            }} />
+          </label>
+        </Field>
         <Field label="URL da Thumbnail (Poster)"><Input value={block.thumbnailSrc} onChange={v => onChange({ thumbnailSrc: v })} placeholder="https://example.com/thumb.jpg" /></Field>
+        <Field label="Ou Carregar Thumbnail do PC">
+          <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 hover:bg-slate-800/60 text-xs">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            {block.thumbnailSrc?.startsWith('data:') ? '✅ Thumbnail carregada' : 'Clique para Carregar Thumbnail'}
+            <input type="file" accept="image/*" className="hidden" onChange={e => {
+              const file = e.target.files[0]; if (!file) return;
+              const reader = new FileReader();
+              reader.onload = ev => onChange({ thumbnailSrc: ev.target.result });
+              reader.readAsDataURL(file);
+            }} />
+          </label>
+        </Field>
         <Field label="Proporção">
           <Select value={block.aspectRatio || '16/9'} onChange={v => onChange({ aspectRatio: v })} options={[
             { value: '16/9', label: '16:9 (YouTube)' }, { value: '9/16', label: '9:16 (Vertical)' },
@@ -193,12 +217,29 @@ function VideoEditor({ block, onChange }) {
         </Field>
       </Section>
       <Section title="Comportamento">
-        <Toggle label="Autoplay" value={block.autoplay} onChange={v => onChange({ autoplay: v })} />
-        <Toggle label="Mudo" value={block.muted} onChange={v => onChange({ muted: v })} />
+        <Toggle label="Autoplay (inicia mudo)" value={block.autoplay} onChange={v => onChange({ autoplay: v })} />
+        <Toggle label="Iniciar Mudo" value={block.muted} onChange={v => onChange({ muted: v })} />
         <Toggle label="Loop" value={block.loop} onChange={v => onChange({ loop: v })} />
-        <Toggle label="Ocultar Controles" value={block.hideControls} onChange={v => onChange({ hideControls: v })} />
+        <Toggle label="Ocultar Controles Nativos" value={block.hideControls} onChange={v => onChange({ hideControls: v })} />
         <Toggle label="Mostrar Timer" value={block.showTimer !== false} onChange={v => onChange({ showTimer: v })} />
         <Toggle label="Bordas Arredondadas" value={block.rounded !== false} onChange={v => onChange({ rounded: v })} />
+      </Section>
+      <Section title="🔇 Ícone de Mudo Animado (Panda VSL)">
+        <p className="text-xs text-slate-500 leading-relaxed">Aparece automaticamente quando <strong className="text-slate-300">Autoplay + Mudo</strong> estão ativados.</p>
+        <Field label="Texto do Botão de Desmutar">
+          <Input value={block.unmuteText || ''} onChange={v => onChange({ unmuteText: v })} placeholder="🔊 Clique para ouvir" />
+        </Field>
+      </Section>
+      <Section title="⏱️ Duração Falsa (VSL)">
+        <Toggle label="Usar Duração Falsa" value={block.useFakeDuration} onChange={v => onChange({ useFakeDuration: v })} />
+        {block.useFakeDuration && (
+          <Field label="Duração em segundos">
+            <input type="number" value={block.fakeDuration || 120} min={10} max={7200}
+              onChange={e => onChange({ fakeDuration: Number(e.target.value) })}
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
+            />
+          </Field>
+        )}
       </Section>
       <Section title="Botão CTA (Opcional)">
         <Field label="Texto do Botão"><Input value={block.ctaText} onChange={v => onChange({ ctaText: v })} placeholder="Quero mais informações →" /></Field>
