@@ -7,7 +7,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -40,15 +40,18 @@ const frontendPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath));
 
 // --- Rota Principal Dinâmica (Motor Round Robin) ---
-// Primeiro lidamos com o roteador dinâmico de quizzes
-app.get('/{*path}', handleQuizRouting);
-
-// Se não for um quiz e não for API, devolve o index.html do frontend (React Router v7)
-app.use((req, res, next) => {
-    if (req.path.startsWith('/api/') || req.method !== 'GET') {
-        return next();
+// Esta rota só serve quizzes para domínios externos. O painel admin é servido pelo React.
+app.get('/{*path}', (req, res, next) => {
+    const hostname = req.hostname;
+    const isAdminDomain = hostname.includes('discloud.app') || hostname === 'localhost';
+    
+    if (isAdminDomain) {
+        // Serve o painel React (index.html) para o domínio principal
+        return res.sendFile(path.join(frontendPath, 'index.html'));
     }
-    res.sendFile(path.join(frontendPath, 'index.html'));
+
+    // Para outros domínios customizados, usa o roteador de quizzes
+    return handleQuizRouting(req, res, next);
 });
 
 const { getDB } = require('./db');
