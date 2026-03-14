@@ -164,13 +164,20 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
   };
 
   const save = async () => {
+    let finalTitle = title;
+    if (!finalTitle || finalTitle.trim() === 'Novo Quiz' || finalTitle.trim() === 'Meu Lindo Quiz') {
+      const p = prompt('Digite o nome do seu Quiz (que vai ser usado no link):', finalTitle || 'Meu Quiz');
+      if (p === null) return;
+      finalTitle = p.trim() || 'Meu Quiz';
+      setTitle(finalTitle);
+    }
     setSaving(true);
     const config_json = JSON.stringify(config);
     const API = '/api';
     if (quiz.id) {
-      await fetch(`${API}/quizzes/${quiz.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, config_json, is_active: 1 }) });
+      await fetch(`${API}/quizzes/${quiz.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: finalTitle, config_json, is_active: 1 }) });
     } else {
-      await fetch(`${API}/quizzes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, config_json }) });
+      await fetch(`${API}/quizzes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: finalTitle, config_json }) });
     }
     setSaving(false);
     onBack();

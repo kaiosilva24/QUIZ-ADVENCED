@@ -3,7 +3,7 @@ const { getDB } = require('../db');
 // GET /api/roundrobin — Retorna config atual (lista de IDs e index)
 async function getRoundRobin(req, res) {
   try {
-    const db = getDB();
+    const db = await getDB();
     const result = await db.query('SELECT * FROM round_robin ORDER BY id LIMIT 1');
     if (result.rows.length === 0) {
       return res.json({ quiz_ids: [], current_index: 0 });
@@ -24,7 +24,7 @@ async function getRoundRobin(req, res) {
 // PUT /api/roundrobin — Salva lista de IDs do round robin
 async function updateRoundRobin(req, res) {
   try {
-    const db = getDB();
+    const db = await getDB();
     const { quiz_ids, is_active } = req.body;
     const quizIdsJson = JSON.stringify(quiz_ids || []);
     await db.query(
@@ -41,7 +41,7 @@ async function updateRoundRobin(req, res) {
 // GET /api/roundrobin/next — Retorna o próximo quiz em round robin (chamado pelo roteador do domínio raiz)
 async function getNextRoundRobinQuiz(req, res) {
   try {
-    const db = getDB();
+    const db = await getDB();
     // Busca config
     const rrResult = await db.query('SELECT * FROM round_robin ORDER BY id LIMIT 1');
     if (rrResult.rows.length === 0) return res.status(404).json({ error: 'Nenhum round robin configurado' });
