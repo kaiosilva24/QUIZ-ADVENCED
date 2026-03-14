@@ -166,7 +166,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
   const save = async () => {
     setSaving(true);
     const config_json = JSON.stringify(config);
-    const API = 'http://localhost:3000/api';
+    const API = '/api';
     if (quiz.id) {
       await fetch(`${API}/quizzes/${quiz.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, config_json, is_active: 1 }) });
     } else {

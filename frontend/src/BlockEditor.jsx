@@ -1,28 +1,360 @@
 import React from 'react';
 
+function Field({ label, children }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-xs font-medium text-slate-400">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function Input({ value, onChange, placeholder, type = 'text' }) {
+  return (
+    <input
+      type={type}
+      value={value || ''}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 transition-colors"
+    />
+  );
+}
+
+function ColorPicker({ value, onChange }) {
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="color"
+        value={value || '#ffffff'}
+        onChange={e => onChange(e.target.value)}
+        className="w-10 h-10 rounded-lg border border-slate-700 cursor-pointer bg-transparent"
+      />
+      <Input value={value} onChange={onChange} placeholder="#ffffff" />
+    </div>
+  );
+}
+
+function Select({ value, onChange, options }) {
+  return (
+    <select
+      value={value || ''}
+      onChange={e => onChange(e.target.value)}
+      className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 cursor-pointer"
+    >
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+}
+
+function Toggle({ label, value, onChange }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-slate-400">{label}</span>
+      <button
+        onClick={() => onChange(!value)}
+        className={`w-10 h-5 rounded-full transition-colors relative ${value ? 'bg-indigo-500' : 'bg-slate-700'} cursor-pointer`}
+      >
+        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${value ? 'translate-x-5' : 'translate-x-0.5'}`} />
+      </button>
+    </div>
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <div className="space-y-4 border-t border-slate-700/50 pt-4 first:border-0 first:pt-0">
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+function StepSelect({ steps, value, onChange, placeholder }) {
+  return (
+    <Select
+      value={value}
+      onChange={onChange}
+      options={[
+        { value: '', label: placeholder || '-- Nenhum --' },
+        ...steps.map((s, i) => ({ value: s.id, label: `${i + 1}. ${s.label}` }))
+      ]}
+    />
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Block specific editors
+// ────────────────────────────────────────────────────────────────────────────
+
+function HeadingEditor({ block, onChange }) {
+  return (
+    <>
+      <Section title="Conteúdo">
+        <Field label="Texto"><Input value={block.text} onChange={v => onChange({ text: v })} /></Field>
+        <Field label="Tamanho">
+          <Select value={block.size || 'xl'} onChange={v => onChange({ size: v })} options={[
+            { value: 'sm', label: 'Pequeno' }, { value: 'base', label: 'Médio' },
+            { value: 'xl', label: 'Grande' }, { value: '2xl', label: 'Extra Grande' }, { value: '4xl', label: 'Máximo' }
+          ]} />
+        </Field>
+        <Field label="Alinhamento">
+          <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
+            { value: 'left', label: 'Esquerda' }, { value: 'center', label: 'Centro' }, { value: 'right', label: 'Direita' }
+          ]} />
+        </Field>
+        <Field label="Cor do Texto"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
+        <Toggle label="Negrito" value={block.bold} onChange={v => onChange({ bold: v })} />
+      </Section>
+    </>
+  );
+}
+
+function TextEditor({ block, onChange }) {
+  return (
+    <>
+      <Section title="Conteúdo">
+        <Field label="Texto">
+          <textarea
+            value={block.text || ''}
+            onChange={e => onChange({ text: e.target.value })}
+            rows={4}
+            className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none"
+          />
+        </Field>
+        <Field label="Tamanho">
+          <Select value={block.size || 'base'} onChange={v => onChange({ size: v })} options={[
+            { value: 'xs', label: 'Muito Pequeno' }, { value: 'sm', label: 'Pequeno' },
+            { value: 'base', label: 'Médio' }, { value: 'lg', label: 'Grande' }
+          ]} />
+        </Field>
+        <Field label="Alinhamento">
+          <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
+            { value: 'left', label: 'Esquerda' }, { value: 'center', label: 'Centro' }, { value: 'right', label: 'Direita' }
+          ]} />
+        </Field>
+        <Field label="Cor do Texto"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
+      </Section>
+    </>
+  );
+}
+
+function ImageEditor({ block, onChange }) {
+  return (
+    <Section title="Imagem">
+      <Field label="URL da Imagem"><Input value={block.src} onChange={v => onChange({ src: v })} placeholder="https://..." /></Field>
+      <Field label="Texto Alternativo"><Input value={block.alt} onChange={v => onChange({ alt: v })} placeholder="Descrição da imagem" /></Field>
+      <Field label="Altura (px)">
+        <input type="range" min={80} max={600} value={block.height || 200}
+          onChange={e => onChange({ height: Number(e.target.value) })}
+          className="w-full accent-indigo-500 cursor-pointer" />
+        <span className="text-xs text-indigo-400">{block.height || 200}px</span>
+      </Field>
+      <Field label="Ajuste de Imagem">
+        <Select value={block.fit || 'cover'} onChange={v => onChange({ fit: v })} options={[
+          { value: 'cover', label: 'Cover (Preencher)' }, { value: 'contain', label: 'Contain (Conter)' }, { value: 'fill', label: 'Fill (Esticar)' }
+        ]} />
+      </Field>
+      <Toggle label="Bordas Arredondadas" value={block.rounded} onChange={v => onChange({ rounded: v })} />
+    </Section>
+  );
+}
+
+function AudioEditor({ block, onChange }) {
+  return (
+    <>
+      <Section title="Áudio">
+        <Field label="URL do Arquivo de Áudio (.mp3, .ogg)"><Input value={block.src} onChange={v => onChange({ src: v })} placeholder="https://example.com/audio.mp3" /></Field>
+        <Field label="URL do Avatar do Remetente"><Input value={block.avatarSrc} onChange={v => onChange({ avatarSrc: v })} placeholder="https://example.com/foto.jpg" /></Field>
+        <Field label="Nome do Remetente"><Input value={block.senderName} onChange={v => onChange({ senderName: v })} placeholder="Fulano" /></Field>
+        <Field label="Duração (ex: 1:23)"><Input value={block.duration} onChange={v => onChange({ duration: v })} placeholder="0:30" /></Field>
+      </Section>
+      <Section title="Aparência">
+        <Field label="Cor de Fundo da Bolha"><ColorPicker value={block.bgColor || '#075e54'} onChange={v => onChange({ bgColor: v })} /></Field>
+        <Field label="Cor da Bolha"><ColorPicker value={block.bubbleColor || '#dcf8c6'} onChange={v => onChange({ bubbleColor: v })} /></Field>
+        <Field label="Cor do Texto"><ColorPicker value={block.textColor || '#111b21'} onChange={v => onChange({ textColor: v })} /></Field>
+        <Toggle label="Mostrar Onda Sonora" value={block.showWave !== false} onChange={v => onChange({ showWave: v })} />
+      </Section>
+    </>
+  );
+}
+
+function VideoEditor({ block, onChange }) {
+  return (
+    <>
+      <Section title="Vídeo">
+        <Field label="URL do Vídeo (MP4 ou Embed)"><Input value={block.src} onChange={v => onChange({ src: v })} placeholder="https://example.com/video.mp4" /></Field>
+        <Field label="URL da Thumbnail (Poster)"><Input value={block.thumbnailSrc} onChange={v => onChange({ thumbnailSrc: v })} placeholder="https://example.com/thumb.jpg" /></Field>
+        <Field label="Proporção">
+          <Select value={block.aspectRatio || '16/9'} onChange={v => onChange({ aspectRatio: v })} options={[
+            { value: '16/9', label: '16:9 (YouTube)' }, { value: '9/16', label: '9:16 (Vertical)' },
+            { value: '1/1', label: '1:1 (Quadrado)' }, { value: '4/3', label: '4:3' }
+          ]} />
+        </Field>
+      </Section>
+      <Section title="Comportamento">
+        <Toggle label="Autoplay" value={block.autoplay} onChange={v => onChange({ autoplay: v })} />
+        <Toggle label="Mudo" value={block.muted} onChange={v => onChange({ muted: v })} />
+        <Toggle label="Loop" value={block.loop} onChange={v => onChange({ loop: v })} />
+        <Toggle label="Ocultar Controles" value={block.hideControls} onChange={v => onChange({ hideControls: v })} />
+        <Toggle label="Mostrar Timer" value={block.showTimer !== false} onChange={v => onChange({ showTimer: v })} />
+        <Toggle label="Bordas Arredondadas" value={block.rounded !== false} onChange={v => onChange({ rounded: v })} />
+      </Section>
+      <Section title="Botão CTA (Opcional)">
+        <Field label="Texto do Botão"><Input value={block.ctaText} onChange={v => onChange({ ctaText: v })} placeholder="Quero mais informações →" /></Field>
+        <Field label="URL do Botão"><Input value={block.ctaUrl} onChange={v => onChange({ ctaUrl: v })} placeholder="https://..." /></Field>
+      </Section>
+    </>
+  );
+}
+
+function ButtonEditor({ block, onChange, steps }) {
+  return (
+    <>
+      <Section title="Botão">
+        <Field label="Texto"><Input value={block.text} onChange={v => onChange({ text: v })} /></Field>
+        <Field label="Emoji"><Input value={block.emoji} onChange={v => onChange({ emoji: v })} placeholder="✅" /></Field>
+        <Field label="Cor de Fundo"><ColorPicker value={block.bg} onChange={v => onChange({ bg: v })} /></Field>
+        <Field label="Cor do Texto"><ColorPicker value={block.textColor} onChange={v => onChange({ textColor: v })} /></Field>
+      </Section>
+      <Section title="Ação">
+        <Field label="Ir para Etapa">
+          <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} placeholder="-- Próxima Etapa --" />
+        </Field>
+        <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
+      </Section>
+    </>
+  );
+}
+
+function ArrowButtonEditor({ block, onChange, steps }) {
+  return (
+    <>
+      <Section title="Botão Seta">
+        <Field label="Texto"><Input value={block.text} onChange={v => onChange({ text: v })} /></Field>
+        <Field label="Cor de Fundo"><ColorPicker value={block.bg} onChange={v => onChange({ bg: v })} /></Field>
+        <Field label="Cor do Texto"><ColorPicker value={block.textColor} onChange={v => onChange({ textColor: v })} /></Field>
+        <Field label="Estilo">
+          <Select value={block.style || 'pill'} onChange={v => onChange({ style: v })} options={[
+            { value: 'pill', label: 'Pílula' }, { value: 'square', label: 'Quadrado' }
+          ]} />
+        </Field>
+      </Section>
+      <Section title="Ação">
+        <Field label="Ir para Etapa">
+          <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} />
+        </Field>
+        <Toggle label="Mostrar ícone de seta" value={block.showIcon !== false} onChange={v => onChange({ showIcon: v })} />
+        <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
+      </Section>
+    </>
+  );
+}
+
+function DividerEditor({ block, onChange }) {
+  return (
+    <Section title="Separador">
+      <Field label="Cor"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
+      <Field label="Espessura (px)">
+        <input type="range" min={1} max={8} value={block.thickness || 1}
+          onChange={e => onChange({ thickness: Number(e.target.value) })}
+          className="w-full accent-indigo-500 cursor-pointer" />
+        <span className="text-xs text-indigo-400">{block.thickness || 1}px</span>
+      </Field>
+    </Section>
+  );
+}
+
+function ProgressEditor({ block, onChange }) {
+  return (
+    <Section title="Barra de Progresso">
+      <Field label="Etapa Atual">
+        <input type="range" min={1} max={block.total || 5} value={block.current || 1}
+          onChange={e => onChange({ current: Number(e.target.value) })}
+          className="w-full accent-indigo-500 cursor-pointer" />
+        <span className="text-xs text-indigo-400">{block.current || 1} de {block.total || 5}</span>
+      </Field>
+      <Field label="Total de Etapas">
+        <input type="range" min={1} max={20} value={block.total || 5}
+          onChange={e => onChange({ total: Number(e.target.value) })}
+          className="w-full accent-indigo-500 cursor-pointer" />
+        <span className="text-xs text-indigo-400">{block.total || 5} etapas</span>
+      </Field>
+      <Field label="Cor da Barra"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
+      <Field label="Cor de Fundo"><ColorPicker value={block.bg} onChange={v => onChange({ bg: v })} /></Field>
+      <Toggle label="Mostrar Rótulo" value={block.showLabel !== false} onChange={v => onChange({ showLabel: v })} />
+    </Section>
+  );
+}
+
+function LeadCaptureEditor({ block, onChange }) {
+  const all = ['name', 'email', 'phone', 'message'];
+  const labels = { name: 'Nome', email: 'E-mail', phone: 'Telefone', message: 'Mensagem' };
+  return (
+    <>
+      <Section title="Campos do Formulário">
+        {all.map(f => (
+          <Toggle key={f} label={labels[f]}
+            value={block.fields?.includes(f)}
+            onChange={v => onChange({ fields: v ? [...(block.fields || []), f] : (block.fields || []).filter(x => x !== f) })} />
+        ))}
+      </Section>
+      <Section title="Botão">
+        <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
+        <Field label="Cor do Botão"><ColorPicker value={block.buttonBg} onChange={v => onChange({ buttonBg: v })} /></Field>
+      </Section>
+    </>
+  );
+}
+
+function ResultEditor({ block, onChange }) {
+  return (
+    <>
+      <Section title="Resultado">
+        <Field label="Título"><Input value={block.heading} onChange={v => onChange({ heading: v })} /></Field>
+        <Field label="Texto">
+          <textarea value={block.text || ''} onChange={e => onChange({ text: e.target.value })} rows={3}
+            className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none" />
+        </Field>
+      </Section>
+      <Section title="Botão CTA">
+        <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
+        <Field label="URL do Botão"><Input value={block.buttonUrl} onChange={v => onChange({ buttonUrl: v })} placeholder="https://..." /></Field>
+        <Field label="Cor do Botão"><ColorPicker value={block.buttonBg} onChange={v => onChange({ buttonBg: v })} /></Field>
+      </Section>
+    </>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Main component
+// ────────────────────────────────────────────────────────────────────────────
 export default function BlockEditor({ block, theme, steps, currentStepIdx, onChange }) {
   if (!block) return null;
 
+  const editorMap = {
+    heading: HeadingEditor,
+    text: TextEditor,
+    image: ImageEditor,
+    audio: AudioEditor,
+    video: VideoEditor,
+    button: ButtonEditor,
+    arrow_button: ArrowButtonEditor,
+    divider: DividerEditor,
+    progress: ProgressEditor,
+    lead_capture: LeadCaptureEditor,
+    result: ResultEditor,
+  };
+
+  const Editor = editorMap[block.type];
+
   return (
-    <div className="p-4 bg-slate-800 rounded-xl text-slate-300">
-      <h3 className="text-lg font-bold mb-4 text-white">Editar: {block.type}</h3>
-      <div className="space-y-4">
-        {block.type === 'heading' || block.type === 'text' ? (
-          <div>
-            <label className="block text-sm mb-1 text-slate-400">Texto</label>
-            <input 
-              type="text" 
-              value={block.text || ''} 
-              onChange={e => onChange({ text: e.target.value })}
-              className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-            />
-          </div>
-        ) : (
-          <p className="text-sm text-slate-400">
-            Nenhuma opção de edição específica para este bloco foi implementada ainda.
-          </p>
-        )}
-      </div>
+    <div className="space-y-4">
+      {Editor ? (
+        <Editor block={block} onChange={onChange} steps={steps} currentStepIdx={currentStepIdx} theme={theme} />
+      ) : (
+        <p className="text-sm text-slate-500 text-center py-8">Nenhuma opção de edição para este bloco.</p>
+      )}
     </div>
   );
 }

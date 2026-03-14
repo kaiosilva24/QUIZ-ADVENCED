@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
 
-const API = 'http://localhost:3000/api';
+const API = '/api';
 
 // ─── Componente Raiz ─────────────────────────────────────────────────────────
 export default function App() {
