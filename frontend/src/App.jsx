@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Palette, Globe, BarChart2, ListTodo, Settings,
+  Palette, BarChart2, ListTodo, Settings,
   PlusCircle, Trash2, Edit3, ArrowRight,
-  CheckCircle2, Users, TrendingUp
+  CheckCircle2, Users, TrendingUp, Shuffle, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
 import QuizPreview from './QuizPreview';
@@ -17,11 +17,12 @@ function QuizRouter() {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    // Lê o slug direto do caminho da URL: ex: /quiz-renda => slug = "quiz-renda"
     const pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
-    if (!pathSlug) { window.location.href = '/admin'; return; }
 
-    fetch(`/api/route/${encodeURIComponent(pathSlug)}`)
+    // Se é o root sem slug, tenta o round robin (rotação)
+    const endpoint = pathSlug ? `/api/route/${encodeURIComponent(pathSlug)}` : '/api/roundrobin/next';
+
+    fetch(endpoint)
       .then(r => {
         if (!r.ok) { window.location.href = '/admin'; throw new Error('redirect'); }
         return r.json();
@@ -55,27 +56,20 @@ function QuizRouter() {
 // ─── Componente Raiz ──────────────────────────────────────────────────────────
 export default function App() {
   const [tab, setTab] = useState('quizzes');
-  const [domains, setDomains] = useState([]);
   const [quizzes, setQuizzes] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [editingQuiz, setEditingQuiz] = useState(null);
 
-  // Check if we are on a custom domain
   const hostname = window.location.hostname;
   const isCustomDomain = !hostname.includes('discloud.app') && hostname !== 'localhost';
-
-  // Se o usuário acessar meusite.com/admin, permite que ele veja o painel!
   const isAdminRoute = window.location.pathname.startsWith('/admin');
 
   if (isCustomDomain && !isAdminRoute) {
     return <QuizRouter />;
   }
 
-  useEffect(() => { fetchQuizzes(); fetchDomains(); fetchAllTasks(); }, []);
+  useEffect(() => { fetchQuizzes(); fetchAllTasks(); }, []);
 
-  const fetchDomains = async () => {
-    const r = await fetch(`${API}/domains`); setDomains(await r.json());
-  };
   const fetchQuizzes = async () => {
     const r = await fetch(`${API}/quizzes`);
     const data = await r.json();
@@ -85,7 +79,6 @@ export default function App() {
     const r = await fetch(`${API}/tasks`); setTasks(await r.json());
   };
 
-  // Quando editando quiz, renderiza o Builder fullscreen (substitui o layout inteiro)
   if (editingQuiz !== null) {
     return (
       <QuizBuilder
@@ -106,7 +99,7 @@ export default function App() {
         </div>
         <nav className="flex-1 p-3 space-y-1 mt-2">
           <NavItem icon={<Palette size={20}/>} label="Quizzes & Builder" active={tab==='quizzes'} onClick={()=>setTab('quizzes')}/>
-          <NavItem icon={<Globe size={20}/>} label="Domínios" active={tab==='domains'} onClick={()=>setTab('domains')}/>
+          <NavItem icon={<Shuffle size={20}/>} label="Teste A/B · Round Robin" active={tab==='abteste'} onClick={()=>setTab('abteste')}/>
           <NavItem icon={<BarChart2 size={20}/>} label="Analytics" active={tab==='analytics'} onClick={()=>setTab('analytics')}/>
           <NavItem icon={<ListTodo size={20}/>} label="Tarefas da Equipe" active={tab==='tasks'} onClick={()=>setTab('tasks')}/>
         </nav>
@@ -120,7 +113,7 @@ export default function App() {
         <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 shrink-0 bg-slate-900/30 backdrop-blur-md">
           <h2 className="text-lg font-semibold text-slate-100">
             {tab==='quizzes'&&'Quizzes & Builder Visual'}
-            {tab==='domains'&&'Roteamento & Domínios'}
+            {tab==='abteste'&&'Teste A/B · Round Robin'}
             {tab==='analytics'&&'Analytics & Métricas'}
             {tab==='tasks'&&'Gestão de Tarefas'}
           </h2>
@@ -146,9 +139,9 @@ export default function App() {
               })}
             />
           )}
-          {tab==='domains' && <DomainsView domains={domains} fetchDomains={fetchDomains}/>}
-          {tab==='analytics' && <AnalyticsView quizzes={quizzes} domains={domains}/>}
-          {tab==='tasks' && <TasksView tasks={tasks} setTasks={setTasks} fetchTasks={fetchAllTasks}/>}
+          {tab==='abteste' && <RoundRobinView quizzes={quizzes}/>}
+          {tab==='analytics' && <AnalyticsView quizzes={quizzes}/>}
+          {tab==='tasks' && <TasksView tasks={tasks} fetchTasks={fetchAllTasks}/>}
         </div>
       </main>
     </div>
@@ -159,7 +152,7 @@ export default function App() {
 function NavItem({ icon, label, active, onClick }) {
   return (
     <button onClick={onClick}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 ${active ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-[inset_0_0_12px_rgba(99,102,241,0.08)]' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'}`}>
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left cursor-pointer focus:outline-none ${active ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-[inset_0_0_12px_rgba(99,102,241,0.08)]' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'}`}>
       <span className="shrink-0">{icon}</span>
       <span className="hidden lg:block text-sm font-medium truncate">{label}</span>
     </button>
@@ -188,7 +181,7 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
         <div>
           <h3 className="text-xl font-bold text-white">Meus Quizzes</h3>
           <p className="text-sm text-slate-500 mt-1">
-            Link direto de cada quiz: <span className="font-mono text-indigo-400">{protocol}//{host}/<span className="text-emerald-400">nome-do-quiz</span></span>
+            Link direto: <span className="font-mono text-indigo-400">{protocol}//{host}/<span className="text-emerald-400">nome-do-quiz</span></span>
           </p>
         </div>
         <button onClick={onNew} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] active:scale-95 text-sm cursor-pointer">
@@ -242,43 +235,143 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
   );
 }
 
-// ─── Domains View ─────────────────────────────────────────────────────────────
-function DomainsView({ domains, fetchDomains }) {
-  const [hostname, setHostname] = useState('');
-  const create = async () => {
-    if (!hostname) return;
-    await fetch(`${API}/domains`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ hostname }) });
-    setHostname(''); fetchDomains();
+// ─── Round Robin A/B Test View ────────────────────────────────────────────────
+function RoundRobinView({ quizzes }) {
+  const [rrConfig, setRrConfig] = useState({ quiz_ids: [], is_active: true });
+  const [saved, setSaved] = useState(false);
+  const host = window.location.host;
+  const protocol = window.location.protocol;
+
+  useEffect(() => {
+    fetch(`${API}/roundrobin`)
+      .then(r => r.json())
+      .then(d => setRrConfig({ quiz_ids: d.quiz_ids || [], is_active: d.is_active !== false }))
+      .catch(() => {});
+  }, []);
+
+  const isSelected = (id) => rrConfig.quiz_ids.includes(id);
+
+  const toggleQuiz = (id) => {
+    setRrConfig(c => ({
+      ...c,
+      quiz_ids: c.quiz_ids.includes(id)
+        ? c.quiz_ids.filter(x => x !== id)
+        : [...c.quiz_ids, id]
+    }));
   };
+
+  const moveUp = (id) => {
+    const ids = [...rrConfig.quiz_ids];
+    const idx = ids.indexOf(id);
+    if (idx <= 0) return;
+    [ids[idx-1], ids[idx]] = [ids[idx], ids[idx-1]];
+    setRrConfig(c => ({...c, quiz_ids: ids}));
+  };
+
+  const moveDown = (id) => {
+    const ids = [...rrConfig.quiz_ids];
+    const idx = ids.indexOf(id);
+    if (idx < 0 || idx >= ids.length - 1) return;
+    [ids[idx], ids[idx+1]] = [ids[idx+1], ids[idx]];
+    setRrConfig(c => ({...c, quiz_ids: ids}));
+  };
+
+  const save = async () => {
+    await fetch(`${API}/roundrobin`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(rrConfig)
+    });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const orderedSelected = rrConfig.quiz_ids
+    .map(id => quizzes.find(q => q.id === id))
+    .filter(Boolean);
+  const unselected = quizzes.filter(q => !rrConfig.quiz_ids.includes(q.id));
+
   return (
     <div className="max-w-2xl space-y-8">
-      <div>
-        <h3 className="text-xl font-bold text-white mb-1">Gerenciar Domínios</h3>
-        <p className="text-sm text-slate-500">Cada domínio possui sua própria roleta Round Robin de quizzes.</p>
-      </div>
-      <div className="flex gap-3">
-        <input value={hostname} onChange={e => setHostname(e.target.value)} placeholder="quiz.meusite.com.br"
-          className="flex-1 bg-slate-800/40 border border-slate-700/50 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-indigo-500 transition-colors"/>
-        <button onClick={create} className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-medium transition-all text-sm cursor-pointer focus:outline-none">Adicionar</button>
-      </div>
-      <div className="space-y-3">
-        {domains.map(d => (
-          <div key={d.id} className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700/40 rounded-xl">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center"><Globe size={15} className="text-indigo-400"/></div>
-              <span className="text-sm font-medium text-slate-200">{d.hostname}</span>
-            </div>
-            <span className={`text-xs px-2 py-0.5 rounded-full border ${d.is_active ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-slate-400 border-slate-700'}`}>{d.is_active ? 'Ativo' : 'Inativo'}</span>
+      {/* Header */}
+      <div className="p-5 bg-gradient-to-br from-indigo-500/10 to-purple-500/5 border border-indigo-500/20 rounded-2xl">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+            <Shuffle size={20} className="text-indigo-400"/>
           </div>
-        ))}
-        {domains.length === 0 && <p className="text-sm text-slate-500 px-1">Nenhum domínio cadastrado ainda.</p>}
+          <div>
+            <h3 className="text-lg font-bold text-white">Rotação Round Robin</h3>
+            <p className="text-xs text-slate-400">Quem acessar <span className="font-mono text-indigo-300">{protocol}//{host}/</span> (sem slug) vê quizzes em rotação</p>
+          </div>
+          {/* Toggle ativo */}
+          <button onClick={() => setRrConfig(c => ({...c, is_active: !c.is_active}))} className="ml-auto cursor-pointer">
+            {rrConfig.is_active
+              ? <ToggleRight size={34} className="text-emerald-400"/>
+              : <ToggleLeft size={34} className="text-slate-600"/>}
+          </button>
+        </div>
+        <p className="text-xs text-slate-500 mt-2">
+          💡 Os links diretos <span className="font-mono text-emerald-400">/slug</span> continuam funcionando normalmente. O Round Robin só aplica ao domínio raiz.
+        </p>
       </div>
+
+      {/* Quizzes selecionados (ordem de rotação) */}
+      <div>
+        <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <span className="w-5 h-5 rounded-full bg-indigo-500/20 text-indigo-400 text-xs flex items-center justify-center font-bold">{orderedSelected.length}</span>
+          Quizzes na rotação (em ordem)
+        </h4>
+        <div className="space-y-2">
+          {orderedSelected.map((q, i) => (
+            <div key={q.id} className="flex items-center gap-3 p-3.5 bg-indigo-500/5 border border-indigo-500/20 rounded-xl">
+              <span className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-200 truncate">{q.title}</p>
+                <p className="text-xs font-mono text-emerald-400">/{q.slug || 'quiz-'+q.id}</p>
+              </div>
+              <div className="flex gap-1 shrink-0">
+                <button onClick={() => moveUp(q.id)} disabled={i===0} className="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-30 flex items-center justify-center text-slate-300 cursor-pointer text-xs">↑</button>
+                <button onClick={() => moveDown(q.id)} disabled={i===orderedSelected.length-1} className="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-30 flex items-center justify-center text-slate-300 cursor-pointer text-xs">↓</button>
+                <button onClick={() => toggleQuiz(q.id)} className="w-6 h-6 rounded-lg bg-red-500/10 hover:bg-red-500/30 flex items-center justify-center text-red-400 cursor-pointer">✕</button>
+              </div>
+            </div>
+          ))}
+          {orderedSelected.length === 0 && (
+            <p className="text-sm text-slate-500 py-4 text-center border border-dashed border-slate-700 rounded-xl">Nenhum quiz selecionado ainda. Adicione abaixo ↓</p>
+          )}
+        </div>
+      </div>
+
+      {/* Quizzes disponíveis para adicionar */}
+      {unselected.length > 0 && (
+        <div>
+          <h4 className="text-sm font-semibold text-slate-300 mb-3">Adicionar à rotação</h4>
+          <div className="space-y-2">
+            {unselected.map(q => (
+              <div key={q.id} className="flex items-center gap-3 p-3.5 bg-slate-800/30 border border-slate-700/40 rounded-xl hover:border-indigo-500/30 transition-all">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-300 truncate">{q.title}</p>
+                  <p className="text-xs font-mono text-slate-500">/{q.slug || 'quiz-'+q.id}</p>
+                </div>
+                <button onClick={() => toggleQuiz(q.id)} className="shrink-0 px-3 py-1.5 text-xs bg-indigo-600/20 hover:bg-indigo-600/50 text-indigo-300 hover:text-white rounded-lg border border-indigo-500/20 transition-colors cursor-pointer">
+                  + Adicionar
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Botão salvar */}
+      <button onClick={save} className={`w-full py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer ${saved ? 'bg-emerald-600 text-white' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]'}`}>
+        {saved ? '✓ Configuração salva!' : 'Salvar Configuração de Round Robin'}
+      </button>
     </div>
   );
 }
 
 // ─── Analytics View ───────────────────────────────────────────────────────────
-function AnalyticsView({ quizzes, domains }) {
+function AnalyticsView({ quizzes }) {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -306,7 +399,7 @@ function AnalyticsView({ quizzes, domains }) {
               <span className="flex-1 text-sm font-medium text-slate-200 truncate">{q.title}</span>
               <span className="text-xs font-medium text-indigo-400 w-10 text-right">{rate}%</span>
               <div className="w-20 h-1.5 bg-slate-700 rounded-full overflow-hidden shrink-0">
-                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all" style={{width: `${rate}%`}}/>
+                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{width: `${rate}%`}}/>
               </div>
             </div>
           );
@@ -381,7 +474,7 @@ function TasksView({ tasks, fetchTasks }) {
                 <div key={t.id} className="p-4 bg-slate-900/70 border border-slate-700/50 rounded-xl space-y-2 group hover:border-slate-600 transition-all">
                   <div className="flex justify-between items-start gap-2">
                     <p className="text-sm font-medium text-slate-200 leading-snug">{t.title}</p>
-                    <button onClick={() => del(t.id)} aria-label="Deletar tarefa" className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all shrink-0 cursor-pointer"><Trash2 size={13}/></button>
+                    <button onClick={() => del(t.id)} aria-label="Deletar" className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all shrink-0 cursor-pointer"><Trash2 size={13}/></button>
                   </div>
                   {t.description && <p className="text-xs text-slate-500 leading-relaxed">{t.description}</p>}
                   <div className="flex items-center justify-between pt-1">

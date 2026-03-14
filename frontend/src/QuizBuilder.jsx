@@ -170,7 +170,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
     if (quiz.id) {
       await fetch(`${API}/quizzes/${quiz.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, config_json, is_active: 1 }) });
     } else {
-      await fetch(`${API}/quizzes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domain_id: domain.id, title, config_json }) });
+      await fetch(`${API}/quizzes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, config_json }) });
     }
     setSaving(false);
     onBack();

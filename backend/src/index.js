@@ -16,6 +16,7 @@ const { getQuizzes, createQuiz, updateQuiz, deleteQuiz } = require('./controller
 const { handleQuizRouting } = require('./controllers/routerController');
 const { getTasks, createTask, updateTask, deleteTask } = require('./controllers/taskController');
 const { getQuizAnalytics, trackEvent } = require('./controllers/analyticsController');
+const { getRoundRobin, updateRoundRobin, getNextRoundRobinQuiz } = require('./controllers/roundRobinController');
 
 // --- Rotas API ---
 app.post('/api/domains', createDomain);
@@ -35,16 +36,17 @@ app.delete('/api/tasks/:id', deleteTask);
 app.get('/api/analytics/quiz/:quizId', getQuizAnalytics);
 app.post('/api/analytics/track', trackEvent);
 
-// --- Rota Principal (Antigo Round Robin, Agora Slug InLead) ---
-// O frontend chamará isso para descobrir qual quiz exibir baseado no path
+// Round Robin A/B Test
+app.get('/api/roundrobin', getRoundRobin);
+app.put('/api/roundrobin', updateRoundRobin);
+app.get('/api/roundrobin/next', getNextRoundRobinQuiz);
+
+// --- Rota por Slug (InLead Style) ---
 app.get('/api/route/:slug', handleQuizRouting);
 
 // --- Servir Frontend Estático para TODAS AS OUTRAS rotas ---
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath));
-
-
-
 
 app.get('/{*path}', (req, res, next) => {
     if (req.path.startsWith('/api/')) return next();

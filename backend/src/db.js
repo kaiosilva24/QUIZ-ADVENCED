@@ -126,6 +126,19 @@ async function runMigrations(db) {
         );
     `);
 
+
+    // Tabela: Round Robin A/B (Configurar quais quizzes rotacionar no domínio raiz)
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS round_robin (
+            id SERIAL PRIMARY KEY,
+            quiz_ids TEXT NOT NULL DEFAULT '[]', -- JSON array de quiz IDs em ordem
+            current_index INTEGER DEFAULT 0,
+            is_active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+    // Garante que existe pelo menos 1 registro de configuração
+    await db.query(`INSERT INTO round_robin (quiz_ids) SELECT '[]' WHERE NOT EXISTS (SELECT 1 FROM round_robin)`);
     console.log('[DB] Migrations executed successfully.');
 }
 
