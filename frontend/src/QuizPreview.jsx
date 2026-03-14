@@ -410,7 +410,7 @@ function VideoBlockPlayer({ block, compact }) {
 }
 
 // Renderizador fiel ao InLead: converte o config JSON em tela visual
-export default function QuizPreview({ config, stepIdx = 0, compact = false }) {
+export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate }) {
   const step = config?.steps?.[stepIdx];
   const theme = config?.theme || {};
   const accent = theme.accent || '#6366f1';
@@ -456,7 +456,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false }) {
       <div className="relative z-10 h-full flex flex-col overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
         <div className={`flex flex-col gap-${compact ? '2' : '3'} ${compact ? 'p-4' : 'p-6'} min-h-full`}>
           {(step?.blocks || []).map(block => (
-            <BlockRenderer key={block.id} block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} />
+            <BlockRenderer key={block.id} block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} />
           ))}
           {(!step?.blocks || step.blocks.length === 0) && (
             <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30">
@@ -471,7 +471,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false }) {
   );
 }
 
-function BlockRenderer({ block, theme, compact }) {
+function BlockRenderer({ block, theme, compact, onNavigate }) {
   const scale = compact ? 0.6 : 1;
   const { accent, textColor: defaultText } = theme;
 
@@ -551,7 +551,10 @@ function BlockRenderer({ block, theme, compact }) {
           </div>
         );
       }
-      return <img src={block.src} alt={block.alt || ''} style={imageStyle} />;
+      return (
+        <img src={block.src} alt={block.alt || ''} style={{...imageStyle, cursor: block.nextStep ? 'pointer' : 'default'}} 
+             onClick={() => block.nextStep && onNavigate && onNavigate(block.nextStep)} />
+      );
     }
 
     case 'arrow_button': {
@@ -646,6 +649,7 @@ function BlockRenderer({ block, theme, compact }) {
                 filter: `drop-shadow(0 0 ${compact ? 6 : 12}px ${color}80)`,
               }}
               aria-label="Navegar para próxima etapa"
+              onClick={() => block.nextStep && onNavigate && onNavigate(block.nextStep)}
             >
               {icon}
             </button>
@@ -677,7 +681,9 @@ function BlockRenderer({ block, theme, compact }) {
           transition: 'opacity 0.15s ease',
           boxShadow: `0 4px 20px ${block.bg || accent}40`,
           letterSpacing: '0.01em',
-        }}>
+        }}
+        onClick={() => block.nextStep && onNavigate && onNavigate(block.nextStep)}
+        >
           {block.text || 'Avançar'}
         </button>
       );

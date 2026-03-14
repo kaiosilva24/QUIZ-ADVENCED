@@ -35,24 +35,19 @@ app.delete('/api/tasks/:id', deleteTask);
 app.get('/api/analytics/quiz/:quizId', getQuizAnalytics);
 app.post('/api/analytics/track', trackEvent);
 
-// --- Servir Frontend Estático ---
+// --- Rota Principal (Motor Round Robin) ---
+// O frontend chamará isso para descobrir qual quiz exibir
+app.get('/api/route', handleQuizRouting);
+
+// --- Servir Frontend Estático para TODAS AS OUTRAS rotas ---
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath));
 
-// --- Rota Principal Dinâmica (Motor Round Robin) ---
-// Esta rota só serve quizzes para domínios externos. O painel admin é servido pelo React.
-app.get('/{*path}', (req, res, next) => {
-    const hostname = req.hostname;
-    const isAdminDomain = hostname.includes('discloud.app') || hostname === 'localhost';
-    
-    if (isAdminDomain) {
-        // Serve o painel React (index.html) para o domínio principal
-        return res.sendFile(path.join(frontendPath, 'index.html'));
-    }
-
-    // Para outros domínios customizados, usa o roteador de quizzes
-    return handleQuizRouting(req, res, next);
+app.get('/*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(frontendPath, 'index.html'));
 });
+
 
 const { getDB } = require('./db');
 

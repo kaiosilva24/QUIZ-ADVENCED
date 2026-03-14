@@ -5,8 +5,52 @@ import {
   CheckCircle2, Users, TrendingUp
 } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
+import QuizPreview from './QuizPreview';
 
 const API = '/api';
+
+// ─── Componente Roteador de Quizzes para Domínios Customizados ─────────────────
+function QuizRouter() {
+  const [quizData, setQuizData] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // O QuizPreview original usa stepIdx, mas em produção real a gente precisaria do Flow engine,
+  // ou adaptar para o próprio QuizPreview gerenciar etapas.
+  // Já que este sistema é Round Robin e o QuizPreview já sabe renderizar 1 tela, usaremos um wrapper.
+  const [currentStep, setCurrentStep] = useState(0);
+
+  useEffect(() => {
+    fetch('/api/route')
+      .then(r => {
+        if (!r.ok) throw new Error('Domínio ou quiz não encontrado');
+        return r.json();
+      })
+      .then(data => {
+        setQuizData(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center font-sans text-white text-lg">Carregando...</div>;
+  if (error) return <div className="min-h-screen bg-slate-950 flex items-center justify-center font-sans text-red-400 text-lg">{error}</div>;
+  if (!quizData) return null;
+
+  // Renderiza o visual do Quiz em tela cheia, usando a engine do Preview (não compact)
+  // TODO: Opcionalmente criar um Engine de Fluxo Real se o QuizPreview for apenas read-only de 1 tela.
+  // Por enquanto reaproveitamos ele, mas forçamos height 100vh se der block.
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-black">
+      <div style={{ width: '100%', maxWidth: '420px', height: '100vh', maxHeight: '100vh' }}>
+        <QuizPreview config={quizData.config} stepIdx={currentStep} compact={false} />
+      </div>
+    </div>
+  );
+}
 
 // ─── Componente Raiz ─────────────────────────────────────────────────────────
 export default function App() {
@@ -17,8 +61,15 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [editingQuiz, setEditingQuiz] = useState(null);
 
+  // Check if we are on a custom domain
+  const hostname = window.location.hostname;
+  const isCustomDomain = !hostname.includes('discloud.app') && hostname !== 'localhost';
+
+  if (isCustomDomain) {
+    return <QuizRouter />;
+  }
+
   useEffect(() => { fetchDomains(); fetchAllTasks(); }, []);
-  useEffect(() => { if (selectedDomain) fetchQuizzes(selectedDomain.id); }, [selectedDomain]);
 
   const fetchDomains = async () => {
     const r = await fetch(`${API}/domains`); setDomains(await r.json());
