@@ -64,8 +64,11 @@ export default function App() {
   // Check if we are on a custom domain
   const hostname = window.location.hostname;
   const isCustomDomain = !hostname.includes('discloud.app') && hostname !== 'localhost';
+  
+  // Se o usuário acessar meusite.com/admin, permite que ele veja o painel!
+  const isAdminRoute = window.location.pathname.startsWith('/admin');
 
-  if (isCustomDomain) {
+  if (isCustomDomain && !isAdminRoute) {
     return <QuizRouter />;
   }
 
