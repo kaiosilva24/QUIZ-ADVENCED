@@ -43,11 +43,13 @@ app.get('/api/route', handleQuizRouting);
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath));
 
-app.get('/*', (req, res, next) => {
+
+
+
+app.get('/{*path}', (req, res, next) => {
     if (req.path.startsWith('/api/')) return next();
     res.sendFile(path.join(frontendPath, 'index.html'));
 });
-
 
 const { getDB } = require('./db');
 
