@@ -23,7 +23,13 @@ function QuizRouter() {
   useEffect(() => {
     fetch('/api/route')
       .then(r => {
-        if (!r.ok) throw new Error('Domínio ou quiz não encontrado');
+        if (!r.ok) {
+           // Se der 404, significa que o domínio customizado (ex: herancasherdadas.org)
+           // não tem nenhum quiz ativo. Em vez de mostrar "Não encontrado",
+           // enviamos o dono direto para o painel de admin.
+           window.location.href = '/admin';
+           throw new Error('Redirecionando para o Admin...');
+        }
         return r.json();
       })
       .then(data => {
@@ -37,7 +43,7 @@ function QuizRouter() {
   }, []);
 
   if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center font-sans text-white text-lg">Carregando...</div>;
-  if (error) return <div className="min-h-screen bg-slate-950 flex items-center justify-center font-sans text-red-400 text-lg">{error}</div>;
+  if (error && error !== 'Redirecionando para o Admin...') return <div className="min-h-screen bg-slate-950 flex items-center justify-center font-sans text-red-400 text-lg">{error}</div>;
   if (!quizData) return null;
 
   // Renderiza o visual do Quiz em tela cheia, usando a engine do Preview (não compact)
