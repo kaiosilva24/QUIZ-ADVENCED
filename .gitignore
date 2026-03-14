@@ -2,3 +2,4 @@ node_modules/
 .env
 skills_temp/
 skills_repo/
+database.sqlite
