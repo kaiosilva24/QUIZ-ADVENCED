@@ -4,7 +4,8 @@
   "description": "Quiz Advanced Discloud Deploy",
   "main": "backend/src/index.js",
   "scripts": {
-    "start": "node backend/src/index.js"
+    "start": "node backend/src/index.js",
+    "postinstall": "cd frontend && npm install && npm run build"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",

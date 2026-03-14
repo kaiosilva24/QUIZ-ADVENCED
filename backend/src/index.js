@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,9 +35,21 @@ app.delete('/api/tasks/:id', deleteTask);
 app.get('/api/analytics/quiz/:quizId', getQuizAnalytics);
 app.post('/api/analytics/track', trackEvent);
 
+// --- Servir Frontend Estático ---
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendPath));
+
 // --- Rota Principal Dinâmica (Motor Round Robin) ---
-// Express 5 usa '/{*path}' para wildcard
-app.all('/{*path}', handleQuizRouting);
+// Primeiro lidamos com o roteador dinâmico de quizzes
+app.get('/{*path}', handleQuizRouting);
+
+// Se não for um quiz e não for API, devolve o index.html do frontend (React Router v7)
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/') || req.method !== 'GET') {
+        return next();
+    }
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
 
 const { getDB } = require('./db');
 

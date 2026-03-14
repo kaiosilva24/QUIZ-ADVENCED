@@ -5,8 +5,8 @@ let poolInstance = null;
 async function getDB() {
     if (poolInstance) return poolInstance;
 
-    // A senha contém '#', o que quebra o parse da URL. Precisa ser feito o URL encode.
-    const encodedPassword = encodeURIComponent(process.env.DB_PASSWORD);
+    const dbPassword = process.env.DB_PASSWORD || '';
+    const encodedPassword = encodeURIComponent(dbPassword);
     const connectionString = `postgresql://postgres.eptmqlnqdaljyxdfcuxg:${encodedPassword}@aws-1-us-east-1.pooler.supabase.com:6543/postgres`;
 
     try {
