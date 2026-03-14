@@ -5,7 +5,7 @@ let poolInstance = null;
 async function getDB() {
     if (poolInstance) return poolInstance;
 
-    const dbPassword = process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD) : '';
+    const dbPassword = process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD) : '#Nk552446#Nk';
 
     try {
         poolInstance = new Pool({
