@@ -6,12 +6,14 @@ async function getDB() {
     if (poolInstance) return poolInstance;
 
     const dbPassword = process.env.DB_PASSWORD || '';
-    const encodedPassword = encodeURIComponent(dbPassword);
-    const connectionString = `postgresql://postgres.eptmqlnqdaljyxdfcuxg:${encodedPassword}@aws-1-us-east-1.pooler.supabase.com:6543/postgres`;
 
     try {
         poolInstance = new Pool({
-            connectionString,
+            host: 'aws-1-us-east-1.pooler.supabase.com',
+            port: 6543,
+            database: 'postgres',
+            user: 'postgres.eptmqlnqdaljyxdfcuxg',
+            password: dbPassword,
             ssl: { rejectUnauthorized: false } // Supabase requires SSL
         });
 
