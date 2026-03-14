@@ -1,4 +1,4 @@
-const { Pool } = require('pg');
+﻿const { Pool } = require('pg');
 
 let poolInstance = null;
 
@@ -14,7 +14,7 @@ async function getDB() {
             database: 'postgres',
             user: 'postgres.eptmqlnqdaljyxdfcuxg',
             password: dbPassword,
-            ssl: { rejectUnauthorized: false } // Supabase requires SSL
+            ssl: { rejectUnauthorized: false }
         });
 
         // Test connection
@@ -24,7 +24,7 @@ async function getDB() {
 
         await runMigrations(poolInstance);
 
-        // Map sqlite `.all`, `.get`, `.run` to simplify adapter change for controllers
+        // Map sqlite `.all`, `.get`, `.run`
         poolInstance.all = async (sql, params) => {
             if (!poolInstance) return [];
             const res = await poolInstance.query(sql, params);
@@ -38,15 +38,12 @@ async function getDB() {
         poolInstance.run = async (sql, params) => {
             if (!poolInstance) return { changes: 0 };
             const res = await poolInstance.query(sql, params);
-            // Sqlite returns { lastID, changes }, pg doesn't have lastID directly unless RETURNING is used, but we map changes
             return { changes: res.rowCount };
         };
 
         return poolInstance;
     } catch (error) {
         console.error('[DB] Failed to connect to Supabase:', error.message);
-        
-        // Retorna um objeto mockado (sem a classe Pool nativa que pode estar quebrada) para a aplicação não explodir
         poolInstance = {
             all: async () => [],
             get: async () => null,
@@ -80,7 +77,7 @@ async function runMigrations(db) {
         );
     `);
 
-    // Tabela: Quizzes (Agora armazenando o Grafo JSON do Quiz)
+    // Tabela: Quizzes
     await db.query(`
         CREATE TABLE IF NOT EXISTS quizzes (
             id SERIAL PRIMARY KEY,
@@ -92,29 +89,21 @@ async function runMigrations(db) {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
-
-    // Migration para garantir que a coluna slug existe em bancos antigos
-    try {
-        await db.query(`ALTER TABLE quizzes ADD COLUMN slug TEXT UNIQUE;`);
-        await db.query(`ALTER TABLE quizzes ALTER COLUMN domain_id DROP NOT NULL;`);
-    } catch (e) {
-        // Ignora erro se a coluna já existir
-    }
-
-    // Tabela: Leads/Visitors Tracker (Monitorar progresso no funil do Roteador)
+    
+    // Tabela: Leads/Visitors Tracker
     await db.query(`
         CREATE TABLE IF NOT EXISTS quiz_events (
             id SERIAL PRIMARY KEY,
             quiz_id INTEGER NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
             visitor_id TEXT NOT NULL, -- UUID de cookie de quem acessa
             event_type TEXT NOT NULL, -- start, step_reached, finished, dropped
-            step_id TEXT, -- ID do nó em que está
-            answer_value TEXT, -- Opção que escolheu
+            step_id TEXT, -- ID do no em que esta
+            answer_value TEXT, -- opo que escolheu
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
 
-    // Tabela: Team Tasks (Para controle interno)
+    // Tabela: Team Tasks
     await db.query(`
         CREATE TABLE IF NOT EXISTS tasks (
             id SERIAL PRIMARY KEY,
@@ -126,8 +115,7 @@ async function runMigrations(db) {
         );
     `);
 
-
-    // Tabela: Round Robin A/B (Configurar quais quizzes rotacionar no dom�nio raiz)
+    // Tabela: Round Robin A/B (Configurar quais quizzes rotacionar no domnio raiz)
     await db.query(`
         CREATE TABLE IF NOT EXISTS round_robin (
             id SERIAL PRIMARY KEY,
@@ -137,33 +125,8 @@ async function runMigrations(db) {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
-    // Garante que existe pelo menos 1 registro de configura��o
+    // Garante que existe pelo menos 1 registro de configurao
     await db.query(`INSERT INTO round_robin (quiz_ids) SELECT '[]' WHERE NOT EXISTS (SELECT 1 FROM round_robin)`);
-
-    // Tabela: Round Robin A/B (Configurar quais quizzes rotacionar no dom�nio raiz)
-    await db.run(`
-        CREATE TABLE IF NOT EXISTS round_robin (
-            id SERIAL PRIMARY KEY,
-            quiz_ids TEXT NOT NULL DEFAULT '[]', -- JSON array de quiz IDs em ordem
-            current_index INTEGER DEFAULT 0,
-            is_active BOOLEAN DEFAULT TRUE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `);
-    // Garante que existe pelo menos 1 registro de configura��o
-    await db.run(`INSERT INTO round_robin (quiz_ids) SELECT '[]' WHERE NOT EXISTS (SELECT 1 FROM round_robin)`);
-    
-    // Tabela: Round Robin A/B
-    await db.run(`
-        CREATE TABLE IF NOT EXISTS round_robin (
-            id SERIAL PRIMARY KEY,
-            quiz_ids TEXT NOT NULL DEFAULT '[]',
-            current_index INTEGER DEFAULT 0,
-            is_active BOOLEAN DEFAULT TRUE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    `);
-    await db.run(`INSERT INTO round_robin (quiz_ids) SELECT '[]' WHERE NOT EXISTS (SELECT 1 FROM round_robin)`);
 
     console.log('[DB] Migrations executed successfully.');
 }
