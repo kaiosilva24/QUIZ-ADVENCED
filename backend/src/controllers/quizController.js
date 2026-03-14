@@ -1,10 +1,10 @@
 const { getDB } = require('../db');
 
-async function getQuizzesByDomain(req, res) {
-    const { domainId } = req.params;
+async function getQuizzes(req, res) {
     try {
         const db = await getDB();
-        const quizzes = await db.all('SELECT * FROM quizzes WHERE domain_id = $1 ORDER BY id DESC', [domainId]);
+        // MVP: Retorna todos os quizzes, independente de domínio
+        const quizzes = await db.all('SELECT * FROM quizzes ORDER BY id DESC');
         res.json(quizzes);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -12,15 +12,22 @@ async function getQuizzesByDomain(req, res) {
 }
 
 async function createQuiz(req, res) {
-    const { domain_id, title, config_json } = req.body;
+    const { title, config_json, slug } = req.body;
     try {
         const db = await getDB();
-        // Em pg precisamos usar um call raw pro pool retornar as rows inseridas, já que alteramos .run em db.js
+        
+        // Se a pessoa não mandou um slug, a gente cria um a partir do titulo
+        let finalSlug = slug;
+        if (!finalSlug && title) {
+            finalSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        }
+        if (!finalSlug) finalSlug = 'quiz-' + Date.now();
+
         const result = await db.query(
-            'INSERT INTO quizzes (domain_id, title, config_json) VALUES ($1, $2, $3) RETURNING id',
-            [domain_id, title, config_json || '{}']
+            'INSERT INTO quizzes (title, slug, config_json) VALUES ($1, $2, $3) RETURNING id',
+            [title || 'Novo Quiz', finalSlug, config_json || '{}']
         );
-        res.status(201).json({ id: result.rows[0].id, title });
+        res.status(201).json({ id: result.rows[0].id, title, slug: finalSlug });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -28,12 +35,12 @@ async function createQuiz(req, res) {
 
 async function updateQuiz(req, res) {
     const { id } = req.params;
-    const { title, config_json, is_active } = req.body;
+    const { title, config_json, is_active, slug } = req.body;
     try {
         const db = await getDB();
         await db.run(
-            'UPDATE quizzes SET title=$1, config_json=$2, is_active=$3 WHERE id=$4',
-            [title, config_json, is_active !== undefined ? is_active : true, id]
+            'UPDATE quizzes SET title=$1, config_json=$2, is_active=$3, slug=$4 WHERE id=$5',
+            [title, config_json, is_active !== undefined ? is_active : true, slug, id]
         );
         res.json({ success: true });
     } catch (error) {
@@ -53,7 +60,7 @@ async function deleteQuiz(req, res) {
 }
 
 module.exports = {
-    getQuizzesByDomain,
+    getQuizzes: getQuizzes,
     createQuiz,
     updateQuiz,
     deleteQuiz

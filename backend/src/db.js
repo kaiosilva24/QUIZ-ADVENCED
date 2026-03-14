@@ -84,13 +84,22 @@ async function runMigrations(db) {
     await db.query(`
         CREATE TABLE IF NOT EXISTS quizzes (
             id SERIAL PRIMARY KEY,
-            domain_id INTEGER NOT NULL REFERENCES domains(id) ON DELETE CASCADE,
+            domain_id INTEGER REFERENCES domains(id) ON DELETE CASCADE,
             title TEXT NOT NULL,
+            slug TEXT UNIQUE, -- URL base ex: /meu-quiz
             config_json TEXT NOT NULL DEFAULT '{}', -- Onde fica cores, nos e rotas
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
+
+    // Migration para garantir que a coluna slug existe em bancos antigos
+    try {
+        await db.query(`ALTER TABLE quizzes ADD COLUMN slug TEXT UNIQUE;`);
+        await db.query(`ALTER TABLE quizzes ALTER COLUMN domain_id DROP NOT NULL;`);
+    } catch (e) {
+        // Ignora erro se a coluna já existir
+    }
 
     // Tabela: Leads/Visitors Tracker (Monitorar progresso no funil do Roteador)
     await db.query(`
