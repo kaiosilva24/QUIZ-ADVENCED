@@ -76,15 +76,23 @@ function EmojiSelect({ emoji, unified, onChange }) {
 
   return (
     <div className="relative w-full" ref={ref}>
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 transition-colors cursor-pointer"
-      >
-        <span className="flex items-center gap-2">
-          {unified ? <Emoji unified={unified} size={18} /> : emoji || 'Selecionar Emoji...'}
-        </span>
-        <span className="text-xs text-slate-500">▼</span>
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={() => setOpen(!open)}
+          className="flex-1 flex items-center justify-between bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+        >
+          <span className="flex items-center gap-2">
+            {unified ? <Emoji unified={unified} size={18} /> : emoji || 'Selecionar Emoji...'}
+          </span>
+          <span className="text-xs text-slate-500">▼</span>
+        </button>
+        {(emoji || unified) && (
+          <button onClick={() => onChange('', '')} title="Remover emoji"
+            className="w-9 h-9 flex items-center justify-center bg-red-600/20 hover:bg-red-600/40 border border-red-600/30 hover:border-red-500 rounded-xl text-red-400 text-sm transition-colors cursor-pointer">
+            ✕
+          </button>
+        )}
+      </div>
 
       {open && (
         <div className="absolute top-full left-0 z-50 mt-1 shadow-2xl rounded-lg overflow-hidden border border-slate-700">
@@ -254,19 +262,43 @@ function HeadingEditor({ block, onChange }) {
             { value: 'left', label: 'Esquerda' }, { value: 'center', label: 'Centro' }, { value: 'right', label: 'Direita' }
           ]} />
         </Field>
-        <Field label="Fundo do Título">
-          <Select value={block.bgStyle || 'none'} onChange={v => onChange({ bgStyle: v })} options={[
-            { value: 'none', label: 'Nenhum' },
-            { value: 'rounded', label: 'Fundo Arredondado' },
-            { value: 'square', label: 'Fundo Quadrado' },
-            { value: 'glass', label: 'Efeito Ofuscado (Glass)' }
-          ]} />
-        </Field>
-        {block.bgStyle && block.bgStyle !== 'none' && (
-          <Field label="Cor da Caixa"><ColorPicker value={block.bgColor || '#1e293b'} onChange={v => onChange({ bgColor: v })} /></Field>
-        )}
         <Field label="Cor do Texto"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
         <Toggle label="Negrito" value={block.bold} onChange={v => onChange({ bold: v })} />
+      </Section>
+
+      <Section title="Fundo da Caixa">
+        <Toggle label="Ativar Fundo" value={block.bgEnabled} onChange={v => onChange({ bgEnabled: v, bgStyle: v ? (block.bgStyle || 'rounded') : 'none' })} />
+        {block.bgEnabled && (
+          <>
+            <Field label="Estilo">
+              <Select value={block.bgStyle || 'rounded'} onChange={v => onChange({ bgStyle: v })} options={[
+                { value: 'rounded', label: 'Arredondado' },
+                { value: 'square', label: 'Quadrado' },
+                { value: 'glass', label: 'Ofuscado (Glass)' },
+              ]} />
+            </Field>
+            {block.bgStyle !== 'glass' && (
+              <Field label="Cor da Caixa"><ColorPicker value={block.bgColor || '#1e293b'} onChange={v => onChange({ bgColor: v })} /></Field>
+            )}
+            {block.bgStyle === 'glass' && (
+              <Field label={`Intensidade do Blur: ${block.bgBlur ?? 10}px`}>
+                <input type="range" min={2} max={30} step={2} value={block.bgBlur ?? 10}
+                  onChange={e => onChange({ bgBlur: Number(e.target.value) })}
+                  className="w-full accent-indigo-500 cursor-pointer" />
+              </Field>
+            )}
+            <Field label={`Arredondamento: ${block.bgRadius ?? 16}px`}>
+              <input type="range" min={0} max={60} step={2} value={block.bgRadius ?? 16}
+                onChange={e => onChange({ bgRadius: Number(e.target.value) })}
+                className="w-full accent-indigo-500 cursor-pointer" />
+            </Field>
+            <Field label={`Espaçamento Interno (px): ${block.bgPadding ?? 18}`}>
+              <input type="range" min={4} max={60} step={2} value={block.bgPadding ?? 18}
+                onChange={e => onChange({ bgPadding: Number(e.target.value) })}
+                className="w-full accent-indigo-500 cursor-pointer" />
+            </Field>
+          </>
+        )}
       </Section>
     </>
   );
@@ -298,6 +330,45 @@ function TextEditor({ block, onChange }) {
         </Field>
         <Field label="Cor do Texto"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
         <Toggle label="Negrito" value={block.bold} onChange={v => onChange({ bold: v })} />
+      </Section>
+
+      <Section title="Efeitos do Texto">
+        <Field label="Efeito">
+          <Select value={block.textEffect || 'none'} onChange={v => onChange({ textEffect: v })} options={[
+            { value: 'none', label: 'Nenhum' },
+            { value: 'highlight', label: '🎭 Marcador (Highlight)' },
+            { value: 'bg_box', label: '🟥 Caixa de Fundo' },
+            { value: 'underline_color', label: '📍 Sublinhado Colorido' },
+            { value: 'border_bottom', label: '— Linha Embaixo' },
+            { value: 'border_all', label: '□ Borda Completa' },
+          ]} />
+        </Field>
+        {block.textEffect && block.textEffect !== 'none' && (
+          <>
+            <Field label="Cor do Efeito"><ColorPicker value={block.effectColor || '#6366f1'} onChange={v => onChange({ effectColor: v })} /></Field>
+            {(block.textEffect === 'underline_color' || block.textEffect === 'border_bottom' || block.textEffect === 'border_all') && (
+              <Field label={`Espessura: ${block.effectThickness ?? 3}px`}>
+                <input type="range" min={1} max={10} step={1} value={block.effectThickness ?? 3}
+                  onChange={e => onChange({ effectThickness: Number(e.target.value) })}
+                  className="w-full accent-indigo-500 cursor-pointer" />
+              </Field>
+            )}
+            {(block.textEffect === 'highlight' || block.textEffect === 'bg_box') && (
+              <Field label={`Opacidade: ${Math.round((block.effectOpacity ?? 0.4) * 100)}%`}>
+                <input type="range" min={0.05} max={1} step={0.05} value={block.effectOpacity ?? 0.4}
+                  onChange={e => onChange({ effectOpacity: Number(e.target.value) })}
+                  className="w-full accent-indigo-500 cursor-pointer" />
+              </Field>
+            )}
+            {block.textEffect === 'bg_box' && (
+              <Field label={`Arredondamento: ${block.effectRadius ?? 8}px`}>
+                <input type="range" min={0} max={30} step={2} value={block.effectRadius ?? 8}
+                  onChange={e => onChange({ effectRadius: Number(e.target.value) })}
+                  className="w-full accent-indigo-500 cursor-pointer" />
+              </Field>
+            )}
+          </>
+        )}
       </Section>
     </>
   );

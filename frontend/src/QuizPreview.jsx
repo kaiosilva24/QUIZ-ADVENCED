@@ -532,17 +532,19 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
         </div>
       );
       
-      if (!block.bgStyle || block.bgStyle === 'none') {
+      // Only show background if bgEnabled is active
+      if (!block.bgEnabled || !block.bgStyle || block.bgStyle === 'none') {
         return headingText;
       }
       
-      // bgStyle = rounded | square | glass
       const isGlass = block.bgStyle === 'glass';
+      const radius = block.bgRadius ?? (block.bgStyle === 'rounded' || isGlass ? 16 : 0);
+      const pad = block.bgPadding ?? 18;
       const bgStyleProps = {
         background: isGlass ? 'rgba(255,255,255,0.1)' : (block.bgColor || '#1e293b'),
-        backdropFilter: isGlass ? 'blur(10px)' : 'none',
-        borderRadius: block.bgStyle === 'rounded' || isGlass ? (compact ? 12 : 16) : 0,
-        padding: compact ? '12px 16px' : '18px 24px',
+        backdropFilter: isGlass ? `blur(${block.bgBlur ?? 10}px)` : 'none',
+        borderRadius: compact ? Math.round(radius * 0.6) : radius,
+        padding: compact ? `${Math.round(pad * 0.5)}px ${Math.round(pad * 0.7)}px` : `${pad}px ${Math.round(pad * 1.4)}px`,
         border: isGlass ? '1px solid rgba(255,255,255,0.2)' : 'none',
         boxShadow: isGlass ? '0 8px 32px rgba(0,0,0,0.1)' : 'none',
       };
@@ -551,17 +553,37 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
     }
 
     case 'text': {
-      const sizes = { sm: compact ? 9 : 12, base: compact ? 10 : 14, lg: compact ? 11 : 16 };
+      const sizes = { xs: compact ? 8 : 10, sm: compact ? 9 : 12, base: compact ? 10 : 14, lg: compact ? 11 : 16 };
       if (block.fontFamily) injectFont(block.fontFamily);
+      const effect = block.textEffect || 'none';
+      const ec = block.effectColor || '#6366f1';
+      const thickness = block.effectThickness ?? 3;
+      const opacity = block.effectOpacity ?? 0.4;
+      const radii = block.effectRadius ?? 8;
+      
+      let wrapStyle = {};
+      if (effect === 'highlight') {
+        wrapStyle = { background: ec + Math.round(opacity * 255).toString(16).padStart(2, '0'), display: 'inline', lineHeight: 1.8, padding: '0 4px' };
+      } else if (effect === 'bg_box') {
+        wrapStyle = { background: ec + Math.round(opacity * 255).toString(16).padStart(2, '0'), borderRadius: compact ? Math.round(radii * 0.6) : radii, padding: compact ? '4px 8px' : '8px 16px', display: 'block' };
+      } else if (effect === 'underline_color') {
+        wrapStyle = { textDecoration: `underline ${thickness}px solid ${ec}`, textUnderlineOffset: '4px' };
+      } else if (effect === 'border_bottom') {
+        wrapStyle = { borderBottom: `${thickness}px solid ${ec}`, paddingBottom: compact ? 2 : 6 };
+      } else if (effect === 'border_all') {
+        wrapStyle = { border: `${thickness}px solid ${ec}`, borderRadius: 6, padding: compact ? '2px 6px' : '6px 14px' };
+      }
+      
       return (
         <p style={{
           color: block.color || defaultText,
-          opacity: .75,
+          opacity: effect !== 'none' ? 1 : .75,
           fontSize: sizes[block.size] || sizes.base,
           fontWeight: block.bold ? 700 : 400,
           textAlign: block.align || 'center',
           lineHeight: 1.6,
           fontFamily: block.fontFamily ? `'${block.fontFamily}', sans-serif` : undefined,
+          ...wrapStyle,
         }}>
           {block.text || 'Texto aqui'}
         </p>
