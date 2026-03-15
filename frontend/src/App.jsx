@@ -196,10 +196,13 @@ export default function App() {
   const [editingQuiz, setEditingQuiz] = useState(null);
 
   const hostname = window.location.hostname;
-  const isCustomDomain = !hostname.includes('discloud.app') && hostname !== 'localhost';
+  // Lista de hostnames que devem mostrar o PAINEL ADMIN
+  const ADMIN_HOSTS = ['localhost', '127.0.0.1'];
+  const isAdminHost = ADMIN_HOSTS.some(h => hostname === h || hostname.includes('discloud.app'));
   const isAdminRoute = window.location.pathname.startsWith('/admin');
 
-  if (isCustomDomain && !isAdminRoute) {
+  // Se NÃO for host de desenvolvimento E NÃO for rota /admin → mostra o quiz (funil para leads)
+  if (!isAdminHost && !isAdminRoute) {
     return <QuizRouter />;
   }
 

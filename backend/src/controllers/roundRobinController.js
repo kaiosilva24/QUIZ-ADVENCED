@@ -41,34 +41,32 @@ async function updateRoundRobin(req, res) {
 async function getNextRoundRobinQuiz(req, res) {
   try {
     const db = await getDB();
-    // Busca config
     const rr = await db.get('SELECT * FROM round_robin ORDER BY id LIMIT 1');
     if (!rr) return res.status(404).json({ error: 'Nenhum round robin configurado' });
 
     const quizIds = JSON.parse(rr.quiz_ids || '[]');
+    console.log('[RR] quiz_ids:', quizIds, '| is_active:', rr.is_active, '| current_index:', rr.current_index);
 
     if (!rr.is_active || quizIds.length === 0) {
       return res.status(404).json({ error: 'Round Robin inativo ou sem quizzes configurados' });
     }
 
-    // Pega o índice atual e avança (wrap around)
     const idx = rr.current_index % quizIds.length;
     const nextIdx = (idx + 1) % quizIds.length;
-    const quizId = quizIds[idx];
+    const quizId = parseInt(quizIds[idx], 10); // garante que é inteiro
 
-    // Atualiza o índice
     await db.run('UPDATE round_robin SET current_index = $1 WHERE id = $2', [nextIdx, rr.id]);
 
-    // Busca o quiz
     const quiz = await db.get('SELECT * FROM quizzes WHERE id = $1 AND is_active = TRUE', [quizId]);
+    console.log('[RR] Buscando quiz id', quizId, '->', quiz ? quiz.title : 'NOT FOUND');
     if (!quiz) {
-      return res.status(404).json({ error: 'Quiz não encontrado ou inativo' });
+      return res.status(404).json({ error: `Quiz id ${quizId} n\u00e3o encontrado ou inativo` });
     }
 
     let config = {};
     try { config = JSON.parse(quiz.config_json || '{}'); } catch {}
 
-    res.json({ id: quiz.id, title: quiz.title, slug: quiz.slug, config });
+    res.json({ id: quiz.id, quiz_id: quiz.id, title: quiz.title, slug: quiz.slug, config });
   } catch (err) {
     console.error('[RoundRobin] NEXT error:', err);
     res.status(500).json({ error: err.message });
