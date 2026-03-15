@@ -88,6 +88,7 @@ function EmojiSelect({ value, onChange }) {
         <div className="absolute top-full left-0 z-50 mt-1 shadow-2xl rounded-lg overflow-hidden border border-slate-700">
           <EmojiPicker
             theme="dark"
+            emojiStyle="native"
             onEmojiClick={(e) => {
               onChange(e.emoji);
               setOpen(false);
