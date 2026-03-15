@@ -139,8 +139,102 @@ function StepSelect({ steps, value, onChange, placeholder }) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Block specific editors
+// Google Fonts Picker
 // ────────────────────────────────────────────────────────────────────────────
+const POPULAR_FONTS = [
+  'Inter', 'Roboto', 'Open Sans', 'Lato', 'Poppins', 'Montserrat', 'Raleway',
+  'Nunito', 'Urbanist', 'Plus Jakarta Sans', 'DM Sans', 'Outfit',
+  'Figtree', 'Manrope', 'Syne', 'Space Grotesk', 'Bricolage Grotesque',
+  'Playfair Display', 'Merriweather', 'Lora', 'EB Garamond', 'Cormorant Garamond',
+  'Oswald', 'Bebas Neue', 'Anton', 'Barlow Condensed',
+  'Pacifico', 'Dancing Script', 'Caveat', 'Great Vibes', 'Sacramento',
+  'Exo 2', 'Rajdhani', 'Orbitron', 'Audiowide', 'Jura',
+  'Ubuntu', 'Source Sans 3', 'Work Sans', 'Karla', 'Mulish',
+];
+
+const loadedFonts = new Set();
+function loadGoogleFont(fontName) {
+  if (!fontName || loadedFonts.has(fontName)) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@400;600;700&display=swap`;
+  document.head.appendChild(link);
+  loadedFonts.add(fontName);
+}
+
+function FontPicker({ value, onChange }) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // preview font in editor on hover
+  const handleSelect = (fontName) => {
+    loadGoogleFont(fontName);
+    onChange(fontName);
+    setOpen(false);
+  };
+
+  const filtered = POPULAR_FONTS.filter(f =>
+    f.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="relative w-full" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+        style={{ fontFamily: value ? `'${value}', sans-serif` : undefined, color: 'white' }}
+      >
+        <span>{value || 'Selecionar Fonte...'}</span>
+        <span className="text-xs text-slate-500">▼</span>
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 z-50 mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
+          <div className="p-2 border-b border-slate-700">
+            <input
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar fonte..."
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:border-indigo-500"
+            />
+          </div>
+          <div className="max-h-48 overflow-y-auto">
+            {filtered.map(f => (
+              <button
+                key={f}
+                onMouseEnter={() => loadGoogleFont(f)}
+                onClick={() => handleSelect(f)}
+                className={`w-full px-4 py-2 text-left text-sm transition-colors cursor-pointer hover:bg-indigo-500/10 hover:text-indigo-300 ${value === f ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-300'}`}
+                style={{ fontFamily: `'${f}', sans-serif` }}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+          {value && (
+            <button
+              onClick={() => { onChange(''); setOpen(false); }}
+              className="w-full px-4 py-2 text-xs text-slate-500 hover:text-red-400 transition-colors cursor-pointer border-t border-slate-700 text-left"
+            >
+              ✕ Remover Fonte Personalizada
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function HeadingEditor({ block, onChange }) {
   return (
@@ -154,6 +248,7 @@ function HeadingEditor({ block, onChange }) {
             { value: 'xl', label: 'Grande' }, { value: '2xl', label: 'Extra Grande' }, { value: '4xl', label: 'Máximo' }
           ]} />
         </Field>
+        <Field label="Fonte do Título"><FontPicker value={block.fontFamily} onChange={v => onChange({ fontFamily: v })} /></Field>
         <Field label="Alinhamento">
           <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
             { value: 'left', label: 'Esquerda' }, { value: 'center', label: 'Centro' }, { value: 'right', label: 'Direita' }
@@ -186,9 +281,10 @@ function TextEditor({ block, onChange }) {
             value={block.text || ''}
             onChange={e => onChange({ text: e.target.value })}
             rows={4}
-            className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none"
+            className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none transition-colors"
           />
         </Field>
+        <Field label="Fonte do Texto"><FontPicker value={block.fontFamily} onChange={v => onChange({ fontFamily: v })} /></Field>
         <Field label="Tamanho">
           <Select value={block.size || 'base'} onChange={v => onChange({ size: v })} options={[
             { value: 'xs', label: 'Muito Pequeno' }, { value: 'sm', label: 'Pequeno' },
@@ -330,6 +426,12 @@ function ButtonEditor({ block, onChange, steps }) {
             { value: 'left_outside', label: 'Esquerda Fora (InLead)' },
             { value: 'top_large', label: 'Topo Gigante' }
           ]} />
+        </Field>
+        <Field label="Fonte do Botão"><FontPicker value={block.fontFamily} onChange={v => onChange({ fontFamily: v })} /></Field>
+        <Field label={`Tamanho do Texto: ${block.fontSize || 15}px`}>
+          <input type="range" min={10} max={32} step={1} value={block.fontSize || 15}
+            onChange={e => onChange({ fontSize: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
         </Field>
         <Field label="Cor de Fundo"><ColorPicker value={block.bg} onChange={v => onChange({ bg: v })} /></Field>
         <Field label="Cor do Texto"><ColorPicker value={block.textColor} onChange={v => onChange({ textColor: v })} /></Field>

@@ -1,6 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Emoji } from 'emoji-picker-react';
 
+// Injects a Google Font link once
+const _loadedFonts = new Set();
+function injectFont(fontFamily) {
+  if (!fontFamily || _loadedFonts.has(fontFamily)) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily)}:wght@400;600;700&display=swap`;
+  document.head.appendChild(link);
+  _loadedFonts.add(fontFamily);
+}
+
 // Constrói o background CSS baseado no tipo configurado
 function buildBackground(theme) {
   const bgType = theme.bgType || 'solid';
@@ -495,8 +506,8 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
     }
 
     case 'heading': {
-      const sizes = { sm: compact ? 12 : 16, base: compact ? 13 : 18, lg: compact ? 14 : 20, xl: compact ? 16 : 24, '2xl': compact ? 18 : 28 };
-      
+      const sizes = { sm: compact ? 12 : 16, base: compact ? 13 : 18, lg: compact ? 14 : 20, xl: compact ? 16 : 24, '2xl': compact ? 18 : 28, '4xl': compact ? 22 : 40 };
+      if (block.fontFamily) injectFont(block.fontFamily);
       const headingText = (
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: block.align || 'center', gap: compact ? 4 : 8
@@ -513,7 +524,8 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
             textAlign: block.align || 'center',
             lineHeight: 1.25,
             letterSpacing: '-0.01em',
-            margin: 0
+            margin: 0,
+            fontFamily: block.fontFamily ? `'${block.fontFamily}', sans-serif` : undefined,
           }}>
             {block.text || 'Título aqui'}
           </p>
@@ -540,6 +552,7 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
 
     case 'text': {
       const sizes = { sm: compact ? 9 : 12, base: compact ? 10 : 14, lg: compact ? 11 : 16 };
+      if (block.fontFamily) injectFont(block.fontFamily);
       return (
         <p style={{
           color: block.color || defaultText,
@@ -548,6 +561,7 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
           fontWeight: block.bold ? 700 : 400,
           textAlign: block.align || 'center',
           lineHeight: 1.6,
+          fontFamily: block.fontFamily ? `'${block.fontFamily}', sans-serif` : undefined,
         }}>
           {block.text || 'Texto aqui'}
         </p>
@@ -724,11 +738,13 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
       const BaseButton = (
         <button style={{
           width: block.fullWidth ? `${block.boxWidth || 100}%` : 'auto',
-          minHeight: block.boxHeight || 44,
+          height: compact ? Math.round((block.boxHeight || 44) * 0.5) : (block.boxHeight || 44),
           color: block.textColor || '#ffffff',
-          padding: pos === 'top_large' ? (compact ? '12px 16px' : '18px 24px') : (compact ? '8px 12px' : '14px 20px'),
-          fontSize: compact ? 10 : 15,
+          paddingLeft: compact ? 8 : 16,
+          paddingRight: compact ? 8 : 16,
+          fontSize: compact ? 10 : (block.fontSize || 15),
           fontWeight: 600,
+          fontFamily: block.fontFamily ? `'${block.fontFamily}', sans-serif` : undefined,
           borderRadius: btnRadius,
           cursor: 'pointer',
           textAlign: 'center',
