@@ -15,7 +15,7 @@ const { getDomains, createDomain } = require('./controllers/domainController');
 const { getQuizzes, createQuiz, updateQuiz, deleteQuiz } = require('./controllers/quizController');
 const { handleQuizRouting } = require('./controllers/routerController');
 const { getTasks, createTask, updateTask, deleteTask } = require('./controllers/taskController');
-const { getQuizAnalytics, trackEvent } = require('./controllers/analyticsController');
+const { getQuizAnalytics, trackEvent, getAnalyticsOverview } = require('./controllers/analyticsController');
 const { getRoundRobin, updateRoundRobin, getNextRoundRobinQuiz } = require('./controllers/roundRobinController');
 
 // --- Rotas API ---
@@ -33,6 +33,7 @@ app.put('/api/tasks/:id', updateTask);
 app.delete('/api/tasks/:id', deleteTask);
 
 // Analytics
+app.get('/api/analytics/overview', getAnalyticsOverview);
 app.get('/api/analytics/quiz/:quizId', getQuizAnalytics);
 app.post('/api/analytics/track', trackEvent);
 

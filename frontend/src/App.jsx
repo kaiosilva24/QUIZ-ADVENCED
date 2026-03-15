@@ -17,19 +17,75 @@ function QuizRouter() {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    const pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
+    let pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
+    let endpoint = '';
 
-    // Se é o root sem slug, tenta o round robin (rotação)
-    const endpoint = pathSlug ? `/api/route/${encodeURIComponent(pathSlug)}` : '/api/roundrobin/next';
+    // Lógica de Persistência de Lead por 7 dias
+    const ASIGN_KEY = 'quiz_saas_assigned_slug';
+    const ASIGN_TIME = 'quiz_saas_assigned_time';
+    const now = Date.now();
+    
+    if (!pathSlug) {
+       // Acessou a raiz. Verifica se já tem um quiz fixado recentemente
+       const savedSlug = localStorage.getItem(ASIGN_KEY);
+       const savedTime = localStorage.getItem(ASIGN_TIME);
+       if (savedSlug && savedTime && (now - parseInt(savedTime)) < 7 * 24 * 60 * 60 * 1000) {
+           pathSlug = savedSlug; // Redirecionamento silencioso
+       }
+    }
+
+    if (pathSlug) {
+      endpoint = `/api/route/${encodeURIComponent(pathSlug)}`;
+    } else {
+      endpoint = '/api/roundrobin/next';
+    }
 
     fetch(endpoint)
       .then(r => {
         if (!r.ok) { window.location.href = '/admin'; throw new Error('redirect'); }
         return r.json();
       })
-      .then(data => { setQuizData(data); setLoading(false); })
+      .then(data => {
+        setQuizData(data);
+        setLoading(false);
+        // Salva slug recebido do Round Robin ou renova o tempo do acesso direto
+        if (data.slug) {
+           localStorage.setItem(ASIGN_KEY, data.slug);
+           localStorage.setItem(ASIGN_TIME, now.toString());
+        } else if (pathSlug) {
+           localStorage.setItem(ASIGN_KEY, pathSlug);
+           localStorage.setItem(ASIGN_TIME, now.toString());
+        }
+      })
       .catch(err => { setError(err.message); setLoading(false); });
   }, []);
+
+  // Restore step and trap back button
+  useEffect(() => {
+    if (!quizData) return;
+    
+    const STEP_KEY = `quiz_saas_step_${quizData.quiz_id || quizData.id}`;
+    const savedStep = localStorage.getItem(STEP_KEY);
+    if (savedStep && parseInt(savedStep) >= 0) {
+      setCurrentStep(parseInt(savedStep));
+    }
+
+    // Trava do botão voltar (PushState Trap)
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [quizData]);
+
+  // Persistir passo atual
+  useEffect(() => {
+    if (quizData) {
+      const STEP_KEY = `quiz_saas_step_${quizData.quiz_id || quizData.id}`;
+      localStorage.setItem(STEP_KEY, currentStep.toString());
+    }
+  }, [currentStep, quizData]);
 
   if (loading) return <div style={{minHeight:'100vh',background:'#020617',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:18}}>Carregando quiz...</div>;
   if (error && error !== 'redirect') return <div style={{minHeight:'100vh',background:'#020617',display:'flex',alignItems:'center',justifyContent:'center',color:'#f87171',fontSize:18}}>{error}</div>;
@@ -372,39 +428,59 @@ function RoundRobinView({ quizzes }) {
 
 // ─── Analytics View ───────────────────────────────────────────────────────────
 function AnalyticsView({ quizzes }) {
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/analytics/overview')
+      .then(r => r.json())
+      .then(data => { setMetrics(data); setLoading(false); })
+      .catch(err => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="text-slate-400 p-8 flex justify-center mt-20">Carregando métricas globais...</div>;
+  if (!metrics) return <div className="text-red-400 p-8 flex justify-center mt-20">Erro ao carregar o Overview de Dashboard</div>;
+
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {[
-          { icon: <Users size={22}/>, label: 'Total de Leads', value: '—', sub: 'Em produção' },
-          { icon: <TrendingUp size={22}/>, label: 'Taxa de Conversão', value: '—', sub: 'Requer rastreamento' },
+          { icon: <Users size={22}/>, label: 'Total de Leads', value: metrics.overview.total_leads, sub: 'Que iniciaram o funil' },
+          { icon: <TrendingUp size={22}/>, label: 'Taxa de Conversão', value: `${metrics.overview.conversion_rate}%`, sub: 'Chegaram ao final' },
           { icon: <CheckCircle2 size={22}/>, label: 'Quizzes Ativos', value: quizzes.filter(q=>q.is_active).length, sub: `de ${quizzes.length} total` },
         ].map((s,i) => (
-          <div key={i} className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-4">{s.icon}</div>
-            <p className="text-2xl font-bold text-white mb-1">{s.value}</p>
-            <p className="text-sm font-medium text-slate-300">{s.label}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{s.sub}</p>
+          <div key={i} className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+            <div className="absolute -right-6 -top-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all duration-500"></div>
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4 shadow-[0_0_15px_rgba(99,102,241,0.2)]">{s.icon}</div>
+            <p className="text-3xl font-bold text-white mb-1 tracking-tight">{s.value}</p>
+            <p className="text-sm font-semibold text-slate-300">{s.label}</p>
+            <p className="text-xs text-slate-500 mt-1 font-medium">{s.sub}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-slate-800/30 border border-slate-700/40 rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-5">Performance por Quiz</h3>
-        {quizzes.map((q, i) => {
-          const rate = Math.floor(Math.random() * 40) + 20;
+      <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-7 shadow-2xl">
+        <h3 className="text-xl font-bold text-white mb-6 tracking-tight flex items-center gap-3">
+          <BarChart2 className="w-6 h-6 text-indigo-400" />
+          Performance por Funil (Ranking)
+        </h3>
+        {metrics.quizzes.map((q, i) => {
+          const rate = q.conversion_rate;
           return (
-            <div key={q.id} className="flex items-center gap-4 py-3 border-b border-slate-700/30 last:border-0">
-              <span className="text-slate-400 text-sm w-4">{i+1}</span>
-              <span className="flex-1 text-sm font-medium text-slate-200 truncate">{q.title}</span>
-              <span className="text-xs font-medium text-indigo-400 w-10 text-right">{rate}%</span>
-              <div className="w-20 h-1.5 bg-slate-700 rounded-full overflow-hidden shrink-0">
-                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{width: `${rate}%`}}/>
+            <div key={q.id} className="flex items-center gap-4 py-4 border-b border-slate-700/30 last:border-0 hover:bg-white/5 transition-colors px-3 -mx-3 rounded-xl">
+              <span className="text-slate-500 font-bold text-sm w-4">{i+1}</span>
+              <span className="flex-1 text-sm font-semibold text-slate-100 truncate">{q.title}</span>
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 w-24 text-center">{q.starts} leads</span>
+              <span className="text-sm font-bold text-indigo-400 w-12 text-right">{rate}%</span>
+              <div className="w-24 h-2 bg-slate-800 rounded-full overflow-hidden shrink-0 shadow-inner">
+                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 relative" style={{width: `${rate}%`}}>
+                   <div className="absolute inset-0 bg-white/20 w-full h-full animate-pulse"></div>
+                </div>
               </div>
             </div>
           );
         })}
-        {quizzes.length === 0 && <p className="text-slate-500 text-sm">Crie quizzes para ver as métricas.</p>}
+        {metrics.quizzes.length === 0 && <p className="text-slate-500 text-sm italic">Nenhum evento registrado ainda. Rode o quiz para ver métricas.</p>}
       </div>
     </div>
   );
