@@ -244,12 +244,65 @@ function FontPicker({ value, onChange }) {
 }
 
 
+function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
+  const ref = useRef(null);
+  
+  // Set HTML initially and handle external updates cautiously
+  useEffect(() => {
+    if (ref.current && value !== ref.current.innerHTML) {
+      ref.current.innerHTML = value || '';
+    }
+  }, [value]);
+
+  const exec = (cmd, val = null) => {
+    document.execCommand(cmd, false, val);
+    if(ref.current) onChange(ref.current.innerHTML);
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5 relative mb-2">
+      <div className="flex flex-wrap bg-slate-800 border border-slate-700 rounded-lg p-1 gap-0.5 sticky top-0 z-10 shadow-md">
+        <button onMouseDown={e=>{e.preventDefault();exec('bold')}} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 font-serif font-bold cursor-pointer" title="Negrito">B</button>
+        <button onMouseDown={e=>{e.preventDefault();exec('italic')}} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 font-serif italic cursor-pointer" title="Itálico">I</button>
+        <button onMouseDown={e=>{e.preventDefault();exec('underline')}} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 font-serif underline cursor-pointer" title="Sublinhado">U</button>
+        
+        <div className="w-px h-5 bg-slate-600 my-auto mx-1" />
+        
+        <label className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 cursor-pointer relative" title="Cor do Texto">
+          <span className="w-5 h-5 rounded-full border border-slate-600" style={{background: 'linear-gradient(to right, #ef4444, #3b82f6)'}}></span>
+          <input type="color" className="absolute opacity-0 w-0 h-0" onChange={e => exec('foreColor', e.target.value)} />
+        </label>
+        
+        <label className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 cursor-pointer relative" title="Cor de Fundo da Seleção">
+          <span className="w-5 h-5 rounded border border-slate-600 flex items-center justify-center bg-yellow-400 text-black text-[12px] font-bold">A</span>
+          <input type="color" className="absolute opacity-0 w-0 h-0" onChange={e => exec('hiliteColor', e.target.value)} />
+        </label>
+
+        <div className="w-px h-5 bg-slate-600 my-auto mx-1" />
+
+        <button onMouseDown={e=>{e.preventDefault();exec('removeFormat')}} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-400 cursor-pointer" title="Limpar Formatação">
+          <Trash2 size={14} />
+        </button>
+      </div>
+      <div
+        ref={ref}
+        contentEditable
+        onInput={e => onChange(e.currentTarget.innerHTML)}
+        onBlur={e => onChange(e.currentTarget.innerHTML)}
+        className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 transition-colors"
+        style={{ minHeight }}
+        data-placeholder={placeholder}
+      />
+    </div>
+  );
+}
+
 function HeadingEditor({ block, onChange }) {
   return (
     <>
       <Section title="Conteúdo">
         <Field label="Emoji do Título"><EmojiSelect emoji={block.emoji} unified={block.emojiUnified} onChange={(e, u) => onChange({ emoji: e, emojiUnified: u })} /></Field>
-        <Field label="Texto"><Input value={block.text} onChange={v => onChange({ text: v })} /></Field>
+        <Field label="Texto"><InlineRichText value={block.text} onChange={v => onChange({ text: v })} minHeight={60} /></Field>
         <Field label="Tamanho">
           <Select value={block.size || 'xl'} onChange={v => onChange({ size: v })} options={[
             { value: 'sm', label: 'Pequeno' }, { value: 'base', label: 'Médio' },
@@ -309,12 +362,7 @@ function TextEditor({ block, onChange }) {
     <>
       <Section title="Conteúdo">
         <Field label="Texto">
-          <textarea
-            value={block.text || ''}
-            onChange={e => onChange({ text: e.target.value })}
-            rows={4}
-            className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none transition-colors"
-          />
+          <InlineRichText value={block.text || ''} onChange={v => onChange({ text: v })} />
         </Field>
         <Field label="Fonte do Texto"><FontPicker value={block.fontFamily} onChange={v => onChange({ fontFamily: v })} /></Field>
         <Field label="Tamanho">

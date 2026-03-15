@@ -48,7 +48,7 @@ function createBlock(type) {
   }
 }
 
-function SortableBlock({ block, isSelected, onSelect, onDelete }) {
+function SortableBlock({ block, isSelected, onSelect, onDelete, onClone }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
   const typeInfo = BLOCK_TYPES.find(t => t.type === block.type) || BLOCK_TYPES[0];
@@ -69,12 +69,19 @@ function SortableBlock({ block, isSelected, onSelect, onDelete }) {
         <Icon size={13} style={{ color: typeInfo.color }} />
       </div>
       <span className="text-xs font-medium text-slate-300 flex-1 truncate">{typeInfo.label}</span>
-      {/* Delete on hover */}
-      <button onClick={e => { e.stopPropagation(); onDelete(block.id); }}
-        aria-label="Remover bloco"
-        className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded hover:text-red-400 text-slate-600 transition-all duration-150 flex items-center justify-center focus:outline-none focus:text-red-400">
-        <Trash2 size={12} />
-      </button>
+      {/* Clone + Delete on hover */}
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all duration-150">
+        <button onClick={e => { e.stopPropagation(); onClone(block.id); }}
+          aria-label="Duplicar bloco"
+          className="w-5 h-5 rounded hover:text-blue-400 text-slate-600 transition-all duration-150 flex items-center justify-center focus:outline-none focus:text-blue-400">
+          <Copy size={11} />
+        </button>
+        <button onClick={e => { e.stopPropagation(); onDelete(block.id); }}
+          aria-label="Remover bloco"
+          className="w-5 h-5 rounded hover:text-red-400 text-slate-600 transition-all duration-150 flex items-center justify-center focus:outline-none focus:text-red-400">
+          <Trash2 size={12} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -170,6 +177,28 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
       steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, blocks: s.blocks.filter(b => b.id !== blockId) } : s)
     }));
     if (selectedBlockId === blockId) setSelectedBlockId(null);
+  };
+
+  const cloneBlock = (blockId) => {
+    setConfig(c => ({
+      ...c,
+      steps: c.steps.map((s, i) => {
+        if (i !== currentStepIdx) return s;
+        const blockToClone = s.blocks.find(b => b.id === blockId);
+        if (!blockToClone) return s;
+        
+        const blockIndex = s.blocks.findIndex(b => b.id === blockId);
+        const clonedBlock = {
+          ...blockToClone,
+          id: `block_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        };
+        
+        const newBlocks = [...s.blocks];
+        newBlocks.splice(blockIndex + 1, 0, clonedBlock);
+        
+        return { ...s, blocks: newBlocks };
+      })
+    }));
   };
 
   const updateBlock = (blockId, patch) => {
@@ -299,7 +328,8 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
                     <SortableBlock key={block.id} block={block}
                       isSelected={selectedBlockId === block.id}
                       onSelect={setSelectedBlockId}
-                      onDelete={deleteBlock} />
+                      onDelete={deleteBlock}
+                      onClone={cloneBlock} />
                   ))}
                 </SortableContext>
               </DndContext>

@@ -517,7 +517,7 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
           ) : block.emoji ? (
             <span style={{ fontSize: compact ? 24 : 32 }}>{block.emoji}</span>
           ) : null}
-          <p style={{
+          <div style={{
             color: block.color || defaultText,
             fontSize: sizes[block.size] || sizes.xl,
             fontWeight: block.bold ? 700 : 600,
@@ -526,9 +526,7 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
             letterSpacing: '-0.01em',
             margin: 0,
             fontFamily: block.fontFamily ? `'${block.fontFamily}', sans-serif` : undefined,
-          }}>
-            {block.text || 'Título aqui'}
-          </p>
+          }} dangerouslySetInnerHTML={{ __html: block.text || 'Título aqui' }} />
         </div>
       );
       
@@ -575,7 +573,7 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
       }
       
       return (
-        <p style={{
+        <div style={{
           color: block.color || defaultText,
           opacity: effect !== 'none' ? 1 : .75,
           fontSize: sizes[block.size] || sizes.base,
@@ -584,9 +582,7 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
           lineHeight: 1.6,
           fontFamily: block.fontFamily ? `'${block.fontFamily}', sans-serif` : undefined,
           ...wrapStyle,
-        }}>
-          {block.text || 'Texto aqui'}
-        </p>
+        }} dangerouslySetInnerHTML={{ __html: block.text || 'Texto aqui' }} />
       );
     }
 
