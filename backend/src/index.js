@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 const { getDomains, createDomain } = require('./controllers/domainController');
-const { getQuizzes, createQuiz, updateQuiz, deleteQuiz } = require('./controllers/quizController');
+const { getQuizzes, createQuiz, updateQuiz, deleteQuiz, getQuizById } = require('./controllers/quizController');
 const { handleQuizRouting } = require('./controllers/routerController');
 const { getTasks, createTask, updateTask, deleteTask } = require('./controllers/taskController');
 const { getQuizAnalytics, trackEvent, getAnalyticsOverview } = require('./controllers/analyticsController');
@@ -21,7 +21,8 @@ const { getRoundRobin, updateRoundRobin, getNextRoundRobinQuiz } = require('./co
 // --- Rotas API ---
 app.post('/api/domains', createDomain);
 app.get('/api/domains', getDomains);
-app.get('/api/quizzes', getQuizzes); // Busca todos os quizzes da conta
+app.get('/api/quizzes', getQuizzes);
+app.get('/api/quizzes/:id', getQuizById);
 app.post('/api/quizzes', createQuiz);
 app.put('/api/quizzes/:id', updateQuiz);
 app.delete('/api/quizzes/:id', deleteQuiz);

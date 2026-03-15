@@ -1,4 +1,4 @@
-﻿const { Pool } = require('pg');
+const { Pool } = require('pg');
 
 let poolInstance = null;
 
@@ -98,10 +98,13 @@ async function runMigrations(db) {
             visitor_id TEXT NOT NULL, -- UUID de cookie de quem acessa
             event_type TEXT NOT NULL, -- start, step_reached, finished, dropped
             step_id TEXT, -- ID do no em que esta
-            answer_value TEXT, -- opo que escolheu
+            answer_value TEXT, -- opcao que escolheu
+            time_spent_seconds INTEGER DEFAULT 0, -- Tempo em segundos nessa etapa
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
+    // Garantir coluna time_spent_seconds em bancos existentes
+    await db.query(`ALTER TABLE quiz_events ADD COLUMN IF NOT EXISTS time_spent_seconds INTEGER DEFAULT 0`);
 
     // Tabela: Team Tasks
     await db.query(`

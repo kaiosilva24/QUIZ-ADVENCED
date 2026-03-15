@@ -59,9 +59,22 @@ async function deleteQuiz(req, res) {
     }
 }
 
+async function getQuizById(req, res) {
+    const { id } = req.params;
+    try {
+        const db = await getDB();
+        const quiz = await db.get('SELECT id, title, slug, config_json FROM quizzes WHERE id = $1 AND is_active = TRUE', [id]);
+        if (!quiz) return res.status(404).json({ error: 'Quiz não encontrado' });
+        res.json({ quiz_id: quiz.id, id: quiz.id, title: quiz.title, slug: quiz.slug, config: JSON.parse(quiz.config_json || '{}') });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
     getQuizzes: getQuizzes,
     createQuiz,
     updateQuiz,
-    deleteQuiz
+    deleteQuiz,
+    getQuizById
 };

@@ -9,83 +9,120 @@ import QuizPreview from './QuizPreview';
 
 const API = '/api';
 
+// ─── Helpers: visitorId e trackEvent ──────────────────────────────────────────
+function getVisitorId() {
+  let vid = localStorage.getItem('quiz_saas_visitor_id');
+  if (!vid) {
+    vid = 'v_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+    localStorage.setItem('quiz_saas_visitor_id', vid);
+  }
+  return vid;
+}
+
+function trackEvent(quizId, eventType, stepId = null, answerValue = null, timeSpent = 0) {
+  const visitorId = getVisitorId();
+  fetch('/api/analytics/track', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quiz_id: quizId, visitor_id: visitorId, event_type: eventType, step_id: stepId, answer_value: answerValue, time_spent_seconds: timeSpent })
+  }).catch(() => {}); // fire-and-forget
+}
+
 // ─── Componente Roteador de Quizzes por Slug (InLead Style) ──────────────────
 function QuizRouter() {
   const [quizData, setQuizData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
+  const stepStartTime = React.useRef(Date.now());
+
+  const QUIZ_ID_KEY = 'quiz_saas_lead_quiz_id';
+  const QUIZ_TIME_KEY = 'quiz_saas_lead_quiz_time';
+  const STEP_KEY_PREFIX = 'quiz_saas_step_';
 
   useEffect(() => {
-    let pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
-    let endpoint = '';
-
-    // Lógica de Persistência de Lead por 7 dias
-    const ASIGN_KEY = 'quiz_saas_assigned_slug';
-    const ASIGN_TIME = 'quiz_saas_assigned_time';
     const now = Date.now();
-    
-    if (!pathSlug) {
-       // Acessou a raiz. Verifica se já tem um quiz fixado recentemente
-       const savedSlug = localStorage.getItem(ASIGN_KEY);
-       const savedTime = localStorage.getItem(ASIGN_TIME);
-       if (savedSlug && savedTime && (now - parseInt(savedTime)) < 7 * 24 * 60 * 60 * 1000) {
-           pathSlug = savedSlug; // Redirecionamento silencioso
-       }
+    const savedQuizId = localStorage.getItem(QUIZ_ID_KEY);
+    const savedTime = localStorage.getItem(QUIZ_TIME_KEY);
+    const isValid = savedQuizId && savedTime && (now - parseInt(savedTime)) < 7 * 24 * 60 * 60 * 1000;
+
+    // Se lead já tem um quiz atribuído nos últimos 7 dias, recarrega ESSE quiz diretamente
+    if (isValid) {
+      fetch(`/api/quizzes/${savedQuizId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) {
+            setQuizData(data);
+            // Restaura passo salvo
+            const savedStep = localStorage.getItem(STEP_KEY_PREFIX + savedQuizId);
+            if (savedStep) setCurrentStep(parseInt(savedStep));
+          } else {
+            // Quiz removido, limpa localStorage e busca novo
+            localStorage.removeItem(QUIZ_ID_KEY);
+            loadNewQuiz();
+          }
+          setLoading(false);
+        })
+        .catch(() => { loadNewQuiz(); });
+      return;
     }
 
-    if (pathSlug) {
-      endpoint = `/api/route/${encodeURIComponent(pathSlug)}`;
-    } else {
-      endpoint = '/api/roundrobin/next';
-    }
-
-    fetch(endpoint)
-      .then(r => {
-        if (!r.ok) { window.location.href = '/admin'; throw new Error('redirect'); }
-        return r.json();
-      })
-      .then(data => {
-        setQuizData(data);
-        setLoading(false);
-        // Salva slug recebido do Round Robin ou renova o tempo do acesso direto
-        if (data.slug) {
-           localStorage.setItem(ASIGN_KEY, data.slug);
-           localStorage.setItem(ASIGN_TIME, now.toString());
-        } else if (pathSlug) {
-           localStorage.setItem(ASIGN_KEY, pathSlug);
-           localStorage.setItem(ASIGN_TIME, now.toString());
-        }
-      })
-      .catch(err => { setError(err.message); setLoading(false); });
+    loadNewQuiz();
   }, []);
 
-  // Restore step and trap back button
+  const loadNewQuiz = () => {
+    const pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
+    const endpoint = pathSlug ? `/api/route/${encodeURIComponent(pathSlug)}` : '/api/roundrobin/next';
+    const now = Date.now();
+
+    fetch(endpoint)
+      .then(r => { if (!r.ok) { window.location.href = '/admin'; throw new Error('redirect'); } return r.json(); })
+      .then(data => {
+        const quizId = data.quiz_id || data.id;
+        // Salva o quiz ID por 7 dias (a chave para persistência)
+        localStorage.setItem(QUIZ_ID_KEY, String(quizId));
+        localStorage.setItem(QUIZ_TIME_KEY, now.toString());
+        setQuizData(data);
+        setLoading(false);
+        // Dispara evento de início
+        trackEvent(quizId, 'start', null, null, 0);
+      })
+      .catch(err => { setError(err.message); setLoading(false); });
+  };
+
+  // Trava do botão voltar
   useEffect(() => {
     if (!quizData) return;
-    
-    const STEP_KEY = `quiz_saas_step_${quizData.quiz_id || quizData.id}`;
-    const savedStep = localStorage.getItem(STEP_KEY);
-    if (savedStep && parseInt(savedStep) >= 0) {
-      setCurrentStep(parseInt(savedStep));
-    }
-
-    // Trava do botão voltar (PushState Trap)
     window.history.pushState(null, '', window.location.href);
-    const handlePopState = () => {
-      window.history.pushState(null, '', window.location.href);
-    };
+    const handlePopState = () => window.history.pushState(null, '', window.location.href);
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [quizData]);
 
-  // Persistir passo atual
+  // Persistir passo atual a cada mudança
   useEffect(() => {
     if (quizData) {
-      const STEP_KEY = `quiz_saas_step_${quizData.quiz_id || quizData.id}`;
-      localStorage.setItem(STEP_KEY, currentStep.toString());
+      const quizId = quizData.quiz_id || quizData.id;
+      localStorage.setItem(STEP_KEY_PREFIX + quizId, currentStep.toString());
     }
   }, [currentStep, quizData]);
+
+  const handleNavigate = (nextStepId) => {
+    const steps = quizData?.config?.steps || [];
+    const idx = steps.findIndex(s => s.id === nextStepId);
+    if (idx >= 0) {
+      const timeSpent = Math.round((Date.now() - stepStartTime.current) / 1000);
+      const quizId = quizData.quiz_id || quizData.id;
+      const currentStepObj = steps[currentStep];
+      // Track step completado com tempo e última resposta
+      trackEvent(quizId, 'step_reached', currentStepObj?.id, null, timeSpent);
+      stepStartTime.current = Date.now();
+      setCurrentStep(idx);
+      if (idx === steps.length - 1) {
+        trackEvent(quizId, 'finished', nextStepId, null, 0);
+      }
+    }
+  };
 
   if (loading) return <div style={{minHeight:'100vh',background:'#020617',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:18}}>Carregando quiz...</div>;
   if (error && error !== 'redirect') return <div style={{minHeight:'100vh',background:'#020617',display:'flex',alignItems:'center',justifyContent:'center',color:'#f87171',fontSize:18}}>{error}</div>;
@@ -98,11 +135,7 @@ function QuizRouter() {
           config={quizData.config}
           stepIdx={currentStep}
           compact={false}
-          onNavigate={(nextStepId) => {
-            const steps = quizData.config?.steps || [];
-            const idx = steps.findIndex(s => s.id === nextStepId);
-            if (idx >= 0) setCurrentStep(idx);
-          }}
+          onNavigate={handleNavigate}
         />
       </div>
     </div>
@@ -430,17 +463,120 @@ function RoundRobinView({ quizzes }) {
 function AnalyticsView({ quizzes }) {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [quizDetail, setQuizDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     fetch('/api/analytics/overview')
       .then(r => r.json())
       .then(data => { setMetrics(data); setLoading(false); })
-      .catch(err => setLoading(false));
+      .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-slate-400 p-8 flex justify-center mt-20">Carregando métricas globais...</div>;
-  if (!metrics) return <div className="text-red-400 p-8 flex justify-center mt-20">Erro ao carregar o Overview de Dashboard</div>;
+  const loadQuizDetail = (quiz) => {
+    setSelectedQuiz(quiz);
+    setDetailLoading(true);
+    fetch(`/api/analytics/quiz/${quiz.id}`)
+      .then(r => r.json())
+      .then(data => { setQuizDetail(data); setDetailLoading(false); })
+      .catch(() => setDetailLoading(false));
+  };
 
+  const fmt = (s) => {
+    if (!s || s === 0) return '0s';
+    if (s < 60) return `${s}s`;
+    return `${Math.floor(s/60)}m ${s%60}s`;
+  };
+
+  if (loading) return <div className="text-slate-400 p-8 flex justify-center mt-20 animate-pulse">⏳ Carregando métricas globais...</div>;
+  if (!metrics) return <div className="text-red-400 p-8 flex justify-center mt-20">Erro ao carregar o Dashboard</div>;
+
+  // ─── Drill-Down de um Quiz Específico ──────────────────────────────────────
+  if (selectedQuiz) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => { setSelectedQuiz(null); setQuizDetail(null); }}
+            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors cursor-pointer flex items-center gap-2">
+            ← Voltar para Overview
+          </button>
+          <div>
+            <h2 className="text-xl font-bold text-white">{selectedQuiz.title}</h2>
+            <p className="text-sm text-slate-400 font-mono">/{selectedQuiz.slug || 'quiz-' + selectedQuiz.id}</p>
+          </div>
+        </div>
+
+        {detailLoading ? (
+          <div className="text-slate-400 text-center py-16 animate-pulse">Carregando dados detalhados...</div>
+        ) : quizDetail ? (
+          <>
+            {/* Resumo do funil */}
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: 'Total de Leads', value: quizDetail.total_starts, color: 'blue', icon: '👥' },
+                { label: 'Concluíram', value: quizDetail.total_finished, color: 'green', icon: '✅' },
+                { label: 'Taxa de Conversão', value: `${quizDetail.conversion_rate}%`, color: 'purple', icon: '📈' },
+              ].map((s, i) => (
+                <div key={i} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
+                  <div className="text-2xl mb-2">{s.icon}</div>
+                  <p className="text-3xl font-bold text-white">{s.value}</p>
+                  <p className="text-sm text-slate-400 mt-1">{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Funil por Etapa */}
+            <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
+                <span>🔽</span> Funil de Etapas (drop-off)
+              </h3>
+              {quizDetail.step_funnel.length === 0 ? (
+                <p className="text-slate-500 text-sm italic">Nenhum dado de etapa registrado ainda.</p>
+              ) : (
+                <div className="space-y-4">
+                  {quizDetail.step_funnel.map((step, i) => {
+                    const maxVisitors = quizDetail.step_funnel[0]?.visitors || 1;
+                    const pct = Math.round((step.visitors / maxVisitors) * 100);
+                    const answers = quizDetail.answers_by_step?.[step.step_id] || [];
+                    const topAnswer = answers[0];
+                    return (
+                      <div key={step.step_id} className="space-y-2">
+                        <div className="flex items-center gap-3">
+                          <span className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-300 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
+                          <span className="flex-1 text-sm font-medium text-slate-200 font-mono">{step.step_id}</span>
+                          <span className="text-xs bg-slate-800 px-2 py-1 rounded text-cyan-400 font-semibold">⏱ {fmt(step.avg_time_seconds)}</span>
+                          <span className="text-sm font-bold text-white w-16 text-right">{step.visitors} leads</span>
+                        </div>
+                        {/* Barra de drop-off */}
+                        <div className="h-2 bg-slate-800 rounded-full overflow-hidden ml-9">
+                          <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all" style={{ width: `${pct}%` }} />
+                        </div>
+                        {/* Resposta mais popular desta etapa */}
+                        {topAnswer && (
+                          <div className="ml-9 flex flex-wrap gap-2 pt-1">
+                            {answers.slice(0, 4).map((a, ai) => (
+                              <span key={ai} className={`text-xs px-2 py-0.5 rounded-full font-medium ${ai === 0 ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-slate-800 text-slate-400'}`}>
+                                {ai === 0 ? '🏆 ' : ''}{a.answer} <span className="opacity-70">({a.count}x)</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <p className="text-slate-500 text-sm text-center py-12">Nenhum dado para este quiz ainda.</p>
+        )}
+      </div>
+    );
+  }
+
+  // ─── Overview Geral ───────────────────────────────────────────────────────────
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -460,23 +596,25 @@ function AnalyticsView({ quizzes }) {
       </div>
 
       <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-7 shadow-2xl">
-        <h3 className="text-xl font-bold text-white mb-6 tracking-tight flex items-center gap-3">
+        <h3 className="text-xl font-bold text-white mb-1 tracking-tight flex items-center gap-3">
           <BarChart2 className="w-6 h-6 text-indigo-400" />
           Performance por Funil (Ranking)
         </h3>
+        <p className="text-xs text-slate-500 mb-6">Clique em um quiz para ver o detalhamento completo por etapa</p>
         {metrics.quizzes.map((q, i) => {
           const rate = q.conversion_rate;
           return (
-            <div key={q.id} className="flex items-center gap-4 py-4 border-b border-slate-700/30 last:border-0 hover:bg-white/5 transition-colors px-3 -mx-3 rounded-xl">
+            <div key={q.id} onClick={() => loadQuizDetail(q)}
+              className="flex items-center gap-4 py-4 border-b border-slate-700/30 last:border-0 hover:bg-white/5 transition-colors px-3 -mx-3 rounded-xl cursor-pointer group">
               <span className="text-slate-500 font-bold text-sm w-4">{i+1}</span>
-              <span className="flex-1 text-sm font-semibold text-slate-100 truncate">{q.title}</span>
-              <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 w-24 text-center">{q.starts} leads</span>
+              <span className="flex-1 text-sm font-semibold text-slate-100 truncate group-hover:text-indigo-300 transition-colors">{q.title}</span>
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-cyan-400 w-28 text-center">⏱ {fmt(q.avg_time_seconds)}</span>
+              <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 w-20 text-center">{q.starts} leads</span>
               <span className="text-sm font-bold text-indigo-400 w-12 text-right">{rate}%</span>
               <div className="w-24 h-2 bg-slate-800 rounded-full overflow-hidden shrink-0 shadow-inner">
-                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 relative" style={{width: `${rate}%`}}>
-                   <div className="absolute inset-0 bg-white/20 w-full h-full animate-pulse"></div>
-                </div>
+                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{width: `${rate}%`}} />
               </div>
+              <span className="text-slate-600 group-hover:text-slate-300 transition-colors text-sm shrink-0">→</span>
             </div>
           );
         })}
@@ -485,6 +623,7 @@ function AnalyticsView({ quizzes }) {
     </div>
   );
 }
+
 
 // ─── Tasks View (Kanban) ──────────────────────────────────────────────────────
 const STATUSES = [
