@@ -398,33 +398,67 @@ function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
           onSelectColor={c => exec('hiliteColor', c)}
           onRemoveColor={() => {
             restoreSelection();
-            
             // Browsers often ignore execCommand with 'transparent' for hiliteColor.
             // We use removeFormat on the background if standard execCommand fails, 
             // or force a temporary white background and strip it.
             document.execCommand('styleWithCSS', false, true);
             document.execCommand('hiliteColor', false, 'transparent');
             document.execCommand('backColor', false, 'transparent');
+            document.execCommand('backColor', false, 'rgba(0,0,0,0)'); // Safari fallback
             
-            // Fallback for Chrome:
+            // Aggressive fallback to strip directly from DOM elements
             const sel = window.getSelection();
             if (!sel.isCollapsed && sel.getRangeAt && sel.rangeCount) {
               const range = sel.getRangeAt(0);
               const frag = range.extractContents();
               
-              // Helper to strip background color from all elements within the selection
               const stripBg = (node) => {
-                if (node.nodeType === 1 && node.style) { // Element node
-                  node.style.backgroundColor = '';
-                  node.style.background = '';
+                if (node.nodeType === 1) { // Element node
+                  if (node.style) {
+                    node.style.backgroundColor = '';
+                    node.style.background = '';
+                  }
+                  
+                  // if node is a span with no other styles and no class, we should unwrap it 
+                  // to prevent creating a mess of empty spans
+                  if (node.tagName.toLowerCase() === 'span' && !node.getAttribute('class') && !node.getAttribute('style')) {
+                     const docFrag = document.createDocumentFragment();
+                     while (node.firstChild) {
+                         docFrag.appendChild(node.firstChild);
+                     }
+                     node.parentNode.replaceChild(docFrag, node);
+                     return; // Skip recursing children since they were moved up
+                  }
+                  
+                  // some browsers use <mark> for hiliteColor
+                  if (node.tagName.toLowerCase() === 'mark') {
+                     const docFrag = document.createDocumentFragment();
+                     while (node.firstChild) {
+                         docFrag.appendChild(node.firstChild);
+                     }
+                     node.parentNode.replaceChild(docFrag, node);
+                     return;
+                  }
                 }
-                for (let i = 0; i < node.childNodes.length; i++) {
+                
+                // Recurse backwards so unwrapping doesn't break our loop index
+                for (let i = node.childNodes.length - 1; i >= 0; i--) {
                   stripBg(node.childNodes[i]);
                 }
               };
               
-              stripBg(frag);
-              range.insertNode(frag);
+              // We need a wrapper to safely process the frag's top-level children
+              const wrapper = document.createElement('div');
+              wrapper.appendChild(frag);
+              stripBg(wrapper);
+              
+              // Move back to fragment
+              const newFrag = document.createDocumentFragment();
+              while (wrapper.firstChild) {
+                newFrag.appendChild(wrapper.firstChild);
+              }
+              
+              range.insertNode(newFrag);
             }
             
             if (ref.current) { 
