@@ -420,10 +420,13 @@ function RoundRobinView({ quizzes }) {
   };
 
   const save = async () => {
+    // Apenas salva IDs de quizzes que realmente existem ainda
+    const validIds = rrConfig.quiz_ids.filter(id => quizzes.some(q => q.id === id));
+    
     await fetch(`${API}/roundrobin`, {
       method: 'PUT',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(rrConfig)
+      body: JSON.stringify({ ...rrConfig, quiz_ids: validIds })
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
