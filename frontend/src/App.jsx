@@ -42,9 +42,20 @@ function QuizRouter() {
 
   useEffect(() => {
     const now = Date.now();
+    const params = new URLSearchParams(window.location.search);
+    const forceNew = params.get('novo') === '1'; // ?novo=1 simula novo lead (limpa cache)
+
+    if (forceNew) {
+      localStorage.removeItem(QUIZ_ID_KEY);
+      localStorage.removeItem(QUIZ_TIME_KEY);
+      // Remove ?novo=1 da URL sem recarregar
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState(null, '', cleanUrl);
+    }
+
     const savedQuizId = localStorage.getItem(QUIZ_ID_KEY);
     const savedTime = localStorage.getItem(QUIZ_TIME_KEY);
-    const isValid = savedQuizId && savedTime && (now - parseInt(savedTime)) < 7 * 24 * 60 * 60 * 1000;
+    const isValid = !forceNew && savedQuizId && savedTime && (now - parseInt(savedTime)) < 7 * 24 * 60 * 60 * 1000;
 
     // Se lead já tem um quiz atribuído nos últimos 7 dias, recarrega ESSE quiz diretamente
     if (isValid) {
@@ -76,8 +87,22 @@ function QuizRouter() {
     const now = Date.now();
 
     fetch(endpoint)
-      .then(r => { if (!r.ok) { window.location.href = '/admin'; throw new Error('redirect'); } return r.json(); })
+      .then(r => {
+        if (r.status === 404) {
+          // Sem quiz/Round Robin configurado — mostra tela amigável
+          setError('NO_QUIZ_CONFIGURED');
+          setLoading(false);
+          throw new Error('no_quiz');
+        }
+        if (!r.ok) {
+          setError('SERVER_ERROR');
+          setLoading(false);
+          throw new Error('server_error');
+        }
+        return r.json();
+      })
       .then(data => {
+        if (!data) return;
         const quizId = data.quiz_id || data.id;
         // Salva o quiz ID por 7 dias (a chave para persistência)
         localStorage.setItem(QUIZ_ID_KEY, String(quizId));
@@ -87,7 +112,7 @@ function QuizRouter() {
         // Dispara evento de início
         trackEvent(quizId, 'start', null, null, 0);
       })
-      .catch(err => { setError(err.message); setLoading(false); });
+      .catch(() => {}); // erros já tratados acima
   };
 
   // Trava do botão voltar
@@ -124,8 +149,29 @@ function QuizRouter() {
     }
   };
 
-  if (loading) return <div style={{minHeight:'100vh',background:'#020617',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:18}}>Carregando quiz...</div>;
-  if (error && error !== 'redirect') return <div style={{minHeight:'100vh',background:'#020617',display:'flex',alignItems:'center',justifyContent:'center',color:'#f87171',fontSize:18}}>{error}</div>;
+  if (loading) return (
+    <div style={{minHeight:'100vh',background:'#020617',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:18}}>
+      Carregando quiz...
+    </div>
+  );
+
+  if (error === 'NO_QUIZ_CONFIGURED') return (
+    <div style={{minHeight:'100vh',background:'#020617',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',color:'white',textAlign:'center',padding:24}}>
+      <div style={{fontSize:48,marginBottom:16}}>🔧</div>
+      <h2 style={{fontSize:20,fontWeight:'bold',marginBottom:8}}>Quiz em configuração</h2>
+      <p style={{color:'#94a3b8',fontSize:14,maxWidth:280}}>Nenhum quiz está ativo neste domínio ainda. Configure a rotação no painel administrativo.</p>
+    </div>
+  );
+
+  if (error) return (
+    <div style={{minHeight:'100vh',background:'#020617',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',color:'#f87171',textAlign:'center',padding:24}}>
+      <div style={{fontSize:48,marginBottom:16}}>⚠️</div>
+      <h2 style={{fontSize:18,fontWeight:'bold',marginBottom:8}}>Erro ao carregar o funil</h2>
+      <p style={{fontSize:13,color:'#94a3b8',marginBottom:20}}>Tente novamente ou contate o suporte.</p>
+      <button onClick={() => window.location.reload()} style={{background:'#4f46e5',color:'white',border:'none',borderRadius:12,padding:'10px 24px',cursor:'pointer',fontSize:14}}>🔄 Tentar novamente</button>
+    </div>
+  );
+
   if (!quizData) return null;
 
   return (
