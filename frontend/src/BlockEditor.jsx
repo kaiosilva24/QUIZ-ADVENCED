@@ -1,8 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Emoji } from 'emoji-picker-react';
-import data from '@emoji-mart/data';
-import i18n from '@emoji-mart/data/i18n/pt.json';
-import Picker from '@emoji-mart/react';
+import EmojiPicker, { Emoji } from 'emoji-picker-react';
 
 function Field({ label, children }) {
   return (
@@ -91,15 +88,26 @@ function EmojiSelect({ emoji, unified, onChange }) {
 
       {open && (
         <div className="absolute top-full left-0 z-50 mt-1 shadow-2xl rounded-lg overflow-hidden border border-slate-700">
-          <Picker
-            data={data}
-            i18n={i18n}
-            locale="pt"
+          <EmojiPicker
             theme="dark"
-            onEmojiSelect={(e) => {
-              onChange(e.native, e.unified);
+            onEmojiClick={(e) => {
+              onChange(e.emoji, e.unified);
               setOpen(false);
             }}
+            searchPlaceHolder="Buscar emoji..."
+            width={320}
+            height={400}
+            categories={[
+              { category: 'suggested',   name: 'Recentes' },
+              { category: 'smileys_people', name: 'Rostos & Pessoas' },
+              { category: 'animals_nature',  name: 'Animais & Natureza' },
+              { category: 'food_drink',      name: 'Comida & Bebidas' },
+              { category: 'travel_places',   name: 'Viagens & Lugares' },
+              { category: 'activities',      name: 'Atividades' },
+              { category: 'objects',         name: 'Objetos' },
+              { category: 'symbols',         name: 'Símbolos' },
+              { category: 'flags',           name: 'Bandeiras' },
+            ]}
           />
         </div>
       )}
