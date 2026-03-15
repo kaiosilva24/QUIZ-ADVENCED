@@ -90,6 +90,7 @@ function EmojiSelect({ emoji, unified, onChange }) {
         <div className="absolute top-full left-0 z-50 mt-1 shadow-2xl rounded-lg overflow-hidden border border-slate-700">
           <EmojiPicker
             theme="dark"
+            locale="pt"
             onEmojiClick={(e) => {
               onChange(e.emoji, e.unified);
               setOpen(false);
@@ -98,15 +99,15 @@ function EmojiSelect({ emoji, unified, onChange }) {
             width={320}
             height={400}
             categories={[
-              { category: 'suggested',   name: 'Recentes' },
+              { category: 'suggested',      name: 'Recentes' },
               { category: 'smileys_people', name: 'Rostos & Pessoas' },
-              { category: 'animals_nature',  name: 'Animais & Natureza' },
-              { category: 'food_drink',      name: 'Comida & Bebidas' },
-              { category: 'travel_places',   name: 'Viagens & Lugares' },
-              { category: 'activities',      name: 'Atividades' },
-              { category: 'objects',         name: 'Objetos' },
-              { category: 'symbols',         name: 'Símbolos' },
-              { category: 'flags',           name: 'Bandeiras' },
+              { category: 'animals_nature', name: 'Animais & Natureza' },
+              { category: 'food_drink',     name: 'Comida & Bebidas' },
+              { category: 'travel_places',  name: 'Viagens & Lugares' },
+              { category: 'activities',     name: 'Atividades' },
+              { category: 'objects',        name: 'Objetos' },
+              { category: 'symbols',        name: 'Símbolos' },
+              { category: 'flags',          name: 'Bandeiras' },
             ]}
           />
         </div>
