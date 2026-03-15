@@ -398,10 +398,40 @@ function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
           onSelectColor={c => exec('hiliteColor', c)}
           onRemoveColor={() => {
             restoreSelection();
+            
+            // Browsers often ignore execCommand with 'transparent' for hiliteColor.
+            // We use removeFormat on the background if standard execCommand fails, 
+            // or force a temporary white background and strip it.
             document.execCommand('styleWithCSS', false, true);
             document.execCommand('hiliteColor', false, 'transparent');
             document.execCommand('backColor', false, 'transparent');
-            if (ref.current) { ref.current.focus(); onChange(ref.current.innerHTML); }
+            
+            // Fallback for Chrome:
+            const sel = window.getSelection();
+            if (!sel.isCollapsed && sel.getRangeAt && sel.rangeCount) {
+              const range = sel.getRangeAt(0);
+              const frag = range.extractContents();
+              
+              // Helper to strip background color from all elements within the selection
+              const stripBg = (node) => {
+                if (node.nodeType === 1 && node.style) { // Element node
+                  node.style.backgroundColor = '';
+                  node.style.background = '';
+                }
+                for (let i = 0; i < node.childNodes.length; i++) {
+                  stripBg(node.childNodes[i]);
+                }
+              };
+              
+              stripBg(frag);
+              range.insertNode(frag);
+            }
+            
+            if (ref.current) { 
+              ref.current.focus(); 
+              checkStyle();
+              onChange(ref.current.innerHTML); 
+            }
           }}
         />
 
