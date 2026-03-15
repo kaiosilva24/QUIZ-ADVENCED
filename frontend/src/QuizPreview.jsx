@@ -495,7 +495,8 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
 
     case 'heading': {
       const sizes = { sm: compact ? 12 : 16, base: compact ? 13 : 18, lg: compact ? 14 : 20, xl: compact ? 16 : 24, '2xl': compact ? 18 : 28 };
-      return (
+      
+      const headingText = (
         <p style={{
           color: block.color || defaultText,
           fontSize: sizes[block.size] || sizes.xl,
@@ -507,6 +508,23 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
           {block.text || 'Título aqui'}
         </p>
       );
+      
+      if (!block.bgStyle || block.bgStyle === 'none') {
+        return headingText;
+      }
+      
+      // bgStyle = rounded | square | glass
+      const isGlass = block.bgStyle === 'glass';
+      const bgStyleProps = {
+        background: isGlass ? 'rgba(255,255,255,0.1)' : (block.bgColor || '#1e293b'),
+        backdropFilter: isGlass ? 'blur(10px)' : 'none',
+        borderRadius: block.bgStyle === 'rounded' || isGlass ? (compact ? 12 : 16) : 0,
+        padding: compact ? '12px 16px' : '18px 24px',
+        border: isGlass ? '1px solid rgba(255,255,255,0.2)' : 'none',
+        boxShadow: isGlass ? '0 8px 32px rgba(0,0,0,0.1)' : 'none',
+      };
+      
+      return <div style={bgStyleProps}>{headingText}</div>;
     }
 
     case 'text': {
@@ -516,6 +534,7 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
           color: block.color || defaultText,
           opacity: .75,
           fontSize: sizes[block.size] || sizes.base,
+          fontWeight: block.bold ? 700 : 400,
           textAlign: block.align || 'center',
           lineHeight: 1.6,
         }}>
@@ -666,12 +685,14 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
       return <VideoBlockPlayer block={block} compact={compact} />;
 
     case 'button': {
-      return (
+      const pos = block.emojiPosition || 'left_inside';
+      
+      const BaseButton = (
         <button style={{
           width: block.fullWidth ? '100%' : 'auto',
           background: block.bg || accent,
           color: block.textColor || '#ffffff',
-          padding: compact ? '8px 12px' : '14px 20px',
+          padding: pos === 'top_large' ? (compact ? '12px 16px' : '18px 24px') : (compact ? '8px 12px' : '14px 20px'),
           fontSize: compact ? 10 : 15,
           fontWeight: 600,
           borderRadius: block.rounded === 'full' ? 99 : block.rounded === 'xl' ? 14 : 8,
@@ -681,12 +702,33 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
           transition: 'opacity 0.15s ease',
           boxShadow: `0 4px 20px ${block.bg || accent}40`,
           letterSpacing: '0.01em',
+          display: 'flex',
+          flexDirection: pos === 'top_large' ? 'column' : 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: pos === 'top_large' ? (compact ? 6 : 10) : (compact ? 6 : 8),
         }}
         onClick={() => block.nextStep && onNavigate && onNavigate(block.nextStep)}
         >
-          {block.text || 'Avançar'}
+          {pos === 'left_inside' && block.emoji && <span>{block.emoji}</span>}
+          {pos === 'top_large' && block.emoji && <span style={{fontSize: compact ? 24 : 36, lineHeight: 1}}>{block.emoji}</span>}
+          
+          <span style={{flex: pos === 'top_large' ? 'initial' : 1}}>{block.text || 'Avançar'}</span>
+          
+          {pos === 'right_inside' && block.emoji && <span>{block.emoji}</span>}
         </button>
       );
+      
+      if (pos === 'left_outside' && block.emoji) {
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 8 : 12, width: block.fullWidth ? '100%' : 'auto' }}>
+            <div style={{ fontSize: compact ? 20 : 28, flexShrink: 0 }}>{block.emoji}</div>
+            <div style={{ flex: 1 }}>{BaseButton}</div>
+          </div>
+        );
+      }
+      
+      return BaseButton;
     }
 
     case 'divider': {
@@ -697,6 +739,12 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
           borderRadius: 1,
           margin: compact ? '2px 0' : '4px 0',
         }} />
+      );
+    }
+    
+    case 'spacer': {
+      return (
+        <div style={{ height: block.height || 40, width: '100%' }} />
       );
     }
 

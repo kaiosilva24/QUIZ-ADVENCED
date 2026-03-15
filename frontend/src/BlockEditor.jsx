@@ -103,6 +103,17 @@ function HeadingEditor({ block, onChange }) {
             { value: 'left', label: 'Esquerda' }, { value: 'center', label: 'Centro' }, { value: 'right', label: 'Direita' }
           ]} />
         </Field>
+        <Field label="Fundo do Título">
+          <Select value={block.bgStyle || 'none'} onChange={v => onChange({ bgStyle: v })} options={[
+            { value: 'none', label: 'Nenhum' },
+            { value: 'rounded', label: 'Fundo Arredondado' },
+            { value: 'square', label: 'Fundo Quadrado' },
+            { value: 'glass', label: 'Efeito Ofuscado (Glass)' }
+          ]} />
+        </Field>
+        {block.bgStyle && block.bgStyle !== 'none' && (
+          <Field label="Cor da Caixa"><ColorPicker value={block.bgColor || '#1e293b'} onChange={v => onChange({ bgColor: v })} /></Field>
+        )}
         <Field label="Cor do Texto"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
         <Toggle label="Negrito" value={block.bold} onChange={v => onChange({ bold: v })} />
       </Section>
@@ -134,6 +145,7 @@ function TextEditor({ block, onChange }) {
           ]} />
         </Field>
         <Field label="Cor do Texto"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
+        <Toggle label="Negrito" value={block.bold} onChange={v => onChange({ bold: v })} />
       </Section>
     </>
   );
@@ -255,6 +267,14 @@ function ButtonEditor({ block, onChange, steps }) {
       <Section title="Botão">
         <Field label="Texto"><Input value={block.text} onChange={v => onChange({ text: v })} /></Field>
         <Field label="Emoji"><Input value={block.emoji} onChange={v => onChange({ emoji: v })} placeholder="✅" /></Field>
+        <Field label="Posição do Emoji">
+          <Select value={block.emojiPosition || 'left_inside'} onChange={v => onChange({ emojiPosition: v })} options={[
+            { value: 'left_inside', label: 'Esquerda (Dentro)' },
+            { value: 'right_inside', label: 'Direita (Dentro)' },
+            { value: 'left_outside', label: 'Esquerda Fora (InLead)' },
+            { value: 'top_large', label: 'Topo Gigante' }
+          ]} />
+        </Field>
         <Field label="Cor de Fundo"><ColorPicker value={block.bg} onChange={v => onChange({ bg: v })} /></Field>
         <Field label="Cor do Texto"><ColorPicker value={block.textColor} onChange={v => onChange({ textColor: v })} /></Field>
       </Section>
@@ -367,6 +387,19 @@ function ResultEditor({ block, onChange }) {
   );
 }
 
+function SpacerEditor({ block, onChange }) {
+  return (
+    <Section title="Espaçamento Vazio">
+      <Field label="Altura em Pixels">
+        <input type="range" min={10} max={200} step={5} value={block.height || 40}
+          onChange={e => onChange({ height: Number(e.target.value) })}
+          className="w-full accent-indigo-500 cursor-pointer" />
+        <span className="text-xs text-indigo-400">{block.height || 40}px</span>
+      </Field>
+    </Section>
+  );
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Main component
 // ────────────────────────────────────────────────────────────────────────────
@@ -385,6 +418,7 @@ export default function BlockEditor({ block, theme, steps, currentStepIdx, onCha
     progress: ProgressEditor,
     lead_capture: LeadCaptureEditor,
     result: ResultEditor,
+    spacer: SpacerEditor,
   };
 
   const Editor = editorMap[block.type];
