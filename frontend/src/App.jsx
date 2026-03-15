@@ -3,7 +3,7 @@ import {
   PlusCircle, Edit3, Trash2, ArrowRight, X, ChevronLeft, Save, GripVertical, Settings2, Home, Palette, 
   MessageCircle, BarChart2, MousePointerClick, CheckSquare, AlignLeft, ImageIcon, CheckCircle, 
   Users, TrendingUp, Shuffle, ToggleLeft, ToggleRight, LayoutTemplate, Layers, Eye, EyeOff, Plus, PlayCircle, 
-  Video as VideoIcon, Volume2, Copy
+  Video as VideoIcon, Volume2, Copy, ListTodo, Settings
 } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
 import QuizPreview from './QuizPreview';
