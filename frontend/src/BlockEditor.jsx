@@ -247,17 +247,50 @@ function FontPicker({ value, onChange }) {
 
 function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
   const ref = useRef(null);
+  const savedSelection = useRef(null);
   
-  // Set HTML initially and handle external updates cautiously
+  // Set HTML initially, but avoid overwriting while user is typing/has focus
+  // Overwriting innerHTML destroys the current text selection/caret position.
   useEffect(() => {
-    if (ref.current && value !== ref.current.innerHTML) {
-      ref.current.innerHTML = value || '';
+    if (ref.current && document.activeElement !== ref.current) {
+      if (value !== ref.current.innerHTML) {
+        ref.current.innerHTML = value || '';
+      }
     }
   }, [value]);
 
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel.getRangeAt && sel.rangeCount) {
+      savedSelection.current = sel.getRangeAt(0);
+    }
+  };
+
+  const restoreSelection = () => {
+    if (savedSelection.current) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedSelection.current);
+    }
+  };
+
   const exec = (cmd, val = null) => {
-    document.execCommand(cmd, false, val);
-    if(ref.current) onChange(ref.current.innerHTML);
+    if (cmd === 'foreColor' || cmd === 'hiliteColor') {
+      restoreSelection();
+    }
+    
+    // Fallback for highlighting
+    if (cmd === 'hiliteColor') {
+      document.execCommand('hiliteColor', false, val);
+      document.execCommand('backColor', false, val);
+    } else {
+      document.execCommand(cmd, false, val);
+    }
+    
+    if (ref.current) {
+      ref.current.focus();
+      onChange(ref.current.innerHTML);
+    }
   };
 
   return (
@@ -269,14 +302,14 @@ function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
         
         <div className="w-px h-5 bg-slate-600 my-auto mx-1" />
         
-        <label className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 cursor-pointer relative" title="Cor do Texto">
+        <label onMouseDown={saveSelection} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 cursor-pointer relative" title="Cor do Texto">
           <span className="w-5 h-5 rounded-full border border-slate-600" style={{background: 'linear-gradient(to right, #ef4444, #3b82f6)'}}></span>
-          <input type="color" className="absolute opacity-0 w-0 h-0" onChange={e => exec('foreColor', e.target.value)} />
+          <input type="color" className="absolute opacity-0 w-0 h-0 w-full h-full cursor-pointer" onInput={e => exec('foreColor', e.target.value)} />
         </label>
         
-        <label className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 cursor-pointer relative" title="Cor de Fundo da Seleção">
+        <label onMouseDown={saveSelection} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 cursor-pointer relative" title="Cor de Fundo da Seleção">
           <span className="w-5 h-5 rounded border border-slate-600 flex items-center justify-center bg-yellow-400 text-black text-[12px] font-bold">A</span>
-          <input type="color" className="absolute opacity-0 w-0 h-0" onChange={e => exec('hiliteColor', e.target.value)} />
+          <input type="color" className="absolute opacity-0 w-0 h-0 w-full h-full cursor-pointer" onInput={e => exec('hiliteColor', e.target.value)} />
         </label>
 
         <div className="w-px h-5 bg-slate-600 my-auto mx-1" />
@@ -289,7 +322,10 @@ function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
         ref={ref}
         contentEditable
         onInput={e => onChange(e.currentTarget.innerHTML)}
-        onBlur={e => onChange(e.currentTarget.innerHTML)}
+        onBlur={e => {
+          saveSelection();
+          onChange(e.currentTarget.innerHTML);
+        }}
         className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 transition-colors"
         style={{ minHeight }}
         data-placeholder={placeholder}
