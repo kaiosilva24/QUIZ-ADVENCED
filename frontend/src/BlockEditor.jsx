@@ -248,6 +248,13 @@ function FontPicker({ value, onChange }) {
 function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
   const ref = useRef(null);
   const savedSelection = useRef(null);
+  const [activeFormats, setActiveFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    color: '',
+    bg: ''
+  });
   
   // Set HTML initially, but avoid overwriting while user is typing/has focus
   // Overwriting innerHTML destroys the current text selection/caret position.
@@ -258,6 +265,16 @@ function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
       }
     }
   }, [value]);
+
+  const checkStyle = () => {
+    setActiveFormats({
+      bold: document.queryCommandState('bold'),
+      italic: document.queryCommandState('italic'),
+      underline: document.queryCommandState('underline'),
+      color: document.queryCommandValue('foreColor'),
+      bg: document.queryCommandValue('hiliteColor') || document.queryCommandValue('backColor')
+    });
+  };
 
   const saveSelection = () => {
     const sel = window.getSelection();
@@ -289,6 +306,7 @@ function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
     
     if (ref.current) {
       ref.current.focus();
+      checkStyle();
       onChange(ref.current.innerHTML);
     }
   };
@@ -296,20 +314,20 @@ function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
   return (
     <div className="flex flex-col gap-1.5 relative mb-2">
       <div className="flex flex-wrap bg-slate-800 border border-slate-700 rounded-lg p-1 gap-0.5 sticky top-0 z-10 shadow-md">
-        <button onMouseDown={e=>{e.preventDefault();exec('bold')}} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 font-serif font-bold cursor-pointer" title="Negrito">B</button>
-        <button onMouseDown={e=>{e.preventDefault();exec('italic')}} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 font-serif italic cursor-pointer" title="Itálico">I</button>
-        <button onMouseDown={e=>{e.preventDefault();exec('underline')}} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 font-serif underline cursor-pointer" title="Sublinhado">U</button>
+        <button onMouseDown={e=>{e.preventDefault();exec('bold')}} className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 font-serif font-bold cursor-pointer transition-colors ${activeFormats.bold ? 'bg-indigo-500/30 text-indigo-300' : 'hover:bg-slate-700'}`} title="Negrito">B</button>
+        <button onMouseDown={e=>{e.preventDefault();exec('italic')}} className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 font-serif italic cursor-pointer transition-colors ${activeFormats.italic ? 'bg-indigo-500/30 text-indigo-300' : 'hover:bg-slate-700'}`} title="Itálico">I</button>
+        <button onMouseDown={e=>{e.preventDefault();exec('underline')}} className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 font-serif underline cursor-pointer transition-colors ${activeFormats.underline ? 'bg-indigo-500/30 text-indigo-300' : 'hover:bg-slate-700'}`} title="Sublinhado">U</button>
         
         <div className="w-px h-5 bg-slate-600 my-auto mx-1" />
         
-        <label onMouseDown={saveSelection} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 cursor-pointer relative" title="Cor do Texto">
+        <label onMouseDown={saveSelection} className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 cursor-pointer relative transition-colors ${activeFormats.color && activeFormats.color !== 'rgb(255, 255, 255)' ? 'bg-indigo-500/30' : 'hover:bg-slate-700'}`} title="Cor do Texto">
           <span className="w-5 h-5 rounded-full border border-slate-600" style={{background: 'linear-gradient(to right, #ef4444, #3b82f6)'}}></span>
-          <input type="color" className="absolute opacity-0 w-0 h-0 w-full h-full cursor-pointer" onInput={e => exec('foreColor', e.target.value)} />
+          <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer" onInput={e => exec('foreColor', e.target.value)} />
         </label>
         
-        <label onMouseDown={saveSelection} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-300 cursor-pointer relative" title="Cor de Fundo da Seleção">
+        <label onMouseDown={saveSelection} className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 cursor-pointer relative transition-colors ${activeFormats.bg && activeFormats.bg !== 'rgba(0, 0, 0, 0)' && activeFormats.bg !== 'transparent' ? 'bg-indigo-500/30' : 'hover:bg-slate-700'}`} title="Cor de Fundo da Seleção">
           <span className="w-5 h-5 rounded border border-slate-600 flex items-center justify-center bg-yellow-400 text-black text-[12px] font-bold">A</span>
-          <input type="color" className="absolute opacity-0 w-0 h-0 w-full h-full cursor-pointer" onInput={e => exec('hiliteColor', e.target.value)} />
+          <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer" onInput={e => exec('hiliteColor', e.target.value)} />
         </label>
 
         <div className="w-px h-5 bg-slate-600 my-auto mx-1" />
@@ -321,7 +339,12 @@ function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
       <div
         ref={ref}
         contentEditable
-        onInput={e => onChange(e.currentTarget.innerHTML)}
+        onKeyUp={checkStyle}
+        onMouseUp={checkStyle}
+        onInput={e => {
+          checkStyle();
+          onChange(e.currentTarget.innerHTML);
+        }}
         onBlur={e => {
           saveSelection();
           onChange(e.currentTarget.innerHTML);
