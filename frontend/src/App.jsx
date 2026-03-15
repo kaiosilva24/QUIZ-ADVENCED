@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Palette, BarChart2, ListTodo, Settings,
-  PlusCircle, Trash2, Edit3, ArrowRight,
-  CheckCircle2, Users, TrendingUp, Shuffle, ToggleLeft, ToggleRight
+import { 
+  PlusCircle, Edit3, Trash2, ArrowRight, X, ChevronLeft, Save, GripVertical, Settings2, Home, Palette, 
+  MessageCircle, BarChart2, MousePointerClick, CheckSquare, AlignLeft, ImageIcon, CheckCircle, 
+  Users, TrendingUp, Shuffle, ToggleLeft, ToggleRight, LayoutTemplate, Layers, Eye, EyeOff, Plus, PlayCircle, 
+  Video as VideoIcon, Volume2, Copy
 } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
 import QuizPreview from './QuizPreview';
@@ -313,6 +314,25 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
     fetchQuizzes();
   };
 
+  const handleDuplicate = async (quiz) => {
+    if (!confirm('Deseja duplicar este quiz?')) return;
+    try {
+      await fetch(`${API}/quizzes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: quiz.title + ' (Cópia)',
+          config_json: quiz.config_json
+          // slug será gerado automaticamente pelo backend baseado no título novo
+        })
+      });
+      fetchQuizzes();
+    } catch (e) {
+      console.error('Erro ao duplicar:', e);
+      alert('Erro ao duplicar o quiz.');
+    }
+  };
+
   const copyLink = (slug) => {
     const url = `${protocol}//${host}/${slug}`;
     navigator.clipboard.writeText(url).then(() => alert('Link copiado! ✔'));
@@ -343,6 +363,7 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
               <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-indigo-500/5 group-hover:bg-indigo-500/15 blur-xl transition-all"/>
               <div className="absolute top-3 right-3 flex gap-2">
                 <button onClick={() => onEdit(q)} aria-label="Editar" className="w-7 h-7 bg-slate-700 hover:bg-indigo-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Edit3 size={13}/></button>
+                <button onClick={() => handleDuplicate(q)} aria-label="Duplicar" className="w-7 h-7 bg-slate-700 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Copy size={13}/></button>
                 <button onClick={() => handleDelete(q.id)} aria-label="Deletar" className="w-7 h-7 bg-slate-700 hover:bg-red-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Trash2 size={13}/></button>
               </div>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-lg" style={{background: (cfg.theme?.accent||'#6366f1')+'20', border: `1px solid ${cfg.theme?.accent||'#6366f1'}30`}}>

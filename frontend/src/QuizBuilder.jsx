@@ -9,7 +9,7 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, Plus, Trash2, ChevronLeft, Save, Eye, EyeOff,
   Type, Image, MousePointerClick, AlignLeft, ToggleLeft, Minus,
-  CheckCircle2, Users, Layers, Palette, Settings, ArrowRight, Music, Video
+  CheckCircle2, Users, Layers, Palette, Settings, ArrowRight, Music, Video, Copy
 } from 'lucide-react';
 import QuizPreview from './QuizPreview';
 import BlockEditor from './BlockEditor';
@@ -113,9 +113,38 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
   };
 
   const deleteStep = (idx) => {
-    if (config.steps.length === 1) return;
+    if(config.steps.length <= 1) return;
+    if(!confirm('Deletar esta etapa?')) return;
     setConfig(c => ({ ...c, steps: c.steps.filter((_, i) => i !== idx) }));
-    setCurrentStepIdx(Math.max(0, idx - 1));
+    if(currentStepIdx >= config.steps.length - 1) setCurrentStepIdx(Math.max(0, config.steps.length - 2));
+    setSelectedBlockId(null);
+  };
+
+  const cloneStep = (idx) => {
+    const stepToClone = config.steps[idx];
+    if (!stepToClone) return;
+
+    // Fazer deep clone dos blocos e gerar novos IDs únicos
+    const clonedBlocks = stepToClone.blocks.map(b => ({
+      ...b,
+      id: Math.random().toString(36).substr(2, 9),
+      options: b.options ? b.options.map(opt => ({ ...opt })) : undefined
+    }));
+
+    const newStep = {
+      id: Math.random().toString(36).substr(2, 9),
+      label: stepToClone.label + ' (Cópia)',
+      blocks: clonedBlocks
+    };
+
+    setConfig(c => {
+      const newSteps = [...c.steps];
+      newSteps.splice(idx + 1, 0, newStep);
+      return { ...c, steps: newSteps };
+    });
+    
+    // Focar na nova etapa criada
+    setCurrentStepIdx(idx + 1);
     setSelectedBlockId(null);
   };
 
@@ -237,13 +266,20 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
                     onChange={e => updateStepLabel(idx, e.target.value)}
                     className="flex-1 bg-transparent text-xs truncate outline-none"
                     placeholder={`Etapa ${idx + 1}`} />
-                  {config.steps.length > 1 && (
-                    <button onClick={e => { e.stopPropagation(); deleteStep(idx); }}
-                      className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all cursor-pointer focus:outline-none"
-                      aria-label="Remover etapa">
-                      <Trash2 size={11} />
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button onClick={e => { e.stopPropagation(); cloneStep(idx); }}
+                      className="hover:text-blue-400 cursor-pointer focus:outline-none"
+                      aria-label="Duplicar etapa">
+                      <Copy size={11} />
                     </button>
-                  )}
+                    {config.steps.length > 1 && (
+                      <button onClick={e => { e.stopPropagation(); deleteStep(idx); }}
+                        className="hover:text-red-400 cursor-pointer focus:outline-none"
+                        aria-label="Remover etapa">
+                        <Trash2 size={11} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
               <button onClick={addStep}
