@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import EmojiPicker from 'emoji-picker-react';
+import EmojiPicker, { Emoji } from 'emoji-picker-react';
 
 function Field({ label, children }) {
   return (
@@ -62,7 +62,7 @@ function Toggle({ label, value, onChange }) {
   );
 }
 
-function EmojiSelect({ value, onChange }) {
+function EmojiSelect({ emoji, unified, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -80,7 +80,9 @@ function EmojiSelect({ value, onChange }) {
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 transition-colors cursor-pointer"
       >
-        <span>{value || 'Selecionar Emoji...'}</span>
+        <span className="flex items-center gap-2">
+          {unified ? <Emoji unified={unified} size={18} /> : emoji || 'Selecionar Emoji...'}
+        </span>
         <span className="text-xs text-slate-500">▼</span>
       </button>
 
@@ -88,9 +90,8 @@ function EmojiSelect({ value, onChange }) {
         <div className="absolute top-full left-0 z-50 mt-1 shadow-2xl rounded-lg overflow-hidden border border-slate-700">
           <EmojiPicker
             theme="dark"
-            emojiStyle="native"
             onEmojiClick={(e) => {
-              onChange(e.emoji);
+              onChange(e.emoji, e.unified);
               setOpen(false);
             }}
             searchPlaceHolder="Buscar emoji..."
@@ -133,6 +134,7 @@ function HeadingEditor({ block, onChange }) {
   return (
     <>
       <Section title="Conteúdo">
+        <Field label="Emoji do Título"><EmojiSelect emoji={block.emoji} unified={block.emojiUnified} onChange={(e, u) => onChange({ emoji: e, emojiUnified: u })} /></Field>
         <Field label="Texto"><Input value={block.text} onChange={v => onChange({ text: v })} /></Field>
         <Field label="Tamanho">
           <Select value={block.size || 'xl'} onChange={v => onChange({ size: v })} options={[
@@ -308,7 +310,7 @@ function ButtonEditor({ block, onChange, steps }) {
     <>
       <Section title="Botão">
         <Field label="Texto"><Input value={block.text} onChange={v => onChange({ text: v })} /></Field>
-        <Field label="Emoji"><EmojiSelect value={block.emoji} onChange={v => onChange({ emoji: v })} /></Field>
+        <Field label="Emoji"><EmojiSelect emoji={block.emoji} unified={block.emojiUnified} onChange={(e, u) => onChange({ emoji: e, emojiUnified: u })} /></Field>
         <Field label="Posição do Emoji">
           <Select value={block.emojiPosition || 'left_inside'} onChange={v => onChange({ emojiPosition: v })} options={[
             { value: 'left_inside', label: 'Esquerda (Dentro)' },
@@ -414,7 +416,7 @@ function ResultEditor({ block, onChange }) {
   return (
     <>
       <Section title="Resultado">
-        <Field label="Emoji Gigante"><EmojiSelect value={block.emoji} onChange={v => onChange({ emoji: v })} /></Field>
+        <Field label="Emoji Gigante"><EmojiSelect emoji={block.emoji} unified={block.emojiUnified} onChange={(e, u) => onChange({ emoji: e, emojiUnified: u })} /></Field>
         <Field label="Título"><Input value={block.heading} onChange={v => onChange({ heading: v })} /></Field>
         <Field label="Texto">
           <textarea value={block.text || ''} onChange={e => onChange({ text: e.target.value })} rows={3}

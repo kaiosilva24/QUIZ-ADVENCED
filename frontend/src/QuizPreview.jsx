@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Emoji } from 'emoji-picker-react';
 
 // Constrói o background CSS baseado no tipo configurado
 function buildBackground(theme) {
@@ -497,16 +498,26 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
       const sizes = { sm: compact ? 12 : 16, base: compact ? 13 : 18, lg: compact ? 14 : 20, xl: compact ? 16 : 24, '2xl': compact ? 18 : 28 };
       
       const headingText = (
-        <p style={{
-          color: block.color || defaultText,
-          fontSize: sizes[block.size] || sizes.xl,
-          fontWeight: block.bold ? 700 : 600,
-          textAlign: block.align || 'center',
-          lineHeight: 1.25,
-          letterSpacing: '-0.01em',
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: block.align || 'center', gap: compact ? 4 : 8
         }}>
-          {block.text || 'Título aqui'}
-        </p>
+          {block.emojiUnified ? (
+            <Emoji unified={block.emojiUnified} size={compact ? 24 : 32} />
+          ) : block.emoji ? (
+            <span style={{ fontSize: compact ? 24 : 32 }}>{block.emoji}</span>
+          ) : null}
+          <p style={{
+            color: block.color || defaultText,
+            fontSize: sizes[block.size] || sizes.xl,
+            fontWeight: block.bold ? 700 : 600,
+            textAlign: block.align || 'center',
+            lineHeight: 1.25,
+            letterSpacing: '-0.01em',
+            margin: 0
+          }}>
+            {block.text || 'Título aqui'}
+          </p>
+        </div>
       );
       
       if (!block.bgStyle || block.bgStyle === 'none') {
@@ -710,19 +721,21 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
         }}
         onClick={() => block.nextStep && onNavigate && onNavigate(block.nextStep)}
         >
-          {pos === 'left_inside' && block.emoji && <span>{block.emoji}</span>}
-          {pos === 'top_large' && block.emoji && <span style={{fontSize: compact ? 24 : 36, lineHeight: 1}}>{block.emoji}</span>}
+          {pos === 'left_inside' && (block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 16 : 20} /> : block.emoji && <span>{block.emoji}</span>)}
+          {pos === 'top_large' && (block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 24 : 36} /> : block.emoji && <span style={{fontSize: compact ? 24 : 36, lineHeight: 1}}>{block.emoji}</span>)}
           
           <span style={{flex: pos === 'top_large' ? 'initial' : 1}}>{block.text || 'Avançar'}</span>
           
-          {pos === 'right_inside' && block.emoji && <span>{block.emoji}</span>}
+          {pos === 'right_inside' && (block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 16 : 20} /> : block.emoji && <span>{block.emoji}</span>)}
         </button>
       );
       
-      if (pos === 'left_outside' && block.emoji) {
+      if (pos === 'left_outside' && (block.emojiUnified || block.emoji)) {
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 8 : 12, width: block.fullWidth ? '100%' : 'auto' }}>
-            <div style={{ fontSize: compact ? 20 : 28, flexShrink: 0 }}>{block.emoji}</div>
+            <div style={{ fontSize: compact ? 20 : 28, flexShrink: 0, display: 'flex' }}>
+              {block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 20 : 28} /> : block.emoji}
+            </div>
             <div style={{ flex: 1 }}>{BaseButton}</div>
           </div>
         );
@@ -786,7 +799,9 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
     case 'result': {
       return (
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 8 : 16, alignItems: 'center' }}>
-          <p style={{ fontSize: compact ? 24 : 48 }}>{block.emoji || '🎉'}</p>
+          <div style={{ display: 'flex', fontSize: compact ? 24 : 48 }}>
+            {block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 36 : 72} /> : (block.emoji || '🎉')}
+          </div>
           <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{block.heading || 'Parabéns!'}</p>
           <p style={{ color: defaultText, opacity: .7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{block.text || ''}</p>
           {block.buttonText && (
