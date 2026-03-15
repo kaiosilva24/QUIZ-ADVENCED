@@ -189,22 +189,27 @@ function QuizRouter() {
 }
 
 // ─── Componente Raiz ──────────────────────────────────────────────────────────
+// IMPORTANTE: hooks sempre antes de qualquer return condicional (Rules of Hooks)
 export default function App() {
-  const [tab, setTab] = useState('quizzes');
-  const [quizzes, setQuizzes] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [editingQuiz, setEditingQuiz] = useState(null);
-
   const hostname = window.location.hostname;
-  // Lista de hostnames que devem mostrar o PAINEL ADMIN
   const ADMIN_HOSTS = ['localhost', '127.0.0.1'];
   const isAdminHost = ADMIN_HOSTS.some(h => hostname === h || hostname.includes('discloud.app'));
   const isAdminRoute = window.location.pathname.startsWith('/admin');
 
-  // Se NÃO for host de desenvolvimento E NÃO for rota /admin → mostra o quiz (funil para leads)
+  // Funil para leads: qualquer domínio que não seja o admin
   if (!isAdminHost && !isAdminRoute) {
     return <QuizRouter />;
   }
+
+  return <AdminPanel />;
+}
+
+// ─── Painel Admin (separado para respeitar Rules of Hooks) ───────────────────
+function AdminPanel() {
+  const [tab, setTab] = useState('quizzes');
+  const [quizzes, setQuizzes] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [editingQuiz, setEditingQuiz] = useState(null);
 
   useEffect(() => { fetchQuizzes(); fetchAllTasks(); }, []);
 
