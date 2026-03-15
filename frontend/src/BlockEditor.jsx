@@ -342,7 +342,7 @@ function ButtonEditor({ block, onChange, steps }) {
             className="w-full accent-indigo-500 cursor-pointer" />
         </Field>
         <Field label={`Altura Mínima: ${block.boxHeight || 44}px`}>
-          <input type="range" min={32} max={120} step={4} value={block.boxHeight || 44}
+          <input type="range" min={20} max={120} step={4} value={block.boxHeight || 44}
             onChange={e => onChange({ boxHeight: Number(e.target.value) })}
             className="w-full accent-indigo-500 cursor-pointer" />
         </Field>
@@ -351,13 +351,29 @@ function ButtonEditor({ block, onChange, steps }) {
             onChange={e => onChange({ borderRadius: Number(e.target.value) })}
             className="w-full accent-indigo-500 cursor-pointer" />
         </Field>
-        <Toggle label="Efeito Ofuscado (Glass)" value={!!block.glassEffect} onChange={v => onChange({ glassEffect: v })} />
-        {block.glassEffect && (
+        <Field label="Estilo de Fundo">
+          <Select value={block.bgStyle || 'solid'} onChange={v => onChange({ bgStyle: v })} options={[
+            { value: 'solid', label: 'Sólido (Padrão)' },
+            { value: 'glass', label: 'Efeito Ofuscado (Glass)' },
+            { value: 'border_only', label: 'Somente Borda (Transparente)' },
+          ]} />
+        </Field>
+        {block.bgStyle === 'glass' && (
           <Field label={`Intensidade do Blur: ${block.blurAmount ?? 10}px`}>
             <input type="range" min={2} max={30} step={2} value={block.blurAmount ?? 10}
               onChange={e => onChange({ blurAmount: Number(e.target.value) })}
               className="w-full accent-indigo-500 cursor-pointer" />
           </Field>
+        )}
+        {block.bgStyle === 'border_only' && (
+          <>
+            <Field label="Cor da Borda"><ColorPicker value={block.borderColor || block.textColor || '#6366f1'} onChange={v => onChange({ borderColor: v })} /></Field>
+            <Field label={`Espessura da Borda: ${block.borderWidth ?? 2}px`}>
+              <input type="range" min={1} max={8} step={1} value={block.borderWidth ?? 2}
+                onChange={e => onChange({ borderWidth: Number(e.target.value) })}
+                className="w-full accent-indigo-500 cursor-pointer" />
+            </Field>
+          </>
         )}
       </Section>
 

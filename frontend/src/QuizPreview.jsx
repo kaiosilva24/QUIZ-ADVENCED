@@ -698,16 +698,28 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
     case 'button': {
       const pos = block.emojiPosition || 'left_inside';
       const btnRadius = block.borderRadius ?? (block.rounded === 'full' ? 99 : block.rounded === 'xl' ? 14 : 8);
-      const glassStyle = block.glassEffect ? {
-        background: 'rgba(255,255,255,0.1)',
-        backdropFilter: `blur(${block.blurAmount ?? 10}px)`,
-        border: '1px solid rgba(255,255,255,0.25)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-      } : {
-        background: block.bg || accent,
-        boxShadow: `0 4px 20px ${block.bg || accent}40`,
-        border: 'none',
-      };
+      const bgStyleMode = block.bgStyle || (block.glassEffect ? 'glass' : 'solid');
+      let glassStyle;
+      if (bgStyleMode === 'glass') {
+        glassStyle = {
+          background: 'rgba(255,255,255,0.1)',
+          backdropFilter: `blur(${block.blurAmount ?? 10}px)`,
+          border: '1px solid rgba(255,255,255,0.25)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+        };
+      } else if (bgStyleMode === 'border_only') {
+        glassStyle = {
+          background: 'transparent',
+          border: `${block.borderWidth ?? 2}px solid ${block.borderColor || block.textColor || '#6366f1'}`,
+          boxShadow: 'none',
+        };
+      } else {
+        glassStyle = {
+          background: block.bg || accent,
+          boxShadow: `0 4px 20px ${block.bg || accent}40`,
+          border: 'none',
+        };
+      }
       
       const BaseButton = (
         <button style={{
