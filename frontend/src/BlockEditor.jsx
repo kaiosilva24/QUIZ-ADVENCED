@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import EmojiPicker, { Emoji } from 'emoji-picker-react';
+import { Emoji } from 'emoji-picker-react';
+import data from '@emoji-mart/data';
+import i18n from '@emoji-mart/data/i18n/pt.json';
+import Picker from '@emoji-mart/react';
 
 function Field({ label, children }) {
   return (
@@ -88,15 +91,15 @@ function EmojiSelect({ emoji, unified, onChange }) {
 
       {open && (
         <div className="absolute top-full left-0 z-50 mt-1 shadow-2xl rounded-lg overflow-hidden border border-slate-700">
-          <EmojiPicker
+          <Picker
+            data={data}
+            i18n={i18n}
+            locale="pt"
             theme="dark"
-            onEmojiClick={(e) => {
-              onChange(e.emoji, e.unified);
+            onEmojiSelect={(e) => {
+              onChange(e.native, e.unified);
               setOpen(false);
             }}
-            searchPlaceHolder="Buscar emoji..."
-            width={320}
-            height={400}
           />
         </div>
       )}
