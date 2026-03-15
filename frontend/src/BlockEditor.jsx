@@ -334,6 +334,33 @@ function ButtonEditor({ block, onChange, steps }) {
         <Field label="Cor de Fundo"><ColorPicker value={block.bg} onChange={v => onChange({ bg: v })} /></Field>
         <Field label="Cor do Texto"><ColorPicker value={block.textColor} onChange={v => onChange({ textColor: v })} /></Field>
       </Section>
+
+      <Section title="Tamanho e Forma">
+        <Field label={`Largura da Caixa: ${block.boxWidth || 100}%`}>
+          <input type="range" min={30} max={100} step={5} value={block.boxWidth || 100}
+            onChange={e => onChange({ boxWidth: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
+        <Field label={`Altura Mínima: ${block.boxHeight || 44}px`}>
+          <input type="range" min={32} max={120} step={4} value={block.boxHeight || 44}
+            onChange={e => onChange({ boxHeight: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
+        <Field label={`Arredondamento: ${block.borderRadius ?? 14}px`}>
+          <input type="range" min={0} max={60} step={2} value={block.borderRadius ?? 14}
+            onChange={e => onChange({ borderRadius: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
+        <Toggle label="Efeito Ofuscado (Glass)" value={!!block.glassEffect} onChange={v => onChange({ glassEffect: v })} />
+        {block.glassEffect && (
+          <Field label={`Intensidade do Blur: ${block.blurAmount ?? 10}px`}>
+            <input type="range" min={2} max={30} step={2} value={block.blurAmount ?? 10}
+              onChange={e => onChange({ blurAmount: Number(e.target.value) })}
+              className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+        )}
+      </Section>
+
       <Section title="Ação">
         <Field label="Ir para Etapa">
           <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} placeholder="-- Próxima Etapa --" />

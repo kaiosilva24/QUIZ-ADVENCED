@@ -697,27 +697,37 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
 
     case 'button': {
       const pos = block.emojiPosition || 'left_inside';
+      const btnRadius = block.borderRadius ?? (block.rounded === 'full' ? 99 : block.rounded === 'xl' ? 14 : 8);
+      const glassStyle = block.glassEffect ? {
+        background: 'rgba(255,255,255,0.1)',
+        backdropFilter: `blur(${block.blurAmount ?? 10}px)`,
+        border: '1px solid rgba(255,255,255,0.25)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+      } : {
+        background: block.bg || accent,
+        boxShadow: `0 4px 20px ${block.bg || accent}40`,
+        border: 'none',
+      };
       
       const BaseButton = (
         <button style={{
-          width: block.fullWidth ? '100%' : 'auto',
-          background: block.bg || accent,
+          width: block.fullWidth ? `${block.boxWidth || 100}%` : 'auto',
+          minHeight: block.boxHeight || 44,
           color: block.textColor || '#ffffff',
           padding: pos === 'top_large' ? (compact ? '12px 16px' : '18px 24px') : (compact ? '8px 12px' : '14px 20px'),
           fontSize: compact ? 10 : 15,
           fontWeight: 600,
-          borderRadius: block.rounded === 'full' ? 99 : block.rounded === 'xl' ? 14 : 8,
-          border: 'none',
+          borderRadius: btnRadius,
           cursor: 'pointer',
           textAlign: 'center',
           transition: 'opacity 0.15s ease',
-          boxShadow: `0 4px 20px ${block.bg || accent}40`,
           letterSpacing: '0.01em',
           display: 'flex',
           flexDirection: pos === 'top_large' ? 'column' : 'row',
           alignItems: 'center',
           justifyContent: 'center',
           gap: pos === 'top_large' ? (compact ? 6 : 10) : (compact ? 6 : 8),
+          ...glassStyle,
         }}
         onClick={() => block.nextStep && onNavigate && onNavigate(block.nextStep)}
         >
