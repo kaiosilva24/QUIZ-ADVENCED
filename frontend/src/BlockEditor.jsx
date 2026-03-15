@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import EmojiPicker, { Emoji } from 'emoji-picker-react';
+import { Trash2 } from 'lucide-react';
 
 function Field({ label, children }) {
   return (
