@@ -245,6 +245,62 @@ function FontPicker({ value, onChange }) {
 }
 
 
+function ColorPopover({ icon, title, isActive, onSelectColor, onRemoveColor, onOpen }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (ref.current && !ref.current.contains(event.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button 
+        onMouseDown={e => {
+          e.preventDefault();
+          if (!open && onOpen) onOpen();
+          setOpen(!open);
+        }}
+        className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 cursor-pointer transition-colors ${isActive ? 'bg-indigo-500/30' : 'hover:bg-slate-700'}`} 
+        title={title}
+      >
+        {icon}
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 z-50 mt-2 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-col gap-3 min-w-[160px]">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Escolher Cor</span>
+            <div className="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-lg p-2">
+              <input 
+                type="color" 
+                className="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0" 
+                onChange={e => onSelectColor(e.target.value)} 
+              />
+              <span className="text-xs text-slate-300">Personalizada</span>
+            </div>
+          </div>
+          
+          <button 
+            onMouseDown={e => {
+              e.preventDefault();
+              onRemoveColor();
+              setOpen(false);
+            }}
+            className="w-full px-3 py-2 text-xs font-semibold text-red-400 hover:text-white hover:bg-red-500 rounded-lg text-center transition-colors cursor-pointer border border-red-500/30 hover:border-red-500"
+          >
+            🚫 Nenhuma Cor
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
   const ref = useRef(null);
   const savedSelection = useRef(null);
@@ -320,15 +376,34 @@ function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
         
         <div className="w-px h-5 bg-slate-600 my-auto mx-1" />
         
-        <label onMouseDown={saveSelection} className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 cursor-pointer relative transition-colors ${activeFormats.color && activeFormats.color !== 'rgb(255, 255, 255)' ? 'bg-indigo-500/30' : 'hover:bg-slate-700'}`} title="Cor do Texto">
-          <span className="w-5 h-5 rounded-full border border-slate-600" style={{background: 'linear-gradient(to right, #ef4444, #3b82f6)'}}></span>
-          <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer" onInput={e => exec('foreColor', e.target.value)} />
-        </label>
+        <ColorPopover
+          icon={<span className="w-5 h-5 rounded-full border border-slate-600" style={{background: 'linear-gradient(to right, #ef4444, #3b82f6)'}}></span>}
+          title="Cor do Texto"
+          isActive={activeFormats.color && activeFormats.color !== 'rgb(255, 255, 255)'}
+          onOpen={saveSelection}
+          onSelectColor={c => exec('foreColor', c)}
+          onRemoveColor={() => {
+            restoreSelection();
+            document.execCommand('styleWithCSS', false, true);
+            document.execCommand('foreColor', false, 'inherit');
+            if (ref.current) { ref.current.focus(); onChange(ref.current.innerHTML); }
+          }}
+        />
         
-        <label onMouseDown={saveSelection} className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 cursor-pointer relative transition-colors ${activeFormats.bg && activeFormats.bg !== 'rgba(0, 0, 0, 0)' && activeFormats.bg !== 'transparent' ? 'bg-indigo-500/30' : 'hover:bg-slate-700'}`} title="Cor de Fundo da Seleção">
-          <span className="w-5 h-5 rounded border border-slate-600 flex items-center justify-center bg-yellow-400 text-black text-[12px] font-bold">A</span>
-          <input type="color" className="absolute opacity-0 w-full h-full cursor-pointer" onInput={e => exec('hiliteColor', e.target.value)} />
-        </label>
+        <ColorPopover
+          icon={<span className="w-5 h-5 rounded border border-slate-600 flex items-center justify-center bg-yellow-400 text-black text-[12px] font-bold">A</span>}
+          title="Cor de Fundo da Seleção"
+          isActive={activeFormats.bg && activeFormats.bg !== 'rgba(0, 0, 0, 0)' && activeFormats.bg !== 'transparent'}
+          onOpen={saveSelection}
+          onSelectColor={c => exec('hiliteColor', c)}
+          onRemoveColor={() => {
+            restoreSelection();
+            document.execCommand('styleWithCSS', false, true);
+            document.execCommand('hiliteColor', false, 'transparent');
+            document.execCommand('backColor', false, 'transparent');
+            if (ref.current) { ref.current.focus(); onChange(ref.current.innerHTML); }
+          }}
+        />
 
         <div className="w-px h-5 bg-slate-600 my-auto mx-1" />
 
