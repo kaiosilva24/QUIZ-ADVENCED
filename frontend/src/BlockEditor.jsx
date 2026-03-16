@@ -818,6 +818,36 @@ function LeadCaptureEditor({ block, onChange }) {
             onChange={v => onChange({ fields: v ? [...(block.fields || []), f] : (block.fields || []).filter(x => x !== f) })} />
         ))}
       </Section>
+      <Section title="Ação após Captura">
+        <Field label="Ir para Etapa">
+          <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} placeholder="-- Próxima Etapa --" />
+        </Field>
+        <Field label="Ou Redirecionar para URL">
+          <Input value={block.redirectUrl} onChange={v => onChange({ redirectUrl: v })} placeholder="https://seu-site.com" />
+        </Field>
+      </Section>
+      <Section title="Carregamento Pós-Captura (Opcional)">
+        <Toggle label="Ativar Tela de Carregamento" value={block.enableLoading} onChange={v => onChange({ enableLoading: v })} />
+        {block.enableLoading && (
+          <>
+            <Field label="Estilo da Animação">
+              <Select value={block.loadingStyle || 'spinner'} onChange={v => onChange({ loadingStyle: v })} options={[
+                { value: 'spinner', label: 'Círculo Girando' },
+                { value: 'pulse', label: 'Círculo Pulsando' },
+                { value: 'dots', label: 'Três Pontinhos' },
+              ]} />
+            </Field>
+            <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || theme.accent || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
+            <Field label="Texto de Carregamento"><Input value={block.loadingText} onChange={v => onChange({ loadingText: v })} placeholder="Processando dados..." /></Field>
+            <Field label="Texto de Progresso (opcional)"><Input value={block.progressText} onChange={v => onChange({ progressText: v })} placeholder="Gerando plano personalizado..." /></Field>
+            <Field label={`Tempo de Carregamento: ${block.loadingDuration || 3}s`}>
+              <input type="range" min={1} max={15} step={1} value={block.loadingDuration || 3}
+                onChange={e => onChange({ loadingDuration: Number(e.target.value) })}
+                className="w-full accent-indigo-500 cursor-pointer" />
+            </Field>
+          </>
+        )}
+      </Section>
       <Section title="Botão">
         <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
         <Field label="Cor do Botão"><ColorPicker value={block.buttonBg} onChange={v => onChange({ buttonBg: v })} /></Field>
