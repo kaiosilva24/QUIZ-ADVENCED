@@ -1,6 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import EmojiPicker, { Emoji } from 'emoji-picker-react';
 import { Trash2 } from 'lucide-react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import { StarterKit } from '@tiptap/starter-kit';
+import { Underline } from '@tiptap/extension-underline';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { Highlight } from '@tiptap/extension-highlight';
+import { TextAlign } from '@tiptap/extension-text-align';
+import { Placeholder } from '@tiptap/extension-placeholder';
 
 function Field({ label, children }) {
   return (
@@ -245,7 +253,7 @@ function FontPicker({ value, onChange }) {
 }
 
 
-function ColorPopover({ icon, title, isActive, onSelectColor, onRemoveColor, onOpen }) {
+function TiptapColorPopover({ icon, title, isActive, onSelectColor, onRemoveColor }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -257,40 +265,38 @@ function ColorPopover({ icon, title, isActive, onSelectColor, onRemoveColor, onO
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const PRESET_COLORS = [
+    '#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899',
+    '#ffffff','#94a3b8','#64748b','#334155','#1e293b','#000000','#fbbf24','#a78bfa',
+  ];
+
   return (
     <div className="relative" ref={ref}>
       <button 
-        onMouseDown={e => {
-          e.preventDefault();
-          if (!open && onOpen) onOpen();
-          setOpen(!open);
-        }}
-        className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 cursor-pointer transition-colors ${isActive ? 'bg-indigo-500/30' : 'hover:bg-slate-700'}`} 
+        onClick={() => setOpen(!open)}
+        className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 cursor-pointer transition-all ${isActive ? 'bg-indigo-500/30 ring-1 ring-indigo-400' : 'hover:bg-slate-700'}`} 
         title={title}
       >
         {icon}
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 z-50 mt-2 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-col gap-3 min-w-[160px]">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Escolher Cor</span>
-            <div className="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-lg p-2">
-              <input 
-                type="color" 
-                className="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0" 
-                onChange={e => onSelectColor(e.target.value)} 
-              />
-              <span className="text-xs text-slate-300">Personalizada</span>
-            </div>
+        <div className="absolute top-full left-0 z-50 mt-2 p-3 bg-slate-900 border border-slate-700 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] min-w-[200px]">
+          <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2 block">Cores Rápidas</span>
+          <div className="grid grid-cols-8 gap-1.5 mb-3">
+            {PRESET_COLORS.map(c => (
+              <button key={c} onClick={() => { onSelectColor(c); setOpen(false); }}
+                className="w-6 h-6 rounded-md border border-slate-600 hover:scale-110 transition-transform cursor-pointer hover:ring-2 hover:ring-indigo-400"
+                style={{ background: c }} title={c} />
+            ))}
           </div>
-          
+          <div className="flex items-center gap-3 bg-slate-800 border border-slate-700 rounded-lg p-2 mb-2">
+            <input type="color" className="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0"
+              onChange={e => { onSelectColor(e.target.value); setOpen(false); }} />
+            <span className="text-xs text-slate-300">Cor Personalizada</span>
+          </div>
           <button 
-            onMouseDown={e => {
-              e.preventDefault();
-              onRemoveColor();
-              setOpen(false);
-            }}
+            onClick={() => { onRemoveColor(); setOpen(false); }}
             className="w-full px-3 py-2 text-xs font-semibold text-red-400 hover:text-white hover:bg-red-500 rounded-lg text-center transition-colors cursor-pointer border border-red-500/30 hover:border-red-500"
           >
             🚫 Nenhuma Cor
@@ -301,199 +307,132 @@ function ColorPopover({ icon, title, isActive, onSelectColor, onRemoveColor, onO
   );
 }
 
-function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
-  const ref = useRef(null);
-  const savedSelection = useRef(null);
-  const [activeFormats, setActiveFormats] = useState({
-    bold: false,
-    italic: false,
-    underline: false,
-    color: '',
-    bg: ''
+// ────────────────────────────────────────────────────────────────────────────
+// Tiptap Rich Text Editor (Professional Grade)
+// ────────────────────────────────────────────────────────────────────────────
+
+function TiptapEditor({ value, onChange, placeholder, minHeight = 60 }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: false,
+        codeBlock: false,
+        blockquote: false,
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
+        horizontalRule: false,
+      }),
+      Underline,
+      TextStyle,
+      Color,
+      Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ['paragraph'] }),
+      Placeholder.configure({ placeholder: placeholder || 'Digite aqui...' }),
+    ],
+    content: value || '',
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+    editorProps: {
+      attributes: {
+        style: `min-height: ${minHeight}px`,
+      },
+    },
   });
-  
-  // Set HTML initially, but avoid overwriting while user is typing/has focus
-  // Overwriting innerHTML destroys the current text selection/caret position.
+
+  // Sync external changes (only when editor loses focus)
   useEffect(() => {
-    if (ref.current && document.activeElement !== ref.current) {
-      if (value !== ref.current.innerHTML) {
-        ref.current.innerHTML = value || '';
-      }
+    if (editor && !editor.isFocused && value !== editor.getHTML()) {
+      editor.commands.setContent(value || '', false);
     }
-  }, [value]);
+  }, [value, editor]);
 
-  const checkStyle = () => {
-    setActiveFormats({
-      bold: document.queryCommandState('bold'),
-      italic: document.queryCommandState('italic'),
-      underline: document.queryCommandState('underline'),
-      color: document.queryCommandValue('foreColor'),
-      bg: document.queryCommandValue('hiliteColor') || document.queryCommandValue('backColor')
-    });
-  };
+  if (!editor) return null;
 
-  const saveSelection = () => {
-    const sel = window.getSelection();
-    if (sel.getRangeAt && sel.rangeCount) {
-      savedSelection.current = sel.getRangeAt(0);
-    }
-  };
-
-  const restoreSelection = () => {
-    if (savedSelection.current) {
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(savedSelection.current);
-    }
-  };
-
-  const exec = (cmd, val = null) => {
-    if (cmd === 'foreColor' || cmd === 'hiliteColor') {
-      restoreSelection();
-    }
-    
-    // Fallback for highlighting
-    if (cmd === 'hiliteColor') {
-      document.execCommand('hiliteColor', false, val);
-      document.execCommand('backColor', false, val);
-    } else {
-      document.execCommand(cmd, false, val);
-    }
-    
-    if (ref.current) {
-      ref.current.focus();
-      checkStyle();
-      onChange(ref.current.innerHTML);
-    }
-  };
+  const ToolBtn = ({ active, onClick, title, children }) => (
+    <button
+      onClick={onClick}
+      className={`w-8 h-8 flex items-center justify-center rounded text-sm cursor-pointer transition-all ${
+        active 
+          ? 'bg-indigo-500/30 text-indigo-300 ring-1 ring-indigo-400/50' 
+          : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+      }`}
+      title={title}
+    >
+      {children}
+    </button>
+  );
 
   return (
-    <div className="flex flex-col gap-1.5 relative mb-2">
-      <div className="flex flex-wrap bg-slate-800 border border-slate-700 rounded-lg p-1 gap-0.5 sticky top-0 z-10 shadow-md">
-        <button onMouseDown={e=>{e.preventDefault();exec('bold')}} className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 font-serif font-bold cursor-pointer transition-colors ${activeFormats.bold ? 'bg-indigo-500/30 text-indigo-300' : 'hover:bg-slate-700'}`} title="Negrito">B</button>
-        <button onMouseDown={e=>{e.preventDefault();exec('italic')}} className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 font-serif italic cursor-pointer transition-colors ${activeFormats.italic ? 'bg-indigo-500/30 text-indigo-300' : 'hover:bg-slate-700'}`} title="Itálico">I</button>
-        <button onMouseDown={e=>{e.preventDefault();exec('underline')}} className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 font-serif underline cursor-pointer transition-colors ${activeFormats.underline ? 'bg-indigo-500/30 text-indigo-300' : 'hover:bg-slate-700'}`} title="Sublinhado">U</button>
-        
-        <div className="w-px h-5 bg-slate-600 my-auto mx-1" />
-        
-        <ColorPopover
-          icon={<span className="w-5 h-5 rounded-full border border-slate-600" style={{background: 'linear-gradient(to right, #ef4444, #3b82f6)'}}></span>}
+    <div className="flex flex-col gap-0 relative">
+      {/* ── Toolbar ── */}
+      <div className="flex flex-wrap bg-slate-800 border border-slate-700 rounded-t-xl p-1.5 gap-0.5 sticky top-0 z-10 shadow-md items-center">
+        <ToolBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Negrito (Ctrl+B)">
+          <span className="font-bold font-serif">B</span>
+        </ToolBtn>
+        <ToolBtn active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} title="Itálico (Ctrl+I)">
+          <span className="italic font-serif">I</span>
+        </ToolBtn>
+        <ToolBtn active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()} title="Sublinhado (Ctrl+U)">
+          <span className="underline font-serif">U</span>
+        </ToolBtn>
+        <ToolBtn active={editor.isActive('strike')} onClick={() => editor.chain().focus().toggleStrike().run()} title="Tachado">
+          <span className="line-through font-serif">S</span>
+        </ToolBtn>
+
+        <div className="w-px h-5 bg-slate-600 mx-1" />
+
+        {/* Text Color */}
+        <TiptapColorPopover
+          icon={<span className="w-5 h-5 rounded-full border border-slate-600" style={{background: editor.getAttributes('textStyle').color || 'linear-gradient(to right, #ef4444, #3b82f6)'}} />}
           title="Cor do Texto"
-          isActive={activeFormats.color && activeFormats.color !== 'rgb(255, 255, 255)'}
-          onOpen={saveSelection}
-          onSelectColor={c => exec('foreColor', c)}
-          onRemoveColor={() => {
-            restoreSelection();
-            document.execCommand('styleWithCSS', false, true);
-            document.execCommand('foreColor', false, 'inherit');
-            if (ref.current) { ref.current.focus(); onChange(ref.current.innerHTML); }
-          }}
-        />
-        
-        <ColorPopover
-          icon={<span className="w-5 h-5 rounded border border-slate-600 flex items-center justify-center bg-yellow-400 text-black text-[12px] font-bold">A</span>}
-          title="Cor de Fundo da Seleção"
-          isActive={activeFormats.bg && activeFormats.bg !== 'rgba(0, 0, 0, 0)' && activeFormats.bg !== 'transparent'}
-          onOpen={saveSelection}
-          onSelectColor={c => exec('hiliteColor', c)}
-          onRemoveColor={() => {
-            restoreSelection();
-            // Browsers often ignore execCommand with 'transparent' for hiliteColor.
-            // We use removeFormat on the background if standard execCommand fails, 
-            // or force a temporary white background and strip it.
-            document.execCommand('styleWithCSS', false, true);
-            document.execCommand('hiliteColor', false, 'transparent');
-            document.execCommand('backColor', false, 'transparent');
-            document.execCommand('backColor', false, 'rgba(0,0,0,0)'); // Safari fallback
-            
-            // Aggressive fallback to strip directly from DOM elements
-            const sel = window.getSelection();
-            if (!sel.isCollapsed && sel.getRangeAt && sel.rangeCount) {
-              const range = sel.getRangeAt(0);
-              const frag = range.extractContents();
-              
-              const stripBg = (node) => {
-                if (node.nodeType === 1) { // Element node
-                  if (node.style) {
-                    node.style.backgroundColor = '';
-                    node.style.background = '';
-                  }
-                  
-                  // if node is a span with no other styles and no class, we should unwrap it 
-                  // to prevent creating a mess of empty spans
-                  if (node.tagName.toLowerCase() === 'span' && !node.getAttribute('class') && !node.getAttribute('style')) {
-                     const docFrag = document.createDocumentFragment();
-                     while (node.firstChild) {
-                         docFrag.appendChild(node.firstChild);
-                     }
-                     node.parentNode.replaceChild(docFrag, node);
-                     return; // Skip recursing children since they were moved up
-                  }
-                  
-                  // some browsers use <mark> for hiliteColor
-                  if (node.tagName.toLowerCase() === 'mark') {
-                     const docFrag = document.createDocumentFragment();
-                     while (node.firstChild) {
-                         docFrag.appendChild(node.firstChild);
-                     }
-                     node.parentNode.replaceChild(docFrag, node);
-                     return;
-                  }
-                }
-                
-                // Recurse backwards so unwrapping doesn't break our loop index
-                for (let i = node.childNodes.length - 1; i >= 0; i--) {
-                  stripBg(node.childNodes[i]);
-                }
-              };
-              
-              // We need a wrapper to safely process the frag's top-level children
-              const wrapper = document.createElement('div');
-              wrapper.appendChild(frag);
-              stripBg(wrapper);
-              
-              // Move back to fragment
-              const newFrag = document.createDocumentFragment();
-              while (wrapper.firstChild) {
-                newFrag.appendChild(wrapper.firstChild);
-              }
-              
-              range.insertNode(newFrag);
-            }
-            
-            if (ref.current) { 
-              ref.current.focus(); 
-              checkStyle();
-              onChange(ref.current.innerHTML); 
-            }
-          }}
+          isActive={!!editor.getAttributes('textStyle').color}
+          onSelectColor={c => editor.chain().focus().setColor(c).run()}
+          onRemoveColor={() => editor.chain().focus().unsetColor().run()}
         />
 
-        <div className="w-px h-5 bg-slate-600 my-auto mx-1" />
+        {/* Highlight */}
+        <TiptapColorPopover
+          icon={<span className="w-5 h-5 rounded border border-slate-600 flex items-center justify-center text-[11px] font-bold" style={{background: editor.getAttributes('highlight').color || '#eab308', color: '#000'}}>A</span>}
+          title="Cor de Destaque (Highlight)"
+          isActive={editor.isActive('highlight')}
+          onSelectColor={c => editor.chain().focus().toggleHighlight({ color: c }).run()}
+          onRemoveColor={() => editor.chain().focus().unsetHighlight().run()}
+        />
 
-        <button onMouseDown={e=>{e.preventDefault();exec('removeFormat')}} className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded text-slate-400 cursor-pointer" title="Limpar Formatação">
+        <div className="w-px h-5 bg-slate-600 mx-1" />
+
+        {/* Align */}
+        <ToolBtn active={editor.isActive({ textAlign: 'left' })} onClick={() => editor.chain().focus().setTextAlign('left').run()} title="Alinhar Esquerda">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+        </ToolBtn>
+        <ToolBtn active={editor.isActive({ textAlign: 'center' })} onClick={() => editor.chain().focus().setTextAlign('center').run()} title="Centralizar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </ToolBtn>
+        <ToolBtn active={editor.isActive({ textAlign: 'right' })} onClick={() => editor.chain().focus().setTextAlign('right').run()} title="Alinhar Direita">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>
+        </ToolBtn>
+
+        <div className="w-px h-5 bg-slate-600 mx-1" />
+
+        {/* Clear */}
+        <ToolBtn active={false} onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Limpar Formatação">
           <Trash2 size={14} />
-        </button>
+        </ToolBtn>
       </div>
-      <div
-        ref={ref}
-        contentEditable
-        onKeyUp={checkStyle}
-        onMouseUp={checkStyle}
-        onInput={e => {
-          checkStyle();
-          onChange(e.currentTarget.innerHTML);
-        }}
-        onBlur={e => {
-          saveSelection();
-          onChange(e.currentTarget.innerHTML);
-        }}
-        className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 transition-colors"
-        style={{ minHeight }}
-        data-placeholder={placeholder}
-      />
+
+      {/* ── Editor Area ── */}
+      <div className="bg-slate-800/60 border border-t-0 border-slate-700 rounded-b-xl overflow-hidden">
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
+}
+
+// Keep backward-compatible InlineRichText alias
+function InlineRichText({ value, onChange, placeholder, minHeight = 100 }) {
+  return <TiptapEditor value={value} onChange={onChange} placeholder={placeholder} minHeight={minHeight} />;
 }
 
 function HeadingEditor({ block, onChange }) {

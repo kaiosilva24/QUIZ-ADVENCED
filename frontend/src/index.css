@@ -1,1 +1,24 @@
 @import "tailwindcss";
+
+/* ─── Tiptap Editor Styles ─── */
+.tiptap {
+  outline: none;
+  min-height: 60px;
+  padding: 10px 12px;
+  color: #f8fafc;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+.tiptap p { margin: 0; }
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #475569;
+  pointer-events: none;
+  height: 0;
+}
+.tiptap mark {
+  border-radius: 3px;
+  padding: 0 2px;
+}
