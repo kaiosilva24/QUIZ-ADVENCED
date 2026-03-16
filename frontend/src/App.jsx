@@ -83,7 +83,14 @@ function QuizRouter() {
   }, []);
 
   const loadNewQuiz = () => {
-    const pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
+    let pathname = window.location.pathname;
+    
+    // Suporte para rodar debaixo da rota /quizes via proxy ou Cloudflare
+    if (pathname.startsWith('/quizes')) {
+      pathname = pathname.substring(7); // Remove "/quizes"
+    }
+    
+    const pathSlug = pathname.replace(/^\//, '').replace(/\/.*$/, '');
     const endpoint = pathSlug ? `/api/route/${encodeURIComponent(pathSlug)}` : '/api/roundrobin/next';
     const now = Date.now();
 
@@ -195,10 +202,16 @@ export default function App() {
   const hostname = window.location.hostname;
   const ADMIN_HOSTS = ['localhost', '127.0.0.1'];
   const isAdminHost = ADMIN_HOSTS.some(h => hostname === h || hostname.includes('discloud.app'));
-  const isAdminRoute = window.location.pathname.startsWith('/admin');
+  const pathname = window.location.pathname;
+  const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/quizes/admin');
 
   // Funil para leads: qualquer domínio que não seja o admin
   if (!isAdminHost && !isAdminRoute) {
+    if (pathname === '/' && hostname.includes('herancasherdadas')) {
+      // Se por algum motivo cair na raiz do domínio principal através do nosso app, apenas retorna vazio
+      // para não subscrever o site que o usuário mencionou
+      return null;
+    }
     return <QuizRouter />;
   }
 
