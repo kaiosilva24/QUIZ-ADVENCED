@@ -133,7 +133,7 @@ function QuizRouter() {
     }
   }, [currentStep, quizData]);
 
-  const handleNavigate = (nextStepId) => {
+  const handleNavigate = (nextStepId, answerText = null) => {
     const steps = quizData?.config?.steps || [];
     const idx = steps.findIndex(s => s.id === nextStepId);
     if (idx >= 0) {
@@ -141,7 +141,7 @@ function QuizRouter() {
       const quizId = quizData.quiz_id || quizData.id;
       const currentStepObj = steps[currentStep];
       // Track step completado com tempo e última resposta
-      trackEvent(quizId, 'step_reached', currentStepObj?.id, null, timeSpent);
+      trackEvent(quizId, 'step_reached', currentStepObj?.id, answerText, timeSpent);
       stepStartTime.current = Date.now();
       setCurrentStep(idx);
       if (idx === steps.length - 1) {
