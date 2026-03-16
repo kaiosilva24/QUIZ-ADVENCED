@@ -574,11 +574,11 @@ function AnalyticsView({ quizzes }) {
           const config = typeof quizData.config === 'string' ? JSON.parse(quizData.config) : quizData.config;
           if (config.steps) {
             config.steps.forEach(s => {
-              const headingBlock = s.blocks?.find(b => b.type === 'heading');
-              if (headingBlock && headingBlock.text) {
+              const headerBlock = s.blocks?.find(b => b.type === 'heading' || b.type === 'text');
+              if (headerBlock && headerBlock.text) {
                 // Strip HTML from rich text
                 const tmp = document.createElement("DIV");
-                tmp.innerHTML = headingBlock.text;
+                tmp.innerHTML = headerBlock.text;
                 stepNaming[s.id] = (tmp.textContent || tmp.innerText || "").trim() || s.label;
               } else {
                 stepNaming[s.id] = s.label || s.id;

@@ -159,15 +159,28 @@ async function getQuizLeads(req, res) {
                 lead.finished = true;
             }
             
-            if (row.event_type === 'step_reached') {
-                lead.journey.push({
-                    step_id: row.step_id,
-                    answer: row.answer_value,
-                    time_spent: row.time_spent_seconds || 0,
-                    timestamp: row.created_at
-                });
-                lead.total_time += (row.time_spent_seconds || 0);
+            if (row.event_type === 'step_reached' || row.event_type === 'dropped') {
+                const existingStep = lead.journey.find(s => s.step_id === row.step_id);
+                if (existingStep) {
+                    // Update existing step with answer and max time
+                    if (row.answer_value) existingStep.answer = row.answer_value;
+                    if ((row.time_spent_seconds || 0) > existingStep.time_spent) {
+                        existingStep.time_spent = row.time_spent_seconds || 0;
+                    }
+                } else {
+                    lead.journey.push({
+                        step_id: row.step_id,
+                        answer: row.answer_value,
+                        time_spent: row.time_spent_seconds || 0,
+                        timestamp: row.created_at
+                    });
+                }
             }
+        }
+        
+        // Recalculate total_time based on merged steps
+        for (const lead of Object.values(leadsMap)) {
+            lead.total_time = lead.journey.reduce((sum, step) => sum + step.time_spent, 0);
         }
         
         // Convert to array and sort by most recent start_time (or those that have steps)
