@@ -15,7 +15,7 @@ const { getDomains, createDomain } = require('./controllers/domainController');
 const { getQuizzes, createQuiz, updateQuiz, deleteQuiz, getQuizById } = require('./controllers/quizController');
 const { handleQuizRouting } = require('./controllers/routerController');
 const { getTasks, createTask, updateTask, deleteTask } = require('./controllers/taskController');
-const { getQuizAnalytics, trackEvent, getAnalyticsOverview } = require('./controllers/analyticsController');
+const { getQuizAnalytics, trackEvent, getAnalyticsOverview, getQuizLeads } = require('./controllers/analyticsController');
 const { getRoundRobin, updateRoundRobin, getNextRoundRobinQuiz } = require('./controllers/roundRobinController');
 
 // --- Rotas API ---
@@ -36,6 +36,7 @@ app.delete('/api/tasks/:id', deleteTask);
 // Analytics
 app.get('/api/analytics/overview', getAnalyticsOverview);
 app.get('/api/analytics/quiz/:quizId', getQuizAnalytics);
+app.get('/api/analytics/quiz/:quizId/leads', getQuizLeads);
 app.post('/api/analytics/track', trackEvent);
 
 // Round Robin A/B Test

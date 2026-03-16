@@ -122,4 +122,66 @@ async function getAnalyticsOverview(req, res) {
     }
 }
 
-module.exports = { getQuizAnalytics, trackEvent, getAnalyticsOverview };
+// GET /api/analytics/quiz/:quizId/leads — Jornada detalhada por lead
+async function getQuizLeads(req, res) {
+    const { quizId } = req.params;
+    try {
+        const db = await getDB();
+        
+        // Fetch all events for this quiz, grouped by visitor
+        const events = await db.all(`
+            SELECT visitor_id, event_type, step_id, answer_value, time_spent_seconds, created_at
+            FROM quiz_events
+            WHERE quiz_id = $1
+            ORDER BY created_at ASC
+        `, [quizId]);
+
+        // Aggregate by visitor_id
+        const leadsMap = {};
+        for (const row of events) {
+            if (!leadsMap[row.visitor_id]) {
+                leadsMap[row.visitor_id] = {
+                    visitor_id: row.visitor_id,
+                    start_time: null,
+                    total_time: 0,
+                    finished: false,
+                    journey: []
+                };
+            }
+            
+            const lead = leadsMap[row.visitor_id];
+            
+            if (row.event_type === 'start' && !lead.start_time) {
+                lead.start_time = row.created_at;
+            }
+            
+            if (row.event_type === 'finished') {
+                lead.finished = true;
+            }
+            
+            if (row.event_type === 'step_reached') {
+                lead.journey.push({
+                    step_id: row.step_id,
+                    answer: row.answer_value,
+                    time_spent: row.time_spent_seconds || 0,
+                    timestamp: row.created_at
+                });
+                lead.total_time += (row.time_spent_seconds || 0);
+            }
+        }
+        
+        // Convert to array and sort by most recent start_time (or those that have steps)
+        const leadsArray = Object.values(leadsMap).sort((a, b) => {
+            const timeA = a.start_time ? new Date(a.start_time).getTime() : 0;
+            const timeB = b.start_time ? new Date(b.start_time).getTime() : 0;
+            return timeB - timeA;
+        });
+
+        res.json(leadsArray);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+
+module.exports = { getQuizAnalytics, trackEvent, getAnalyticsOverview, getQuizLeads };

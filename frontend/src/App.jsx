@@ -544,6 +544,9 @@ function AnalyticsView({ quizzes }) {
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [quizDetail, setQuizDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [leads, setLeads] = useState([]);
+  const [leadsLoading, setLeadsLoading] = useState(false);
+  const [expandedLead, setExpandedLead] = useState(null);
 
   useEffect(() => {
     fetch('/api/analytics/overview')
@@ -555,10 +558,23 @@ function AnalyticsView({ quizzes }) {
   const loadQuizDetail = (quiz) => {
     setSelectedQuiz(quiz);
     setDetailLoading(true);
-    fetch(`/api/analytics/quiz/${quiz.id}`)
-      .then(r => r.json())
-      .then(data => { setQuizDetail(data); setDetailLoading(false); })
-      .catch(() => setDetailLoading(false));
+    setLeadsLoading(true);
+    setExpandedLead(null);
+    
+    Promise.all([
+      fetch(`/api/analytics/quiz/${quiz.id}`).then(r => r.json()),
+      fetch(`/api/analytics/quiz/${quiz.id}/leads`).then(r => r.json())
+    ])
+    .then(([detailData, leadsData]) => {
+      setQuizDetail(detailData);
+      setLeads(leadsData);
+      setDetailLoading(false);
+      setLeadsLoading(false);
+    })
+    .catch(() => {
+      setDetailLoading(false);
+      setLeadsLoading(false);
+    });
   };
 
   const fmt = (s) => {
@@ -638,6 +654,89 @@ function AnalyticsView({ quizzes }) {
                                 {ai === 0 ? '🏆 ' : ''}{a.answer} <span className="opacity-70">({a.count}x)</span>
                               </span>
                             ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            {/* Lista de Leads Individual (Drill-down) */}
+            <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-6">
+              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                <span>🕵️</span> Lista de Leads (Jornada Individual)
+              </h3>
+              <p className="text-xs text-slate-500 mb-5">Clique em um lead para ver o caminho exato que ele percorreu.</p>
+              
+              {leadsLoading ? (
+                 <div className="text-slate-500 text-sm animate-pulse">Carregando leads...</div>
+              ) : leads.length === 0 ? (
+                 <p className="text-slate-500 text-sm italic">Nenhum evento detalhado de lead encontrado.</p>
+              ) : (
+                <div className="space-y-3">
+                  {leads.map((lead, idx) => {
+                    const isExpanded = expandedLead === lead.visitor_id;
+                    const startTime = new Date(lead.start_time).toLocaleString('pt-BR');
+                    
+                    return (
+                      <div key={lead.visitor_id} className="border border-slate-700/50 rounded-xl overflow-hidden bg-slate-800/20">
+                        {/* Header do Accordion */}
+                        <div 
+                          className="flex items-center gap-4 p-4 cursor-pointer hover:bg-slate-800/40 transition-colors"
+                          onClick={() => setExpandedLead(isExpanded ? null : lead.visitor_id)}
+                        >
+                          <div className="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-slate-400 font-bold shrink-0">
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-slate-200 truncate">Lead {lead.visitor_id.substring(0,8)}</p>
+                            <p className="text-xs text-slate-500">{startTime}</p>
+                          </div>
+                          
+                          <div className="flex items-center gap-3 shrink-0">
+                            {lead.finished ? (
+                              <span className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">Concluído</span>
+                            ) : (
+                              <span className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold">Drop-off</span>
+                            )}
+                            <span className="text-xs bg-slate-800 px-2 py-1 rounded text-cyan-400 font-semibold w-16 text-center">
+                              ⏱ {fmt(lead.total_time)}
+                            </span>
+                            <span className="text-slate-500">{isExpanded ? '▲' : '▼'}</span>
+                          </div>
+                        </div>
+
+                        {/* Corpo Expandido - Jornada */}
+                        {isExpanded && (
+                          <div className="p-5 border-t border-slate-700/50 bg-slate-900/50 space-y-4">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Histórico de Passos</h4>
+                            
+                            {lead.journey.length === 0 ? (
+                              <p className="text-xs text-slate-500 italic">Lead visualizou a tela mas não percorreu nenhuma pergunta antes do tempo acabar.</p>
+                            ) : (
+                              <div className="relative border-l-2 border-slate-700 ml-3 space-y-6">
+                                {lead.journey.map((step, sIdx) => (
+                                  <div key={sIdx} className="relative pl-6">
+                                    {/* Bolinha na linha do tempo */}
+                                    <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-indigo-500 ring-4 ring-slate-900"></div>
+                                    
+                                    <div className="flex flex-col gap-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-slate-200">{step.step_id}</span>
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">⏱ {step.time_spent}s parados</span>
+                                      </div>
+                                      
+                                      {step.answer && (
+                                        <div className="text-sm px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-300 inline-block mt-1">
+                                          Selecionou: <span className="font-semibold text-indigo-300">{step.answer}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
