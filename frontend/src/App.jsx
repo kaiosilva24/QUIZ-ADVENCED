@@ -20,12 +20,21 @@ function getVisitorId() {
   return vid;
 }
 
+function stripHtml(html) {
+  if (!html) return null;
+  const tmp = document.createElement('DIV');
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || '').trim() || null;
+}
+
 function trackEvent(quizId, eventType, stepId = null, answerValue = null, timeSpent = 0) {
   const visitorId = getVisitorId();
+  // strip HTML tags from answer text (in case it came from rich-text buttons)
+  const cleanAnswer = stripHtml(answerValue);
   fetch('/api/analytics/track', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ quiz_id: quizId, visitor_id: visitorId, event_type: eventType, step_id: stepId, answer_value: answerValue, time_spent_seconds: timeSpent })
+    body: JSON.stringify({ quiz_id: quizId, visitor_id: visitorId, event_type: eventType, step_id: stepId, answer_value: cleanAnswer, time_spent_seconds: timeSpent })
   }).catch(() => {}); // fire-and-forget
 }
 
@@ -83,14 +92,7 @@ function QuizRouter() {
   }, []);
 
   const loadNewQuiz = () => {
-    let pathname = window.location.pathname;
-    
-    // Suporte para rodar debaixo da rota /quizes via proxy ou Cloudflare
-    if (pathname.startsWith('/quizes')) {
-      pathname = pathname.substring(7); // Remove "/quizes"
-    }
-    
-    const pathSlug = pathname.replace(/^\//, '').replace(/\/.*$/, '');
+    const pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
     const endpoint = pathSlug ? `/api/route/${encodeURIComponent(pathSlug)}` : '/api/roundrobin/next';
     const now = Date.now();
 
@@ -202,24 +204,10 @@ export default function App() {
   const hostname = window.location.hostname;
   const ADMIN_HOSTS = ['localhost', '127.0.0.1'];
   const isAdminHost = ADMIN_HOSTS.some(h => hostname === h || hostname.includes('discloud.app'));
-  const pathname = window.location.pathname;
-  const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/quizes/admin');
+  const isAdminRoute = window.location.pathname.startsWith('/admin');
 
   // Funil para leads: qualquer domínio que não seja o admin
   if (!isAdminHost && !isAdminRoute) {
-    if (!pathname.startsWith('/quizes')) {
-      if (hostname === 'herancasherdadas.org') {
-        window.location.replace('https://www.herancasherdadas.org' + pathname + window.location.search);
-        return null;
-      }
-      // Força a exibição apenas na rota /quizes para não sobrescrever a raiz do domínio
-      return (
-        <div style={{ background: '#020617', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'sans-serif' }}>
-          <h2 style={{ fontSize: 24, marginBottom: 16 }}>Página não encontrada</h2>
-          <p style={{ color: '#94a3b8' }}>Os quizzes agora respondem apenas no caminho /quizes</p>
-        </div>
-      );
-    }
     return <QuizRouter />;
   }
 
