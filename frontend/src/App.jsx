@@ -149,8 +149,21 @@ function QuizRouter() {
       const timeSpent = Math.round((Date.now() - stepStartTime.current) / 1000);
       const quizId = quizData.quiz_id || quizData.id;
       const currentStepObj = steps[currentStep];
+
+      // BULLETPROOF: Se answerText não veio pelo callback, busca o texto do botão
+      // que aponta para nextStepId dentro dos blocos da etapa atual
+      let finalAnswer = answerText;
+      if (!finalAnswer && currentStepObj && currentStepObj.blocks) {
+        const clickedBtn = currentStepObj.blocks.find(
+          b => (b.type === 'button' || b.type === 'arrow_button') && b.nextStep === nextStepId
+        );
+        if (clickedBtn && clickedBtn.text) {
+          finalAnswer = clickedBtn.text;
+        }
+      }
+
       // Track step completado com tempo e última resposta
-      trackEvent(quizId, 'step_reached', currentStepObj?.id, answerText, timeSpent);
+      trackEvent(quizId, 'step_reached', currentStepObj?.id, finalAnswer, timeSpent);
       stepStartTime.current = Date.now();
       setCurrentStep(idx);
       if (idx === steps.length - 1) {
