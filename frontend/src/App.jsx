@@ -625,8 +625,10 @@ function AnalyticsView({ quizzes }) {
 
   const fmt = (s) => {
     if (!s || s === 0) return '0s';
-    if (s < 60) return `${s}s`;
-    return `${Math.floor(s/60)}m ${s%60}s`;
+    if (s < 60) return `${Number(s.toFixed(1))}s`;
+    const m = Math.floor(s / 60);
+    const secs = Number((s % 60).toFixed(1));
+    return `${m}m ${secs > 0 ? secs + 's' : ''}`;
   };
 
   if (loading) return <div className="text-slate-400 p-8 flex justify-center mt-20 animate-pulse">⏳ Carregando métricas globais...</div>;
