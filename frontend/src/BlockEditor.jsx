@@ -806,7 +806,7 @@ function ProgressEditor({ block, onChange }) {
   );
 }
 
-function LeadCaptureEditor({ block, onChange }) {
+function LeadCaptureEditor({ block, onChange, steps, theme }) {
   const all = ['name', 'email', 'phone', 'message'];
   const labels = { name: 'Nome', email: 'E-mail', phone: 'Telefone', message: 'Mensagem' };
   return (
@@ -856,7 +856,7 @@ function LeadCaptureEditor({ block, onChange }) {
   );
 }
 
-function ResultEditor({ block, onChange }) {
+function ResultEditor({ block, onChange, theme }) {
   return (
     <>
       <Section title="Resultado">
