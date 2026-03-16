@@ -837,6 +837,28 @@ function ResultEditor({ block, onChange }) {
             className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none" />
         </Field>
       </Section>
+      <Section title="Carregamento (Opcional)">
+        <Toggle label="Ativar Tela de Carregamento" value={block.enableLoading} onChange={v => onChange({ enableLoading: v })} />
+        {block.enableLoading && (
+          <>
+            <Field label="Estilo da Animação">
+              <Select value={block.loadingStyle || 'spinner'} onChange={v => onChange({ loadingStyle: v })} options={[
+                { value: 'spinner', label: 'Círculo Girando' },
+                { value: 'pulse', label: 'Círculo Pulsando' },
+                { value: 'dots', label: 'Três Pontinhos' },
+              ]} />
+            </Field>
+            <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || theme.accent || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
+            <Field label="Texto de Carregamento"><Input value={block.loadingText} onChange={v => onChange({ loadingText: v })} placeholder="Analisando perfil..." /></Field>
+            <Field label="Texto de Progresso (opcional)"><Input value={block.progressText} onChange={v => onChange({ progressText: v })} placeholder="Gerando plano personalizado..." /></Field>
+            <Field label={`Tempo de Carregamento: ${block.loadingDuration || 3}s`}>
+              <input type="range" min={1} max={15} step={1} value={block.loadingDuration || 3}
+                onChange={e => onChange({ loadingDuration: Number(e.target.value) })}
+                className="w-full accent-indigo-500 cursor-pointer" />
+            </Field>
+          </>
+        )}
+      </Section>
       <Section title="Botão CTA">
         <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
         <Field label="URL do Botão"><Input value={block.buttonUrl} onChange={v => onChange({ buttonUrl: v })} placeholder="https://..." /></Field>

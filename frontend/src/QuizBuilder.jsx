@@ -43,7 +43,7 @@ function createBlock(type) {
     case 'progress':    return { ...base, current: 1, total: 5, color: '#6366f1', bg: '#1e293b', showLabel: true };
     case 'spacer':      return { ...base, height: 40 };
     case 'lead_capture':return { ...base, fields: ['name', 'email', 'phone'], buttonText: 'Quero meu resultado →', buttonBg: '#6366f1' };
-    case 'result':      return { ...base, heading: '🎉 Parabéns!', text: 'Você está pronto para dar o próximo passo.', buttonText: 'Acessar agora →', buttonUrl: '#', buttonBg: '#10b981' };
+    case 'result':      return { ...base, heading: '🎉 Parabéns!', text: 'Você está pronto para dar o próximo passo.', buttonText: 'Acessar agora →', buttonUrl: '#', buttonBg: '#10b981', enableLoading: false, loadingText: 'Analisando suas respostas...', loadingDuration: 3 };
     default:            return base;
   }
 }
