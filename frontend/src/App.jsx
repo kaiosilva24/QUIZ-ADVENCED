@@ -207,10 +207,14 @@ export default function App() {
 
   // Funil para leads: qualquer domínio que não seja o admin
   if (!isAdminHost && !isAdminRoute) {
-    if (pathname === '/' && hostname.includes('herancasherdadas')) {
-      // Se por algum motivo cair na raiz do domínio principal através do nosso app, apenas retorna vazio
-      // para não subscrever o site que o usuário mencionou
-      return null;
+    if (!pathname.startsWith('/quizes')) {
+      // Força a exibição apenas na rota /quizes para não sobrescrever a raiz do domínio
+      return (
+        <div style={{ background: '#020617', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'sans-serif' }}>
+          <h2 style={{ fontSize: 24, marginBottom: 16 }}>Página não encontrada</h2>
+          <p style={{ color: '#94a3b8' }}>Os quizzes agora respondem apenas no caminho /quizes</p>
+        </div>
+      );
     }
     return <QuizRouter />;
   }
