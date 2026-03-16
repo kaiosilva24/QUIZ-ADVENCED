@@ -861,16 +861,23 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
           <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{block.heading || 'Parabéns!'}</p>
           <p style={{ color: defaultText, opacity: .7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{block.text || ''}</p>
           {block.buttonText && (
-            <button style={{
-              background: block.buttonBg || accent,
-              color: '#fff',
-              padding: compact ? '8px 16px' : '14px 28px',
-              borderRadius: 12,
-              border: 'none',
-              fontSize: compact ? 10 : 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}>
+            <button 
+              onClick={() => {
+                if (block.buttonUrl) {
+                  const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
+                  window.location.href = url;
+                }
+              }}
+              style={{
+                background: block.buttonBg || accent,
+                color: '#fff',
+                padding: compact ? '8px 16px' : '14px 28px',
+                borderRadius: 12,
+                border: 'none',
+                fontSize: compact ? 10 : 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}>
               {block.buttonText}
             </button>
           )}
