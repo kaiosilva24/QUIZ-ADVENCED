@@ -563,10 +563,34 @@ function AnalyticsView({ quizzes }) {
     
     Promise.all([
       fetch(`/api/analytics/quiz/${quiz.id}`).then(r => r.json()),
-      fetch(`/api/analytics/quiz/${quiz.id}/leads`).then(r => r.json())
+      fetch(`/api/analytics/quiz/${quiz.id}/leads`).then(r => r.json()),
+      fetch(`/api/quizzes/${quiz.id}`).then(r => r.json())
     ])
-    .then(([detailData, leadsData]) => {
-      setQuizDetail(detailData);
+    .then(([detailData, leadsData, quizData]) => {
+      // Build a map of step_id -> Question text from config
+      const stepNaming = {};
+      try {
+        if (quizData && quizData.config_json) {
+          const config = typeof quizData.config_json === 'string' ? JSON.parse(quizData.config_json) : quizData.config_json;
+          if (config.steps) {
+            config.steps.forEach(s => {
+              const headingBlock = s.blocks?.find(b => b.type === 'heading');
+              if (headingBlock && headingBlock.text) {
+                // Strip HTML from rich text
+                const tmp = document.createElement("DIV");
+                tmp.innerHTML = headingBlock.text;
+                stepNaming[s.id] = (tmp.textContent || tmp.innerText || "").trim() || s.label;
+              } else {
+                stepNaming[s.id] = s.label || s.id;
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse quiz config for analytics naming", e);
+      }
+
+      setQuizDetail({ ...detailData, stepNaming });
       setLeads(leadsData);
       setDetailLoading(false);
       setLeadsLoading(false);
@@ -638,7 +662,10 @@ function AnalyticsView({ quizzes }) {
                       <div key={step.step_id} className="space-y-2">
                         <div className="flex items-center gap-3">
                           <span className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-300 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
-                          <span className="flex-1 text-sm font-medium text-slate-200 font-mono">{step.step_id}</span>
+                          <span className="flex-1 text-sm font-medium text-slate-200 truncate">
+                            <span className="font-mono opacity-50 mr-2">{step.step_id}</span>
+                            {quizDetail.stepNaming?.[step.step_id] || ''}
+                          </span>
                           <span className="text-xs bg-slate-800 px-2 py-1 rounded text-cyan-400 font-semibold">⏱ {fmt(step.avg_time_seconds)}</span>
                           <span className="text-sm font-bold text-white w-16 text-right">{step.visitors} leads</span>
                         </div>
@@ -723,7 +750,10 @@ function AnalyticsView({ quizzes }) {
                                     
                                     <div className="flex flex-col gap-1">
                                       <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-slate-200">{step.step_id}</span>
+                                        <span className="text-sm font-bold text-slate-200">
+                                          <span className="font-mono opacity-50 font-normal mr-2">{step.step_id}</span>
+                                          {quizDetail?.stepNaming?.[step.step_id] || ''}
+                                        </span>
                                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">⏱ {step.time_spent}s parados</span>
                                       </div>
                                       
