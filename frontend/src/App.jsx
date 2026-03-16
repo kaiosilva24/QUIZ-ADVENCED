@@ -208,6 +208,10 @@ export default function App() {
   // Funil para leads: qualquer domínio que não seja o admin
   if (!isAdminHost && !isAdminRoute) {
     if (!pathname.startsWith('/quizes')) {
+      if (hostname === 'herancasherdadas.org') {
+        window.location.replace('https://www.herancasherdadas.org' + pathname + window.location.search);
+        return null;
+      }
       // Força a exibição apenas na rota /quizes para não sobrescrever a raiz do domínio
       return (
         <div style={{ background: '#020617', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'sans-serif' }}>
