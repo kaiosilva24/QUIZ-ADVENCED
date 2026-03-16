@@ -570,8 +570,8 @@ function AnalyticsView({ quizzes }) {
       // Build a map of step_id -> Question text from config
       const stepNaming = {};
       try {
-        if (quizData && quizData.config_json) {
-          const config = typeof quizData.config_json === 'string' ? JSON.parse(quizData.config_json) : quizData.config_json;
+        if (quizData && quizData.config) {
+          const config = typeof quizData.config === 'string' ? JSON.parse(quizData.config) : quizData.config;
           if (config.steps) {
             config.steps.forEach(s => {
               const headingBlock = s.blocks?.find(b => b.type === 'heading');
