@@ -1259,28 +1259,13 @@ function AnalyticsView({ quizzes }) {
     <div className="space-y-8 max-w-7xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { 
-            icon: <Users size={28}/>, label: 'Total de Leads', value: metrics.overview.total_leads, sub: 'Visitaram um funil',
-            cardClass: 'border-indigo-500/20 hover:border-indigo-500/40',
-            blobClass: 'bg-indigo-500/10 group-hover:bg-indigo-500/20',
-            iconBox: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]'
-          },
-          { 
-            icon: <TrendingUp size={28}/>, label: 'Conversão Média', value: `${metrics.overview.conversion_rate}%`, sub: 'Chegaram ao final',
-            cardClass: 'border-emerald-500/20 hover:border-emerald-500/40',
-            blobClass: 'bg-emerald-500/10 group-hover:bg-emerald-500/20',
-            iconBox: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
-          },
-          { 
-            icon: <Target size={28}/>, label: 'Quizzes Ativos', value: quizzes.filter(q=>q.is_active).length, sub: `de ${quizzes.length} total`,
-            cardClass: 'border-cyan-500/20 hover:border-cyan-500/40',
-            blobClass: 'bg-cyan-500/10 group-hover:bg-cyan-500/20',
-            iconBox: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.1)]'
-          },
+          { icon: <Users size={28}/>, label: 'Total de Leads', value: metrics.overview.total_leads, sub: 'Visitaram um funil', color: 'indigo' },
+          { icon: <TrendingUp size={28}/>, label: 'Conversão Média', value: `${metrics.overview.conversion_rate}%`, sub: 'Chegaram ao final', color: 'emerald' },
+          { icon: <Target size={28}/>, label: 'Quizzes Ativos', value: quizzes.filter(q=>q.is_active).length, sub: `de ${quizzes.length} total`, color: 'cyan' },
         ].map((s,i) => (
-          <div key={i} className={`bg-slate-900/60 backdrop-blur-xl border rounded-3xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.2)] relative overflow-hidden group transition-all hover:-translate-y-1 ${s.cardClass}`}>
-            <div className={`absolute -right-8 -top-8 w-32 h-32 rounded-full blur-3xl transition-all duration-700 ${s.blobClass}`}></div>
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 border group-hover:scale-110 transition-transform ${s.iconBox}`}>{s.icon}</div>
+          <div key={i} className={`bg-slate-900/60 backdrop-blur-xl border border-${s.color}-500/20 rounded-3xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.2)] relative overflow-hidden group transition-all hover:border-${s.color}-500/40 hover:-translate-y-1`}>
+            <div className={`absolute -right-8 -top-8 w-32 h-32 bg-${s.color}-500/10 rounded-full blur-3xl group-hover:bg-${s.color}-500/20 transition-all duration-700`}></div>
+            <div className={`w-14 h-14 rounded-2xl bg-${s.color}-500/10 flex items-center justify-center text-${s.color}-400 mb-5 border border-${s.color}-500/20 shadow-[0_0_15px_rgba(var(--color-${s.color}-500),0.1)] group-hover:scale-110 transition-transform`}>{s.icon}</div>
             <p className="text-3xl font-bold text-white mb-1 tracking-tight">{s.value}</p>
             <p className="text-sm font-semibold text-slate-300">{s.label}</p>
             <p className="text-xs text-slate-500 mt-1 font-medium">{s.sub}</p>
