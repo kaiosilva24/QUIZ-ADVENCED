@@ -1057,6 +1057,28 @@ function AnalyticsView({ quizzes }) {
                   <p className="text-slate-500 text-xs italic">Nenhum dado registrado.</p>
                 ) : (
                   <div className="space-y-4">
+                    {/* ── Barra especial: PageView Only (Bounce) ── */}
+                    {quizDetail.pageview_only > 0 && (
+                      <div className="relative group pb-2 border-b border-slate-800/60">
+                        <div className="flex justify-between items-end mb-1">
+                          <span className="text-xs font-medium text-rose-400 truncate pr-4 max-w-[70%] flex items-center gap-1.5">
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+                            <span className="font-mono text-rose-700 mr-1">👁</span>
+                            Só Visualizaram (PageView)
+                          </span>
+                          <span className="text-xs font-mono font-bold text-rose-300">{quizDetail.pageview_only} <span className="text-[10px] text-slate-600 font-sans">leads</span></span>
+                        </div>
+                        <div className="h-1.5 bg-slate-800/80 rounded-full overflow-hidden relative">
+                          <div className="absolute top-0 left-0 h-full rounded-full transition-all"
+                            style={{
+                              width: `${Math.round((quizDetail.pageview_only / quizDetail.total_starts) * 100)}%`,
+                              background: 'linear-gradient(90deg, rgba(244,63,94,0.4), rgba(244,63,94,0.9))'
+                            }}>
+                          </div>
+                        </div>
+                        <p className="text-[9px] text-rose-900 mt-1">Entraram mas saíram sem responder nenhuma pergunta</p>
+                      </div>
+                    )}
                     {quizDetail.step_funnel.map((step, i) => {
                       const maxVisitors = quizDetail.step_funnel[0]?.visitors || 1;
                       const pct = Math.round((step.visitors / maxVisitors) * 100);

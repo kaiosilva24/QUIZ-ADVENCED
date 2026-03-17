@@ -22,7 +22,7 @@ async function getQuizAnalytics(req, res) {
         const db = await getDB();
         
         // Concurrency pra melhorar o ping
-        const [total, finished, stepFunnel, answerCounts] = await Promise.all([
+        const [total, finished, stepFunnel, answerCounts, pageviewOnly] = await Promise.all([
             db.get(
                 "SELECT COUNT(DISTINCT visitor_id) as count FROM quiz_events WHERE quiz_id=$1 AND event_type='start'",
                 [quizId]
@@ -53,6 +53,17 @@ async function getQuizAnalytics(req, res) {
                  GROUP BY step_id, answer_value
                  ORDER BY step_id, count DESC`,
                 [quizId]
+            ),
+            // Leads que só visualizaram (entraram mas não responderam nada)
+            db.get(
+                `SELECT COUNT(DISTINCT visitor_id) as count
+                 FROM quiz_events
+                 WHERE quiz_id=$1 AND event_type='start'
+                   AND visitor_id NOT IN (
+                     SELECT DISTINCT visitor_id FROM quiz_events
+                     WHERE quiz_id=$1 AND event_type='step_reached' AND answer_value IS NOT NULL
+                   )`,
+                [quizId]
             )
         ]);
         
@@ -66,6 +77,7 @@ async function getQuizAnalytics(req, res) {
         res.json({
             total_starts: parseInt(total?.count || 0),
             total_finished: parseInt(finished?.count || 0),
+            pageview_only: parseInt(pageviewOnly?.count || 0),
             conversion_rate: parseInt(total?.count || 0) > 0 ? Math.round((parseInt(finished?.count || 0) / parseInt(total?.count || 0)) * 100) : 0,
             step_funnel: stepFunnel.map(s => ({
                 step_id: s.step_id,
