@@ -3,7 +3,8 @@ import {
   PlusCircle, Edit3, Trash2, ArrowRight, X, ChevronLeft, Save, GripVertical, Settings2, Home, Palette, 
   MessageCircle, BarChart2, MousePointerClick, CheckSquare, AlignLeft, ImageIcon, CheckCircle, 
   Users, TrendingUp, Shuffle, ToggleLeft, ToggleRight, LayoutTemplate, Layers, Eye, EyeOff, Plus, PlayCircle, 
-  Video as VideoIcon, Volume2, Copy, ListTodo, Settings, CheckCircle2, Zap, LogOut, UserPlus, Lock, User
+  Video as VideoIcon, Volume2, Copy, ListTodo, Settings, CheckCircle2, Zap, LogOut, UserPlus, Lock, User,
+  Trophy, Clock, Rocket
 } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
 import QuizPreview from './QuizPreview';
@@ -368,11 +369,15 @@ function AdminPanel({ token, onLogout }) {
   }
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-200 overflow-hidden font-sans">
+    <div className="flex h-screen bg-[#030712] text-slate-200 overflow-hidden font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
+      {/* Sidebar background glow effect */}
+      <div className="fixed top-0 left-0 w-[400px] h-[400px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+      
       {/* Sidebar */}
-      <aside className="w-20 lg:w-64 border-r border-white/5 bg-slate-900/60 backdrop-blur-xl flex flex-col shrink-0">
-        <div className="h-16 flex items-center justify-center lg:justify-start lg:px-6 border-b border-white/5">
-          <img src={logoSrc} alt="Logo" className="h-10 object-contain" />
+      <aside className="w-20 lg:w-64 border-r border-white/5 bg-slate-900/40 backdrop-blur-2xl flex flex-col shrink-0 relative z-10 shadow-[4px_0_24px_rgba(0,0,0,0.2)]">
+        <div className="h-20 flex items-center justify-center lg:justify-start lg:px-7 border-b border-white/5 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent"></div>
+          <img src={logoSrc} alt="Logo" className="max-h-12 w-auto object-contain relative z-10 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
         </div>
         <nav className="flex-1 p-3 space-y-1 mt-2">
           <NavItem icon={<Palette size={20}/>} label="Quizzes & Builder" active={tab==='quizzes'} onClick={()=>setTab('quizzes')}/>
@@ -391,23 +396,33 @@ function AdminPanel({ token, onLogout }) {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 shrink-0 bg-slate-900/30 backdrop-blur-md">
-          <h2 className="text-lg font-semibold text-slate-100">
-            {tab==='quizzes'&&'Quizzes & Builder Visual'}
-            {tab==='abteste'&&'Teste A/B · Round Robin'}
-            {tab==='analytics'&&'Analytics & Métricas'}
-            {tab==='integrations'&&'Integrações & Pixels'}
-            {tab==='tasks'&&'Gestão de Tarefas'}
-            {tab==='settings'&&'Configurações & Usuários'}
-          </h2>
+      <main className="flex-1 flex flex-col overflow-hidden relative z-10">
+        {/* Main background ambient light */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-cyan-500/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+        <div className="absolute bottom-0 right-[20%] w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+        
+        <header className="h-20 border-b border-white/5 flex items-center justify-between px-10 shrink-0 bg-slate-900/40 backdrop-blur-2xl">
           <div className="flex items-center gap-3">
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">PRO</span>
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" className="w-8 h-8 rounded-full border border-slate-700" alt="user"/>
+            <div className="w-1.5 h-6 bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+            <h2 className="text-xl font-bold text-white tracking-tight">
+              {tab==='quizzes'&&'Quizzes & Builder Visual'}
+              {tab==='abteste'&&'Teste A/B · Round Robin'}
+              {tab==='analytics'&&'Analytics & KPIs'}
+              {tab==='integrations'&&'Integrações & Pixels'}
+              {tab==='tasks'&&'Gestão de Tarefas'}
+              {tab==='settings'&&'Configurações de Acesso'}
+            </h2>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="px-3 py-1.5 rounded-lg text-xs font-bold leading-none bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-[0_0_10px_rgba(99,102,241,0.1)]">PRO PLAN</span>
+            <div className="relative group cursor-pointer">
+              <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur group-hover:bg-indigo-500/40 transition-colors"></div>
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Admin" className="relative w-10 h-10 rounded-full border-2 border-slate-700 group-hover:border-indigo-500/50 transition-colors shadow-lg" alt="user"/>
+            </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-10 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
           {tab==='quizzes' && (
             <QuizzesView
               quizzes={quizzes}
@@ -526,10 +541,19 @@ function SettingsView({ token }) {
 // ─── NavItem ──────────────────────────────────────────────────────────────────
 function NavItem({ icon, label, active, onClick }) {
   return (
-    <button onClick={onClick}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left cursor-pointer focus:outline-none ${active ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-[inset_0_0_12px_rgba(99,102,241,0.08)]' : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'}`}>
-      <span className="shrink-0">{icon}</span>
-      <span className="hidden lg:block text-sm font-medium truncate">{label}</span>
+    <button
+      onClick={onClick}
+      className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group cursor-pointer border focus:outline-none overflow-hidden ${
+        active 
+          ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.05)]' 
+          : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/50 hover:border-slate-700/50'
+      }`}
+    >
+      {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.6)]"></div>}
+      <div className={`shrink-0 transition-transform duration-300 ${active ? 'scale-110 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'group-hover:scale-110'}`}>
+        {icon}
+      </div>
+      <span className="hidden lg:block text-sm font-semibold tracking-wide truncate">{label}</span>
     </button>
   );
 }
@@ -999,53 +1023,88 @@ function AnalyticsView({ quizzes }) {
             {/* Resumo do funil */}
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: 'Total de Leads', value: quizDetail.total_starts, color: 'blue', icon: '👥' },
-                { label: 'Concluíram', value: quizDetail.total_finished, color: 'green', icon: '✅' },
-                { label: 'Taxa de Conversão', value: `${quizDetail.conversion_rate}%`, color: 'purple', icon: '📈' },
+                { label: 'Total de Leads', value: quizDetail.total_starts, color: 'indigo', icon: <Users size={28} className="text-indigo-400" />, glow: 'shadow-[0_0_15px_rgba(99,102,241,0.2)]' },
+                { label: 'Concluíram', value: quizDetail.total_finished, color: 'emerald', icon: <Trophy size={28} className="text-emerald-400" />, glow: 'shadow-[0_0_15px_rgba(16,185,129,0.2)]' },
+                { label: 'Conversão', value: `${quizDetail.conversion_rate}%`, color: 'cyan', icon: <Zap size={28} className="text-cyan-400" />, glow: 'shadow-[0_0_15px_rgba(34,211,238,0.2)]' },
               ].map((s, i) => (
-                <div key={i} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-                  <div className="text-2xl mb-2">{s.icon}</div>
-                  <p className="text-3xl font-bold text-white">{s.value}</p>
-                  <p className="text-sm text-slate-400 mt-1">{s.label}</p>
+                <div key={i} className={`relative overflow-hidden bg-slate-900/60 backdrop-blur-xl border border-${s.color}-500/20 rounded-2xl p-6 ${s.glow} transition-all hover:border-${s.color}-500/40 hover:-translate-y-1`}>
+                  <div className={`absolute -right-4 -top-4 w-24 h-24 bg-${s.color}-500/10 rounded-full blur-2xl`}></div>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className={`p-3 bg-slate-950/50 rounded-xl border border-${s.color}-500/10 shrink-0`}>
+                      {s.icon}
+                    </div>
+                    <p className={`text-sm font-semibold tracking-wider text-${s.color}-400/80 uppercase`}>{s.label}</p>
+                  </div>
+                  <p className="text-4xl font-black text-white px-1 tracking-tight">{s.value}</p>
                 </div>
               ))}
             </div>
 
             {/* Funil por Etapa */}
-            <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-6">
-              <h3 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
-                <span>🔽</span> Funil de Etapas (drop-off)
-              </h3>
+            <div className="bg-slate-900/60 backdrop-blur-xl border border-white/5 shadow-2xl rounded-3xl p-8 mt-6">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="p-2.5 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+                  <BarChart2 size={24} className="text-indigo-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white tracking-tight">Performance por Funil (Ranking)</h3>
+                  <p className="text-sm text-slate-400 mt-0.5">Clique em um quiz para ver o detalhamento completo por etapa</p>
+                </div>
+              </div>
               {quizDetail.step_funnel.length === 0 ? (
-                <p className="text-slate-500 text-sm italic">Nenhum dado de etapa registrado ainda.</p>
+                <div className="text-center py-12 border-2 border-dashed border-slate-800 rounded-2xl">
+                  <Rocket size={32} className="text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-500 text-sm font-medium">Nenhum dado de funil registrado ainda.</p>
+                </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {quizDetail.step_funnel.map((step, i) => {
                     const maxVisitors = quizDetail.step_funnel[0]?.visitors || 1;
                     const pct = Math.round((step.visitors / maxVisitors) * 100);
                     const answers = quizDetail.answers_by_step?.[step.step_id] || [];
                     const topAnswer = answers[0];
                     return (
-                      <div key={step.step_id} className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <span className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-300 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
-                          <span className="flex-1 text-sm font-medium text-slate-200 truncate">
-                            <span className="font-mono opacity-50 mr-2">{step.step_id}</span>
-                            {quizDetail.stepNaming?.[step.step_id] || ''}
-                          </span>
-                          <span className="text-xs bg-slate-800 px-2 py-1 rounded text-cyan-400 font-semibold">⏱ {fmt(step.avg_time_seconds)}</span>
-                          <span className="text-sm font-bold text-white w-16 text-right">{step.visitors} leads</span>
+                      <div key={step.step_id} className="group flex flex-col gap-3 p-4 rounded-2xl hover:bg-white/[0.02] transition-colors border border-transparent hover:border-white/5 cursor-default relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[50px] rounded-full group-hover:bg-indigo-500/10 transition-colors"></div>
+                        <div className="flex items-center gap-4 relative z-10 w-full">
+                          <div className="w-8 h-8 rounded-full bg-slate-800/80 border border-slate-700/50 text-slate-300 text-sm flex items-center justify-center font-bold shrink-0 shadow-inner">
+                            {i+1}
+                          </div>
+                          
+                          <div className="flex-1 min-w-0 pr-4">
+                            <h4 className="text-base font-semibold text-slate-200 truncate flex items-center gap-2">
+                              <span className="font-mono text-xs text-indigo-400/70 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">{step.step_id}</span>
+                              {quizDetail.stepNaming?.[step.step_id] || ''}
+                            </h4>
+                          </div>
+
+                          <div className="flex items-center gap-6 shrink-0 ml-auto">
+                            <div className="flex items-center gap-2 text-xs bg-slate-950/50 px-3 py-1.5 rounded-lg border border-slate-800 text-cyan-400 font-semibold shadow-inner">
+                              <Clock size={14} className="opacity-70" />
+                              {fmt(step.avg_time_seconds)}
+                            </div>
+                            
+                            <div className="text-right w-24">
+                              <span className="text-sm font-bold text-white bg-slate-800/80 px-3 py-1 rounded-md border border-slate-700">{step.visitors} leads</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 w-40 justify-end">
+                              <span className="text-sm font-bold text-indigo-300 w-10 text-right">{pct}%</span>
+                              <div className="w-24 h-2 bg-slate-800 rounded-full overflow-hidden shadow-inner flex-shrink-0">
+                                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400 origin-left transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        {/* Barra de drop-off */}
-                        <div className="h-2 bg-slate-800 rounded-full overflow-hidden ml-9">
-                          <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all" style={{ width: `${pct}%` }} />
-                        </div>
+
                         {/* Resposta mais popular desta etapa */}
                         {topAnswer && (
-                          <div className="ml-9 flex flex-wrap gap-2 pt-1">
+                          <div className="ml-12 flex flex-wrap gap-2 pt-1 relative z-10 w-[calc(100%-3rem)]">
                             {answers.slice(0, 4).map((a, ai) => (
-                              <span key={ai} className={`text-xs px-2 py-0.5 rounded-full font-medium ${ai === 0 ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-slate-800 text-slate-400'}`}>
-                                {ai === 0 ? '🏆 ' : ''}{a.answer} <span className="opacity-70">({a.count}x)</span>
+                              <span key={ai} className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md font-medium whitespace-nowrap overflow-hidden text-ellipsis ${ai === 0 ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shadow-[0_0_8px_rgba(99,102,241,0.15)] ring-1 ring-white/5' : 'bg-slate-800/50 border border-slate-700/50 text-slate-400'}`}>
+                                {ai === 0 && <Trophy size={10} className="text-indigo-400" />}
+                                <span className="truncate max-w-[150px]">{a.answer}</span>
+                                <span className="opacity-60 bg-black/20 px-1 rounded ml-1">{a.count}x</span>
                               </span>
                             ))}
                           </div>
@@ -1057,81 +1116,126 @@ function AnalyticsView({ quizzes }) {
               )}
             </div>
             {/* Lista de Leads Individual (Drill-down) */}
-            <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-6">
-              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <span>🕵️</span> Lista de Leads (Jornada Individual)
-              </h3>
-              <p className="text-xs text-slate-500 mb-5">Clique em um lead para ver o caminho exato que ele percorreu.</p>
+            <div className="bg-slate-900/60 backdrop-blur-xl border border-white/5 shadow-2xl rounded-3xl p-8 mt-6">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                    <UserCircle2 size={24} className="text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white tracking-tight">Lista de Leads (Jornada)</h3>
+                    <p className="text-sm text-slate-400 mt-0.5">Clique em um lead para ver o caminho exato que ele percorreu</p>
+                  </div>
+                </div>
+              </div>
               
               {leadsLoading ? (
-                 <div className="text-slate-500 text-sm animate-pulse">Carregando leads...</div>
+                 <div className="flex justify-center py-12">
+                   <div className="w-8 h-8 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin"></div>
+                 </div>
               ) : leads.length === 0 ? (
-                 <p className="text-slate-500 text-sm italic">Nenhum evento detalhado de lead encontrado.</p>
+                 <div className="text-center py-12 border-2 border-dashed border-slate-800 rounded-2xl">
+                   <Users size={32} className="text-slate-600 mx-auto mb-3" />
+                   <p className="text-slate-500 text-sm font-medium">Nenhum evento detalhado de lead encontrado.</p>
+                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {leads.map((lead, idx) => {
                     const isExpanded = expandedLead === lead.visitor_id;
                     const startTime = new Date(lead.start_time).toLocaleString('pt-BR');
                     
                     return (
-                      <div key={lead.visitor_id} className="border border-slate-700/50 rounded-xl overflow-hidden bg-slate-800/20">
+                      <div key={lead.visitor_id} className={`border ${isExpanded ? 'border-indigo-500/30 bg-slate-800/40 shadow-xl' : 'border-slate-800/80 bg-slate-900/50 hover:bg-slate-800/40 hover:border-white/10'} rounded-2xl overflow-hidden transition-all duration-300`}>
                         {/* Header do Accordion */}
                         <div 
-                          className="flex items-center gap-4 p-4 cursor-pointer hover:bg-slate-800/40 transition-colors"
+                          className="flex items-center gap-5 p-5 cursor-pointer"
                           onClick={() => setExpandedLead(isExpanded ? null : lead.visitor_id)}
                         >
-                          <div className="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-slate-400 font-bold shrink-0">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shrink-0 transition-colors ${isExpanded ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' : 'bg-slate-800 text-slate-400'}`}>
                             {idx + 1}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-slate-200 truncate">Lead {lead.visitor_id.substring(0,8)}</p>
-                            <p className="text-xs text-slate-500">{startTime}</p>
+                            <p className="text-base font-bold text-slate-200 truncate group-hover:text-white transition-colors">
+                              Lead <span className="font-mono text-indigo-300">{lead.visitor_id.substring(0,8)}</span>
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5"><Calendar size={12}/> {startTime}</p>
                           </div>
                           
-                          <div className="flex items-center gap-3 shrink-0">
+                          <div className="flex items-center gap-4 shrink-0">
                             {lead.finished ? (
-                              <span className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">Concluído</span>
+                              <span className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20 shadow-inner">
+                                <CheckCircle2Icon size={14} /> Concluído
+                              </span>
                             ) : (
-                              <span className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold">Drop-off</span>
+                              <span className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-400 font-bold border border-amber-500/20 shadow-inner">
+                                <Flag size={14} /> Drop-off
+                              </span>
                             )}
-                            <span className="text-xs bg-slate-800 px-2 py-1 rounded text-cyan-400 font-semibold w-16 text-center">
-                              ⏱ {fmt(lead.total_time)}
-                            </span>
-                            <span className="text-slate-500">{isExpanded ? '▲' : '▼'}</span>
+                            <div className="flex items-center gap-2 text-xs bg-slate-950/50 px-3 py-1.5 rounded-lg border border-slate-800 text-cyan-400 font-semibold shadow-inner w-24 justify-center">
+                              <Clock size={14} className="opacity-70" />
+                              {fmt(lead.total_time)}
+                            </div>
+                            <div className={`p-1.5 rounded-lg transition-colors ${isExpanded ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'}`}>
+                              {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                            </div>
                           </div>
                         </div>
-
+                        
                         {/* Corpo Expandido - Jornada */}
                         {isExpanded && (
-                          <div className="p-5 border-t border-slate-700/50 bg-slate-900/50 space-y-4">
-                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Histórico de Passos</h4>
+                          <div className="p-6 border-t border-indigo-500/10 bg-slate-950/50 space-y-4">
+                            <h4 className="text-xs font-bold text-indigo-400/80 uppercase tracking-wider mb-4 flex items-center gap-2"><Layers size={14} /> Histórico da Jornada</h4>
                             
-                            {lead.journey.length === 0 ? (
-                              <p className="text-xs text-slate-500 italic">Lead visualizou a tela mas não percorreu nenhuma pergunta antes do tempo acabar.</p>
+                            {(!lead.events || lead.events.length === 0) ? (
+                              <div className="bg-slate-900/80 rounded-xl p-6 text-center border border-white/5">
+                                <p className="text-sm text-slate-500 italic">Lead visualizou a tela mas não percorreu nenhuma pergunta antes do tempo acabar.</p>
+                              </div>
                             ) : (
-                              <div className="relative border-l-2 border-slate-700 ml-3 space-y-6">
-                                {lead.journey.map((step, sIdx) => (
-                                  <div key={sIdx} className="relative pl-6">
-                                    {/* Bolinha na linha do tempo */}
-                                    <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-indigo-500 ring-4 ring-slate-900"></div>
-                                    
-                                    <div className="flex flex-col gap-1">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-slate-200">
-                                          <span className="font-mono opacity-50 font-normal mr-2">{step.step_id}</span>
-                                          {quizDetail?.stepNaming?.[step.step_id] || ''}
-                                        </span>
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">⏱ {step.time_spent}s parados</span>
-                                      </div>
+                              <div className="relative border-l border-indigo-500/30 ml-[23px] space-y-6 pb-2">
+                                {lead.events.map((ev, sIdx) => {
+                                  const evTime = new Date(ev.timestamp).toLocaleTimeString('pt-BR');
+                                  return (
+                                    <div key={sIdx} className="relative pl-8 group">
+                                      {/* Timeline Glowing Dot */}
+                                      <div className="absolute -left-[5px] top-1.5 w-[9px] h-[9px] rounded-full bg-slate-950 border-2 border-indigo-400 group-hover:scale-125 group-hover:bg-indigo-400 transition-all shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
                                       
-                                      {step.answer && (
-                                        <div className="text-sm px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-300 inline-block mt-1">
-                                          Selecionou: <span className="font-semibold text-indigo-300">{step.answer}</span>
+                                      <div className="bg-slate-900/80 rounded-xl border border-white/5 p-4 shadow-sm group-hover:border-indigo-500/20 transition-colors relative top-[-6px]">
+                                        <div className="flex items-center justify-between mb-3">
+                                          <p className="text-[13px] font-bold text-slate-300 flex items-center gap-2">
+                                            <span className="font-mono text-xs text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">{ev.step_id}</span>
+                                            {quizDetail?.stepNaming?.[ev.step_id] || ''}
+                                          </p>
+                                          <span className="text-[11px] font-mono text-slate-500 bg-slate-950/50 px-2 py-1 rounded-md border border-slate-800">{evTime}</span>
                                         </div>
-                                      )}
+                                        
+                                        {ev.answers && Object.keys(ev.answers).length > 0 && (
+                                          <div className="bg-slate-950/80 rounded-lg p-3 border border-slate-800/80 mt-2 space-y-2">
+                                            {Object.entries(ev.answers).map(([qId, ansContent], i) => (
+                                              <div key={i} className="text-sm">
+                                                <div className="text-[10px] font-bold text-slate-500 mb-1 tracking-wider uppercase">Selecionou</div>
+                                                <div className="flex items-start gap-2">
+                                                  <Trophy size={14} className="text-indigo-400/70 mt-0.5 shrink-0" />
+                                                  <span className="font-medium text-indigo-200">{String(ansContent)}</span>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                
+                                {lead.finished && (
+                                  <div className="relative pl-8 mt-8">
+                                    <div className="absolute -left-[14px] top-1 w-7 h-7 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                                      <CheckCircle2Icon size={14} className="text-emerald-400" />
+                                    </div>
+                                    <div className="bg-emerald-500/5 rounded-xl border border-emerald-500/20 p-4 shadow-[0_0_15px_rgba(16,185,129,0.05)]">
+                                      <p className="text-emerald-400 font-bold text-sm tracking-wide">FINALIZOU O QUIZ E VIROU LEAD 🏆</p>
                                     </div>
                                   </div>
-                                ))}
+                                )}
                               </div>
                             )}
                           </div>
@@ -1152,16 +1256,16 @@ function AnalyticsView({ quizzes }) {
 
   // ─── Overview Geral ───────────────────────────────────────────────────────────
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div className="space-y-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { icon: <Users size={22}/>, label: 'Total de Leads', value: metrics.overview.total_leads, sub: 'Que iniciaram o funil' },
-          { icon: <TrendingUp size={22}/>, label: 'Taxa de Conversão', value: `${metrics.overview.conversion_rate}%`, sub: 'Chegaram ao final' },
-          { icon: <CheckCircle2 size={22}/>, label: 'Quizzes Ativos', value: quizzes.filter(q=>q.is_active).length, sub: `de ${quizzes.length} total` },
+          { icon: <Users size={28}/>, label: 'Total de Leads', value: metrics.overview.total_leads, sub: 'Visitaram um funil', color: 'indigo' },
+          { icon: <TrendingUp size={28}/>, label: 'Conversão Média', value: `${metrics.overview.conversion_rate}%`, sub: 'Chegaram ao final', color: 'emerald' },
+          { icon: <Target size={28}/>, label: 'Quizzes Ativos', value: quizzes.filter(q=>q.is_active).length, sub: `de ${quizzes.length} total`, color: 'cyan' },
         ].map((s,i) => (
-          <div key={i} className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-            <div className="absolute -right-6 -top-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all duration-500"></div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4 shadow-[0_0_15px_rgba(99,102,241,0.2)]">{s.icon}</div>
+          <div key={i} className={`bg-slate-900/60 backdrop-blur-xl border border-${s.color}-500/20 rounded-3xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.2)] relative overflow-hidden group transition-all hover:border-${s.color}-500/40 hover:-translate-y-1`}>
+            <div className={`absolute -right-8 -top-8 w-32 h-32 bg-${s.color}-500/10 rounded-full blur-3xl group-hover:bg-${s.color}-500/20 transition-all duration-700`}></div>
+            <div className={`w-14 h-14 rounded-2xl bg-${s.color}-500/10 flex items-center justify-center text-${s.color}-400 mb-5 border border-${s.color}-500/20 shadow-[0_0_15px_rgba(var(--color-${s.color}-500),0.1)] group-hover:scale-110 transition-transform`}>{s.icon}</div>
             <p className="text-3xl font-bold text-white mb-1 tracking-tight">{s.value}</p>
             <p className="text-sm font-semibold text-slate-300">{s.label}</p>
             <p className="text-xs text-slate-500 mt-1 font-medium">{s.sub}</p>
@@ -1169,30 +1273,67 @@ function AnalyticsView({ quizzes }) {
         ))}
       </div>
 
-      <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-7 shadow-2xl">
-        <h3 className="text-xl font-bold text-white mb-1 tracking-tight flex items-center gap-3">
-          <BarChart2 className="w-6 h-6 text-indigo-400" />
-          Performance por Funil (Ranking)
-        </h3>
-        <p className="text-xs text-slate-500 mb-6">Clique em um quiz para ver o detalhamento completo por etapa</p>
-        {metrics.quizzes.map((q, i) => {
-          const rate = q.conversion_rate;
-          return (
-            <div key={q.id} onClick={() => loadQuizDetail(q)}
-              className="flex items-center gap-4 py-4 border-b border-slate-700/30 last:border-0 hover:bg-white/5 transition-colors px-3 -mx-3 rounded-xl cursor-pointer group">
-              <span className="text-slate-500 font-bold text-sm w-4">{i+1}</span>
-              <span className="flex-1 text-sm font-semibold text-slate-100 truncate group-hover:text-indigo-300 transition-colors">{q.title}</span>
-              <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-cyan-400 w-28 text-center">⏱ {fmt(q.avg_time_seconds)}</span>
-              <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 w-20 text-center">{q.starts} leads</span>
-              <span className="text-sm font-bold text-indigo-400 w-12 text-right">{rate}%</span>
-              <div className="w-24 h-2 bg-slate-800 rounded-full overflow-hidden shrink-0 shadow-inner">
-                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{width: `${rate}%`}} />
+      <div className="bg-slate-900/60 backdrop-blur-xl border border-white/5 shadow-2xl rounded-3xl p-8">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="p-2.5 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+            <BarChart2 size={24} className="text-indigo-400" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-white tracking-tight">Performance por Funil (Ranking)</h3>
+            <p className="text-sm text-slate-400 mt-0.5">Clique em um quiz para ver o detalhamento completo por etapa</p>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          {metrics.quizzes.map((q, i) => {
+            const rate = q.conversion_rate;
+            return (
+              <div key={q.id} onClick={() => loadQuizDetail(q)}
+                className="group flex items-center gap-4 py-4 px-5 bg-slate-800/20 border border-transparent hover:border-white/5 hover:bg-slate-800/40 rounded-2xl cursor-pointer transition-all relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[50px] rounded-full group-hover:bg-indigo-500/10 transition-colors"></div>
+                
+                <div className="w-8 h-8 rounded-full bg-slate-800/80 border border-slate-700/50 text-slate-300 text-sm flex items-center justify-center font-bold shrink-0 shadow-inner relative z-10">
+                  {i+1}
+                </div>
+                
+                <div className="flex-1 min-w-0 pr-4 relative z-10">
+                  <h4 className="text-base font-semibold text-slate-200 truncate group-hover:text-white transition-colors">
+                    {q.title}
+                  </h4>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5 opacity-70">/ {q.id}</p>
+                </div>
+                
+                <div className="flex items-center gap-6 shrink-0 relative z-10 ml-auto">
+                  <div className="flex items-center gap-2 text-xs bg-slate-950/50 px-3 py-1.5 rounded-lg border border-slate-800 text-cyan-400 font-semibold shadow-inner hidden md:flex">
+                    <Clock size={14} className="opacity-70" />
+                    {fmt(q.avg_time_seconds)}
+                  </div>
+                  
+                  <div className="text-right w-24">
+                    <span className="text-sm font-bold text-white bg-slate-800/80 px-3 py-1 rounded-md border border-slate-700">{q.starts} leads</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 w-40 justify-end">
+                    <span className="text-sm font-bold text-indigo-300 w-10 text-right">{rate}%</span>
+                    <div className="w-24 h-2 bg-slate-800 rounded-full overflow-hidden shadow-inner flex-shrink-0">
+                      <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400 origin-left transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]" style={{width: `${rate}%`}} />
+                    </div>
+                  </div>
+                  
+                  <span className="w-6 text-slate-600 group-hover:text-indigo-400 transition-colors text-sm shrink-0 flex justify-end">
+                    <MoveRight size={18} />
+                  </span>
+                </div>
               </div>
-              <span className="text-slate-600 group-hover:text-slate-300 transition-colors text-sm shrink-0">→</span>
-            </div>
-          );
-        })}
-        {metrics.quizzes.length === 0 && <p className="text-slate-500 text-sm italic">Nenhum evento registrado ainda. Rode o quiz para ver métricas.</p>}
+            );
+          })}
+        </div>
+        {metrics.quizzes.length === 0 && (
+          <div className="text-center py-12 border-2 border-dashed border-slate-800 rounded-2xl">
+            <Rocket size={32} className="text-slate-600 mx-auto mb-3" />
+            <p className="text-slate-500 text-sm font-medium">Nenhum evento registrado ainda. Rode o quiz para ver métricas.</p>
+          </div>
+        )}
       </div>
     </div>
   );
