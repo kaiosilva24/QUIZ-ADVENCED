@@ -300,7 +300,7 @@ function LoginPage({ onLogin }) {
       <div style={{ width: '100%', maxWidth: 400, padding: '0 16px' }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <img src={logoSrc} alt="Logo" style={{ height: 54, filter: 'brightness(0) invert(1)', marginBottom: 12 }} />
+          <img src={logoSrc} alt="Logo" style={{ height: 64, objectFit: 'contain', marginBottom: 12 }} />
         </div>
 
         <form onSubmit={handleSubmit} style={{ background: 'rgba(30,27,75,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 20, padding: '40px 36px' }}>
@@ -372,7 +372,7 @@ function AdminPanel({ token, onLogout }) {
       {/* Sidebar */}
       <aside className="w-20 lg:w-64 border-r border-white/5 bg-slate-900/60 backdrop-blur-xl flex flex-col shrink-0">
         <div className="h-16 flex items-center justify-center lg:justify-start lg:px-6 border-b border-white/5">
-          <img src={logoSrc} alt="Logo" className="h-8" style={{ filter: 'brightness(0) invert(1)' }} />
+          <img src={logoSrc} alt="Logo" className="h-10 object-contain" />
         </div>
         <nav className="flex-1 p-3 space-y-1 mt-2">
           <NavItem icon={<Palette size={20}/>} label="Quizzes & Builder" active={tab==='quizzes'} onClick={()=>setTab('quizzes')}/>

@@ -74,10 +74,16 @@ async function runMigrations(db) {
     const adminSalt = 'defaultsalt00000';
     const defHashBuf = await new Promise((res, rej) => crypto.scrypt('admin123', adminSalt, 64, (e, b) => e ? rej(e) : res(b)));
     const defHash = adminSalt + ':' + defHashBuf.toString('hex');
-    await db.query(
-        `INSERT INTO users (username, email, password_hash, role) VALUES ($1,$2,$3,$4) ON CONFLICT (username) DO NOTHING`,
-        ['admin','admin@system.local', defHash, 'admin']
-    ).catch(()=>{});
+    
+    // Se existir usuário com id=1 mas sem username, atualiza ele. Senão, insere.
+    const hasAdmin = await db.query(`SELECT id FROM users WHERE username = 'admin'`);
+    if (!hasAdmin.rows || hasAdmin.rows.length === 0) {
+        await db.query(
+            `INSERT INTO users (id, username, email, password_hash, role) VALUES (1, 'admin', 'admin@system.local', $1, 'admin') 
+             ON CONFLICT (id) DO UPDATE SET username = 'admin', password_hash = $1, role = 'admin'`,
+            [defHash]
+        ).catch((e)=>console.error('Erro ao seedar admin:', e));
+    }
 
 
     // Tabela: Domains
