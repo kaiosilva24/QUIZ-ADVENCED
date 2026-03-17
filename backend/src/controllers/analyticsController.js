@@ -21,37 +21,36 @@ async function getQuizAnalytics(req, res) {
     try {
         const db = await getDB();
         
-        const total = await db.get(
-            "SELECT COUNT(DISTINCT visitor_id) as count FROM quiz_events WHERE quiz_id=$1 AND event_type='start'",
-            [quizId]
-        );
-        const finished = await db.get(
-            "SELECT COUNT(DISTINCT visitor_id) as count FROM quiz_events WHERE quiz_id=$1 AND event_type='finished'",
-            [quizId]
-        );
-        
-        // Drop-off por etapa (quantos chegaram até cada step)
-        const stepFunnel = await db.all(
-            `SELECT step_id,
-                COUNT(DISTINCT visitor_id) as visitors,
-                ROUND(AVG(time_spent_seconds), 1) as avg_time_seconds
-             FROM quiz_events
-             WHERE quiz_id=$1 AND event_type='step_reached'
-             GROUP BY step_id
-             ORDER BY visitors DESC`,
-            [quizId]
-        );
-
-        // Contagem de respostas por etapa (qual opção foi mais selecionada)
-        const answerCounts = await db.all(
-            `SELECT step_id, answer_value,
-                COUNT(*) as count
-             FROM quiz_events
-             WHERE quiz_id=$1 AND event_type='step_reached' AND answer_value IS NOT NULL
-             GROUP BY step_id, answer_value
-             ORDER BY step_id, count DESC`,
-            [quizId]
-        );
+        // Concurrency pra melhorar o ping
+        const [total, finished, stepFunnel, answerCounts] = await Promise.all([
+            db.get(
+                "SELECT COUNT(DISTINCT visitor_id) as count FROM quiz_events WHERE quiz_id=$1 AND event_type='start'",
+                [quizId]
+            ),
+            db.get(
+                "SELECT COUNT(DISTINCT visitor_id) as count FROM quiz_events WHERE quiz_id=$1 AND event_type='finished'",
+                [quizId]
+            ),
+            db.all(
+                `SELECT step_id,
+                    COUNT(DISTINCT visitor_id) as visitors,
+                    ROUND(AVG(time_spent_seconds), 1) as avg_time_seconds
+                 FROM quiz_events
+                 WHERE quiz_id=$1 AND event_type='step_reached'
+                 GROUP BY step_id
+                 ORDER BY visitors DESC`,
+                [quizId]
+            ),
+            db.all(
+                `SELECT step_id, answer_value,
+                    COUNT(*) as count
+                 FROM quiz_events
+                 WHERE quiz_id=$1 AND event_type='step_reached' AND answer_value IS NOT NULL
+                 GROUP BY step_id, answer_value
+                 ORDER BY step_id, count DESC`,
+                [quizId]
+            )
+        ]);
         
         // Agrupa respostas por etapa
         const answersByStep = {};
@@ -81,25 +80,25 @@ async function getAnalyticsOverview(req, res) {
     try {
         const db = await getDB();
 
-        // Global stats
-        const globalStarts = await db.get("SELECT COUNT(DISTINCT visitor_id) as count FROM quiz_events WHERE event_type='start'");
-        const globalFinishes = await db.get("SELECT COUNT(DISTINCT visitor_id) as count FROM quiz_events WHERE event_type='finished'");
+        // Rodar as 3 queries em paralelo com Promise.all para evitar gargalo de ping com servidor
+        const [globalStarts, globalFinishes, quizzesStats] = await Promise.all([
+             db.get("SELECT COUNT(DISTINCT visitor_id) as count FROM quiz_events WHERE event_type='start'"),
+             db.get("SELECT COUNT(DISTINCT visitor_id) as count FROM quiz_events WHERE event_type='finished'"),
+             db.all(`
+                 SELECT q.id, q.title, q.slug,
+                        COUNT(DISTINCT CASE WHEN e.event_type = 'start' THEN e.visitor_id END) as starts,
+                        COUNT(DISTINCT CASE WHEN e.event_type = 'finished' THEN e.visitor_id END) as finishes,
+                        ROUND(AVG(CASE WHEN e.event_type = 'step_reached' THEN e.time_spent_seconds END), 1) as avg_time
+                 FROM quizzes q
+                 LEFT JOIN quiz_events e ON q.id = e.quiz_id
+                 GROUP BY q.id, q.title, q.slug
+                 ORDER BY starts DESC
+             `)
+        ]);
 
         const total_leads = parseInt(globalStarts?.count || 0);
         const total_finished = parseInt(globalFinishes?.count || 0);
         const global_conversion_rate = total_leads > 0 ? Math.round((total_finished / total_leads) * 100) : 0;
-
-        // Stats por quiz
-        const quizzesStats = await db.all(`
-            SELECT q.id, q.title, q.slug,
-                   COUNT(DISTINCT CASE WHEN e.event_type = 'start' THEN e.visitor_id END) as starts,
-                   COUNT(DISTINCT CASE WHEN e.event_type = 'finished' THEN e.visitor_id END) as finishes,
-                   ROUND(AVG(CASE WHEN e.event_type = 'step_reached' THEN e.time_spent_seconds END), 1) as avg_time
-            FROM quizzes q
-            LEFT JOIN quiz_events e ON q.id = e.quiz_id
-            GROUP BY q.id, q.title, q.slug
-            ORDER BY starts DESC
-        `);
 
         res.json({
             overview: {

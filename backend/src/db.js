@@ -14,6 +14,7 @@ async function getDB() {
             database: 'postgres',
             user: 'postgres.eptmqlnqdaljyxdfcuxg',
             password: dbPassword,
+            min: 5,
             ssl: { rejectUnauthorized: false }
         });
 
@@ -125,6 +126,11 @@ async function runMigrations(db) {
     `);
     // Garantir coluna time_spent_seconds em bancos existentes
     await db.query(`ALTER TABLE quiz_events ADD COLUMN IF NOT EXISTS time_spent_seconds INTEGER DEFAULT 0`);
+
+    // Performance Indexes for Analytics queries
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_quiz_events_quiz_id ON quiz_events(quiz_id)`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_quiz_events_event_type ON quiz_events(event_type)`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_quiz_events_visitor_id ON quiz_events(visitor_id)`);
 
     // Tabela: Team Tasks
     await db.query(`

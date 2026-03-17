@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  PlusCircle, Edit3, Trash2, ArrowRight, X, ChevronLeft, Save, GripVertical, Settings2, Home, Palette, 
+  PlusCircle, Edit3, Trash2, ArrowRight, X, ChevronLeft, ChevronDown, Save, GripVertical, Settings2, Home, Palette, 
   MessageCircle, BarChart2, MousePointerClick, CheckSquare, AlignLeft, ImageIcon, CheckCircle, 
   Users, TrendingUp, Shuffle, ToggleLeft, ToggleRight, LayoutTemplate, Layers, Eye, EyeOff, Plus, PlayCircle, 
   Video as VideoIcon, Volume2, Copy, ListTodo, Settings, CheckCircle2, Zap, LogOut, UserPlus, Lock, User
@@ -548,19 +548,35 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
   const handleDuplicate = async (quiz) => {
     if (!confirm('Deseja duplicar este quiz?')) return;
     try {
-      await fetch(`${API}/quizzes`, {
+      const res = await fetch(`/api/quizzes/${quiz.id}`);
+      if (!res.ok) throw new Error('Falha ao obter dados completos');
+      const data = await res.json();
+      await fetch('/api/quizzes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: quiz.title + ' (Cópia)',
-          config_json: quiz.config_json
-          // slug será gerado automaticamente pelo backend baseado no título novo
+          title: data.title + ' (Cópia)',
+          config_json: JSON.stringify(data.config || {})
         })
       });
       fetchQuizzes();
     } catch (e) {
       console.error('Erro ao duplicar:', e);
       alert('Erro ao duplicar o quiz.');
+    }
+  };
+
+  const handleEdit = async (quiz) => {
+    try {
+      const res = await fetch(`/api/quizzes/${quiz.id}`);
+      if (!res.ok) throw new Error('Falha');
+      const data = await res.json();
+      onEdit({
+        ...quiz,
+        config_json: JSON.stringify(data.config || {})
+      });
+    } catch {
+      alert('Erro ao carregar os dados do quiz para edição.');
     }
   };
 
@@ -593,7 +609,7 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
             <div key={q.id} className="group relative bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 hover:border-indigo-500/40 transition-all overflow-hidden">
               <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-indigo-500/5 group-hover:bg-indigo-500/15 blur-xl transition-all"/>
               <div className="absolute top-3 right-3 flex gap-2">
-                <button onClick={() => onEdit(q)} aria-label="Editar" className="w-7 h-7 bg-slate-700 hover:bg-indigo-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Edit3 size={13}/></button>
+                <button onClick={() => handleEdit(q)} aria-label="Editar" className="w-7 h-7 bg-slate-700 hover:bg-indigo-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Edit3 size={13}/></button>
                 <button onClick={() => handleDuplicate(q)} aria-label="Duplicar" className="w-7 h-7 bg-slate-700 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Copy size={13}/></button>
                 <button onClick={() => handleDelete(q.id)} aria-label="Deletar" className="w-7 h-7 bg-slate-700 hover:bg-red-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Trash2 size={13}/></button>
               </div>
@@ -601,7 +617,7 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
                 {['🧠','🎯','🔥','💡','⚡'][i % 5]}
               </div>
               <h4 className="font-semibold text-slate-100 mb-1">{q.title}</h4>
-              <p className="text-xs text-slate-500 mb-3">{stepCount} etapa{stepCount !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-slate-500 mb-3">{q.slug || ''}</p>
 
               {/* Link compartilhável */}
               <div className="flex items-center gap-2 p-2.5 bg-slate-900/60 rounded-xl border border-slate-700/50 mb-4">
@@ -911,6 +927,7 @@ function AnalyticsView({ quizzes }) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [leads, setLeads] = useState([]);
   const [leadsLoading, setLeadsLoading] = useState(false);
+  const [expandedLeads, setExpandedLeads] = useState({});
 
   useEffect(() => {
     fetch('/api/analytics/overview')
@@ -1079,13 +1096,14 @@ function AnalyticsView({ quizzes }) {
                     // Calculando taxa de abandono (drop-off) exata NESTA etapa:
                     // Drop-off = (visitors da etapa autal) - (visitors da próxima etapa)
                     const nextStep = quizDetail.step_funnel[i+1];
-                    const dropOffCount = nextStep ? (step.visitors - nextStep.visitors) : (step.visitors - quizDetail.total_finished);
+                    let rawDrop = nextStep ? (step.visitors - nextStep.visitors) : (step.visitors - quizDetail.total_finished);
+                    const dropOffCount = Math.max(0, rawDrop); // previne numero negativo caso leads pulem passos
                     const dropRate = step.visitors > 0 ? (dropOffCount / step.visitors) : 0;
                     
                     // Altura da barra baseada no número absoluto de desistências
                     const maxDrop = Math.max(...quizDetail.step_funnel.map((s, idx) => {
                       const ns = quizDetail.step_funnel[idx+1];
-                      return ns ? (s.visitors - ns.visitors) : (s.visitors - quizDetail.total_finished);
+                      return Math.max(0, ns ? (s.visitors - ns.visitors) : (s.visitors - quizDetail.total_finished));
                     }));
                     const hPct = maxDrop > 0 ? (dropOffCount / maxDrop) * 100 : 0;
                     
@@ -1117,61 +1135,74 @@ function AnalyticsView({ quizzes }) {
               </div>
             </div>
 
-            {/* Tabela de Comportamento Individual (Audit Log de Alta Densidade) */}
             <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-white/5 bg-slate-900/60 flex justify-between items-center">
-                <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Log de Auditoria Individual</h3>
+              <div className="p-4 border-b border-slate-700 bg-slate-800/60 flex justify-between items-center">
+                <h3 className="text-sm font-bold text-slate-300">Log de Auditoria Individual</h3>
                 <span className="text-xs text-slate-500 font-mono text-right">{leads.length} LEADS</span>
               </div>
               
               <div className="overflow-x-auto max-h-[500px] overflow-y-auto w-full custom-scrollbar">
                 <table className="w-full text-left border-collapse">
-                  <thead className="bg-slate-900/80 sticky top-0 z-10 backdrop-blur-md border-b border-white/5">
+                  <thead className="bg-slate-900/80 sticky top-0 z-10 backdrop-blur-md border-b border-slate-700">
                     <tr>
-                      <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-slate-500 tracking-widest">ID do Lead</th>
-                      <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-slate-500 tracking-widest">Status</th>
-                      <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-slate-500 tracking-widest">Última Etapa Acessada</th>
-                      <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-slate-500 tracking-widest text-right">Tempo Total</th>
+                      <th className="py-3 px-4 text-xs font-semibold text-slate-400">Lead</th>
+                      <th className="py-3 px-4 text-xs font-semibold text-slate-400">Status</th>
+                      <th className="py-3 px-4 text-xs font-semibold text-slate-400">Progresso & Respostas</th>
+                      <th className="py-3 px-4 text-xs font-semibold text-slate-400 text-right">Tempo</th>
                     </tr>
                   </thead>
                   <tbody>
                     {leadsLoading ? (
-                      <tr><td colSpan="4" className="text-center py-6 text-xs text-slate-500 font-mono animate-pulse">CARREGANDO REGISTROS...</td></tr>
+                      <tr><td colSpan="4" className="text-center py-6 text-sm text-slate-500 font-mono animate-pulse">CARREGANDO REGISTROS...</td></tr>
                     ) : leads.length === 0 ? (
-                      <tr><td colSpan="4" className="text-center py-6 text-xs text-slate-500 italic">Nenhum evento detalhado encontrado.</td></tr>
+                      <tr><td colSpan="4" className="text-center py-6 text-sm text-slate-500 italic">Nenhum evento detalhado encontrado.</td></tr>
                     ) : (
                       leads.map((lead, idx) => {
                         const lastStep = lead.journey[lead.journey.length - 1];
+                        const isExpanded = !!expandedLeads[lead.visitor_id];
                         return (
-                          <tr key={lead.visitor_id} className="border-b border-white/5 hover:bg-slate-800/40 transition-colors group">
-                            <td className="py-2 px-4 font-mono text-xs text-slate-300 whitespace-nowrap">
-                              {lead.visitor_id.substring(0,10)}
-                            </td>
-                            <td className="py-2 px-4 whitespace-nowrap">
-                              {lead.finished ? (
-                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-bold text-emerald-400 uppercase tracking-wider shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Convertido
+                          <React.Fragment key={lead.visitor_id}>
+                            <tr className="border-b border-slate-800/60 hover:bg-slate-800/40 transition-colors align-middle cursor-pointer" onClick={() => setExpandedLeads(p => ({...p, [lead.visitor_id]: !p[lead.visitor_id]}))}>
+                              <td className="py-3 px-4">
+                                <p className="font-semibold text-sm text-slate-200">Lead {lead.visitor_id.substring(0,8)}</p>
+                                <p className="text-xs text-slate-500 mt-0.5">{new Date(lead.start_time).toLocaleString('pt-BR')}</p>
+                              </td>
+                              <td className="py-3 px-4">
+                                {lead.finished ? (
+                                  <span className="inline-block px-2 py-1 rounded bg-emerald-500/10 text-xs font-medium text-emerald-400 border border-emerald-500/20">✔ Concluído</span>
+                                ) : (
+                                  <span className="inline-block px-2 py-1 rounded bg-amber-500/10 text-xs font-medium text-amber-400 border border-amber-500/20">Drop-off</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 text-xs text-slate-400">
+                                {lead.journey.length} etapas percorridas
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <span className="font-mono text-sm text-cyan-400 font-medium flex items-center justify-end gap-3">
+                                  <span><span className="text-[10px]">⏱</span> {fmt(lead.total_time)}</span>
+                                  <ChevronDown size={14} className={`text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                                 </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-amber-500/20 bg-amber-500/10 text-[10px] font-bold text-amber-400 uppercase tracking-wider shadow-[inset_0_0_8px_rgba(245,158,11,0.1)]">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Abandonou
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-2 px-4 text-xs text-slate-400 truncate max-w-[200px]" title={lastStep ? quizDetail.stepNaming?.[lastStep.step_id] : 'Início'}>
-                              {lastStep ? (
-                                <>
-                                  <span className="font-mono opacity-50 mr-1">{lastStep.step_id}</span>
-                                  {quizDetail.stepNaming?.[lastStep.step_id] || ''}
-                                </>
-                              ) : (
-                                <span className="italic">N/A</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-4 text-right font-mono text-xs text-cyan-400 font-medium whitespace-nowrap">
-                              {fmt(lead.total_time)}
-                            </td>
-                          </tr>
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr className="bg-slate-900/40 border-b border-slate-800/60">
+                                <td colSpan="4" className="py-3 px-8">
+                                  <div className="space-y-4 max-w-sm py-2">
+                                    {lead.journey.map((p, pIdx) => (
+                                      <div key={p.step_id} className="text-xs border-l-2 border-slate-700 pl-4 relative ml-2 mt-1">
+                                        <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
+                                        <p className="text-slate-300 font-medium">{quizDetail.stepNaming?.[p.step_id] || p.step_id}</p>
+                                        <div className="flex justify-between items-end mt-1 gap-2">
+                                          <span className="text-slate-500 break-words max-w-[80%]">{p.answer || <span className="italic">Visualizou a etapa</span>}</span>
+                                          <span className="font-mono text-cyan-400/80 whitespace-nowrap bg-slate-800 px-1.5 py-0.5 rounded">{fmt(p.time_spent)}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         );
                       })
                     )}
