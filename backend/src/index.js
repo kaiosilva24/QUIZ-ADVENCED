@@ -17,6 +17,7 @@ const { handleQuizRouting } = require('./controllers/routerController');
 const { getTasks, createTask, updateTask, deleteTask } = require('./controllers/taskController');
 const { getQuizAnalytics, trackEvent, getAnalyticsOverview, getQuizLeads } = require('./controllers/analyticsController');
 const { getRoundRobin, updateRoundRobin, getNextRoundRobinQuiz } = require('./controllers/roundRobinController');
+const { getIntegrations, setIntegration, setQuizPixel, getQuizPixel } = require('./controllers/integrationsController');
 
 // --- Rotas API ---
 app.post('/api/domains', createDomain);
@@ -43,6 +44,12 @@ app.post('/api/analytics/track', trackEvent);
 app.get('/api/roundrobin', getRoundRobin);
 app.put('/api/roundrobin', updateRoundRobin);
 app.get('/api/roundrobin/next', getNextRoundRobinQuiz);
+
+// Integrations (Meta Pixel, etc)
+app.get('/api/integrations', getIntegrations);
+app.put('/api/integrations', setIntegration);
+app.get('/api/quizzes/:id/pixel', getQuizPixel);
+app.put('/api/quizzes/:id/pixel', setQuizPixel);
 
 // --- Rota por Slug (InLead Style) ---
 app.get('/api/route/:slug', handleQuizRouting);

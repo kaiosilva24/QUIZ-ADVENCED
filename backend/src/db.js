@@ -131,6 +131,18 @@ async function runMigrations(db) {
     // Garante que existe pelo menos 1 registro de configurao
     await db.query(`INSERT INTO round_robin (quiz_ids) SELECT '[]' WHERE NOT EXISTS (SELECT 1 FROM round_robin)`);
 
+    // Tabela: Integrations (chave-valor p/ configs globais)
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS integrations (
+            id SERIAL PRIMARY KEY,
+            key TEXT UNIQUE NOT NULL,
+            value TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+    // Pixel individual por quiz
+    await db.query(`ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS meta_pixel_id TEXT`);
+
     console.log('[DB] Migrations executed successfully.');
 }
 

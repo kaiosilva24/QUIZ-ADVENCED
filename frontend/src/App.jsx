@@ -3,7 +3,7 @@ import {
   PlusCircle, Edit3, Trash2, ArrowRight, X, ChevronLeft, Save, GripVertical, Settings2, Home, Palette, 
   MessageCircle, BarChart2, MousePointerClick, CheckSquare, AlignLeft, ImageIcon, CheckCircle, 
   Users, TrendingUp, Shuffle, ToggleLeft, ToggleRight, LayoutTemplate, Layers, Eye, EyeOff, Plus, PlayCircle, 
-  Video as VideoIcon, Volume2, Copy, ListTodo, Settings, CheckCircle2
+  Video as VideoIcon, Volume2, Copy, ListTodo, Settings, CheckCircle2, Zap
 } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
 import QuizPreview from './QuizPreview';
@@ -49,6 +49,7 @@ function QuizRouter() {
   const QUIZ_ID_KEY = 'quiz_saas_lead_quiz_id';
   const QUIZ_TIME_KEY = 'quiz_saas_lead_quiz_time';
   const STEP_KEY_PREFIX = 'quiz_saas_step_';
+  const pixelInjected = React.useRef(false);
 
   useEffect(() => {
     const now = Date.now();
@@ -142,6 +143,30 @@ function QuizRouter() {
     }
   }, [currentStep, quizData]);
 
+  // Inject Meta Pixel once quizData is available
+  useEffect(() => {
+    if (!quizData || pixelInjected.current) return;
+    const quizId = quizData.quiz_id || quizData.id;
+
+    const inject = (pixelId) => {
+      if (!pixelId) return;
+      if (document.getElementById('meta-pixel-script')) return;
+      pixelInjected.current = true;
+      const s = document.createElement('script');
+      s.id = 'meta-pixel-script';
+      s.innerHTML = `!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${pixelId}');fbq('track','PageView');`;
+      document.head.appendChild(s);
+    };
+
+    // Per-quiz pixel takes priority, fallback to global
+    fetch(`/api/quizzes/${quizId}/pixel`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.meta_pixel_id) { inject(d.meta_pixel_id); return; }
+        return fetch('/api/integrations').then(r => r.json()).then(cfg => inject(cfg['meta_pixel_global']));
+      }).catch(() => {});
+  }, [quizData]);
+
   const handleNavigate = (nextStepId, answerText = null) => {
     const steps = quizData?.config?.steps || [];
     const idx = steps.findIndex(s => s.id === nextStepId);
@@ -168,6 +193,8 @@ function QuizRouter() {
       setCurrentStep(idx);
       if (idx === steps.length - 1) {
         trackEvent(quizId, 'finished', nextStepId, null, 0);
+        // Fire Lead event on Meta Pixel if loaded
+        if (window.fbq) window.fbq('track', 'Lead');
       }
     }
   };
@@ -267,6 +294,7 @@ function AdminPanel() {
           <NavItem icon={<Palette size={20}/>} label="Quizzes & Builder" active={tab==='quizzes'} onClick={()=>setTab('quizzes')}/>
           <NavItem icon={<Shuffle size={20}/>} label="Teste A/B · Round Robin" active={tab==='abteste'} onClick={()=>setTab('abteste')}/>
           <NavItem icon={<BarChart2 size={20}/>} label="Analytics" active={tab==='analytics'} onClick={()=>setTab('analytics')}/>
+          <NavItem icon={<Zap size={20}/>} label="Integrações" active={tab==='integrations'} onClick={()=>setTab('integrations')}/>
           <NavItem icon={<ListTodo size={20}/>} label="Tarefas da Equipe" active={tab==='tasks'} onClick={()=>setTab('tasks')}/>
         </nav>
         <div className="p-3 border-t border-white/5">
@@ -281,6 +309,7 @@ function AdminPanel() {
             {tab==='quizzes'&&'Quizzes & Builder Visual'}
             {tab==='abteste'&&'Teste A/B · Round Robin'}
             {tab==='analytics'&&'Analytics & Métricas'}
+            {tab==='integrations'&&'Integrações & Pixels'}
             {tab==='tasks'&&'Gestão de Tarefas'}
           </h2>
           <div className="flex items-center gap-3">
@@ -307,6 +336,7 @@ function AdminPanel() {
           )}
           {tab==='abteste' && <RoundRobinView quizzes={quizzes}/>}
           {tab==='analytics' && <AnalyticsView quizzes={quizzes}/>}
+          {tab==='integrations' && <IntegrationsView quizzes={quizzes}/>}
           {tab==='tasks' && <TasksView tasks={tasks} fetchTasks={fetchAllTasks}/>}
         </div>
       </main>
@@ -555,6 +585,140 @@ function RoundRobinView({ quizzes }) {
       <button onClick={save} className={`w-full py-3 rounded-xl font-semibold text-sm transition-all cursor-pointer ${saved ? 'bg-emerald-600 text-white' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.3)]'}`}>
         {saved ? '✓ Configuração salva!' : 'Salvar Configuração de Round Robin'}
       </button>
+    </div>
+  );
+}
+
+// ─── Integrations View ────────────────────────────────────────────────────────
+function IntegrationsView({ quizzes }) {
+  const [globalPixel, setGlobalPixel] = useState('');
+  const [quizPixels, setQuizPixels] = useState({});
+  const [saved, setSaved] = useState({});
+
+  useEffect(() => {
+    fetch('/api/integrations').then(r => r.json()).then(data => {
+      setGlobalPixel(data['meta_pixel_global'] || '');
+    });
+    // load per-quiz pixels
+    quizzes.forEach(q => {
+      fetch(`/api/quizzes/${q.id}/pixel`).then(r => r.json()).then(d => {
+        setQuizPixels(prev => ({ ...prev, [q.id]: d.meta_pixel_id || '' }));
+      });
+    });
+  }, [quizzes]);
+
+  const saveGlobal = async () => {
+    await fetch('/api/integrations', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'meta_pixel_global', value: globalPixel })
+    });
+    setSaved(s => ({ ...s, global: true }));
+    setTimeout(() => setSaved(s => ({ ...s, global: false })), 2000);
+  };
+
+  const saveQuizPixel = async (quizId) => {
+    await fetch(`/api/quizzes/${quizId}/pixel`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meta_pixel_id: quizPixels[quizId] || null })
+    });
+    setSaved(s => ({ ...s, [quizId]: true }));
+    setTimeout(() => setSaved(s => ({ ...s, [quizId]: false })), 2000);
+  };
+
+  return (
+    <div className="space-y-8 max-w-3xl">
+
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/20 flex items-center justify-center text-2xl">⚡</div>
+        <div>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Integrações</h2>
+          <p className="text-sm text-slate-400 mt-0.5">Configure o Pixel do Meta Ads globalmente ou por quiz individual.</p>
+        </div>
+      </div>
+
+      {/* Card: Pixel Global (Round Robin) */}
+      <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/20 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" fill="#1877F2" className="w-5 h-5"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">Pixel do Meta Ads — Global (Round Robin)</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Este pixel será disparado em <span className="text-indigo-400 font-semibold">todos os quizzes</span> distribuídos pelo Round Robin. Ideal para rastrear toda a base de leads.</p>
+          </div>
+        </div>
+        <div className="flex gap-3 mt-2">
+          <input
+            value={globalPixel}
+            onChange={e => setGlobalPixel(e.target.value)}
+            placeholder="Ex: 1234567890123456"
+            className="flex-1 bg-slate-800/60 border border-slate-700 focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-white font-mono outline-none transition-colors"
+          />
+          <button onClick={saveGlobal}
+            className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer shrink-0 ${saved.global ? 'bg-emerald-600 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]'}`}>
+            {saved.global ? '✓ Salvo!' : 'Salvar'}
+          </button>
+        </div>
+        {globalPixel && (
+          <p className="text-xs text-emerald-400 flex items-center gap-1.5">
+            <span>✓</span> Pixel <span className="font-mono">{globalPixel}</span> configurado — disparará em todos os funis do Round Robin.
+          </p>
+        )}
+      </div>
+
+      {/* Card: Pixels Individuais por Quiz */}
+      <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 space-y-5">
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/20 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" fill="#1877F2" className="w-5 h-5"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">Pixel por Quiz Individual</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Configure um Pixel <span className="text-indigo-400 font-semibold">específico</span> por quiz. Tem prioridade sobre o Pixel Global quando preenchido.</p>
+          </div>
+        </div>
+
+        {quizzes.length === 0 ? (
+          <p className="text-slate-500 text-sm italic">Nenhum quiz criado ainda.</p>
+        ) : (
+          <div className="space-y-3">
+            {quizzes.map(q => (
+              <div key={q.id} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 border-b border-slate-800/60 last:border-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-100 truncate">{q.title}</p>
+                  <p className="text-xs font-mono text-slate-500">/{q.slug || 'quiz-' + q.id}</p>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <input
+                    value={quizPixels[q.id] || ''}
+                    onChange={e => setQuizPixels(prev => ({ ...prev, [q.id]: e.target.value }))}
+                    placeholder="ID do Pixel (opcional)"
+                    className="w-52 bg-slate-800/60 border border-slate-700 focus:border-indigo-500 rounded-xl px-3 py-2 text-sm text-white font-mono outline-none transition-colors"
+                  />
+                  <button onClick={() => saveQuizPixel(q.id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 ${saved[q.id] ? 'bg-emerald-600 text-white' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}>
+                    {saved[q.id] ? '✓' : 'Salvar'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Info box */}
+      <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-5 flex gap-3">
+        <span className="text-xl shrink-0">ℹ️</span>
+        <div className="text-sm text-slate-300 space-y-1">
+          <p className="font-semibold text-amber-400">Como funciona o disparo do Pixel?</p>
+          <p>• O evento <code className="bg-black/30 px-1 rounded text-xs">PageView</code> é disparado automaticamente quando o lead acessa o quiz.</p>
+          <p>• O evento <code className="bg-black/30 px-1 rounded text-xs">Lead</code> é disparado quando o lead conclui o funil (chega na tela de resultado).</p>
+          <p>• Se um quiz tiver seu próprio Pixel configurado, ele substitui o Global naquele funil específico.</p>
+        </div>
+      </div>
     </div>
   );
 }
