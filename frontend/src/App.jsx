@@ -124,6 +124,12 @@ function QuizRouter() {
         setLoading(false);
         // Dispara evento de início
         trackEvent(quizId, 'start', null, null, 0);
+        // Dispara step_reached para o primeiro passo IMEDIATAMENTE ao carregar
+        // Isso garante que leads que abandonam na primeira pergunta apareçam no Raio-X e Matriz
+        const firstStep = data?.config?.steps?.[0];
+        if (firstStep?.id) {
+          trackEvent(quizId, 'step_reached', firstStep.id, null, 0);
+        }
       })
       .catch(() => {}); // erros já tratados acima
   };

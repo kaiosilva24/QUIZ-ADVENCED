@@ -34,9 +34,13 @@ async function getQuizAnalytics(req, res) {
             db.all(
                 `SELECT step_id,
                     COUNT(DISTINCT visitor_id) as visitors,
-                    ROUND(AVG(time_spent_seconds), 1) as avg_time_seconds
-                 FROM quiz_events
-                 WHERE quiz_id=$1 AND event_type='step_reached'
+                    ROUND(AVG(max_time), 1) as avg_time_seconds
+                 FROM (
+                   SELECT step_id, visitor_id, MAX(time_spent_seconds) as max_time
+                   FROM quiz_events
+                   WHERE quiz_id=$1 AND event_type='step_reached'
+                   GROUP BY step_id, visitor_id
+                 ) sub
                  GROUP BY step_id
                  ORDER BY visitors DESC`,
                 [quizId]
