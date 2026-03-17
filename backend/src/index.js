@@ -18,10 +18,20 @@ const { getTasks, createTask, updateTask, deleteTask } = require('./controllers/
 const { getQuizAnalytics, trackEvent, getAnalyticsOverview, getQuizLeads } = require('./controllers/analyticsController');
 const { getRoundRobin, updateRoundRobin, getNextRoundRobinQuiz } = require('./controllers/roundRobinController');
 const { getIntegrations, setIntegration, setQuizPixel, getQuizPixel } = require('./controllers/integrationsController');
+const { login, register, listUsers, deleteUser, authMiddleware } = require('./controllers/authController');
 
-// --- Rotas API ---
-app.post('/api/domains', createDomain);
-app.get('/api/domains', getDomains);
+// --- Auth routes (public) ---
+app.post('/api/auth/login', login);
+
+// --- Rotas API (protegidas por JWT) ---
+app.use('/api/auth/users', authMiddleware);
+app.post('/api/auth/register', authMiddleware, register);
+app.get('/api/auth/users', listUsers);
+app.delete('/api/auth/users/:id', authMiddleware, deleteUser);
+
+// --- Outras rotas protegidas ---
+app.post('/api/domains', authMiddleware, createDomain);
+app.get('/api/domains', authMiddleware, getDomains);
 app.get('/api/quizzes', getQuizzes);
 app.get('/api/quizzes/:id', getQuizById);
 app.post('/api/quizzes', createQuiz);

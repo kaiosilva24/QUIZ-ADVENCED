@@ -60,11 +60,22 @@ async function runMigrations(db) {
     await db.query(`
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE,
             password_hash TEXT NOT NULL,
+            role TEXT DEFAULT 'admin',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
+    await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`);
+    await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'admin'`);
+    // Garante admin padrão
+    const bcrypt = require('bcryptjs');
+    const defHash = await bcrypt.hash('admin123', 10);
+    await db.query(
+        `INSERT INTO users (username, email, password_hash, role) VALUES ($1,$2,$3,$4) ON CONFLICT (username) DO NOTHING`,
+        ['admin','admin@system.local', defHash, 'admin']
+    ).catch(()=>{});
 
     // Tabela: Domains
     await db.query(`

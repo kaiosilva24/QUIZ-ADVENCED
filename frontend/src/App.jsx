@@ -3,10 +3,12 @@ import {
   PlusCircle, Edit3, Trash2, ArrowRight, X, ChevronLeft, Save, GripVertical, Settings2, Home, Palette, 
   MessageCircle, BarChart2, MousePointerClick, CheckSquare, AlignLeft, ImageIcon, CheckCircle, 
   Users, TrendingUp, Shuffle, ToggleLeft, ToggleRight, LayoutTemplate, Layers, Eye, EyeOff, Plus, PlayCircle, 
-  Video as VideoIcon, Volume2, Copy, ListTodo, Settings, CheckCircle2, Zap
+  Video as VideoIcon, Volume2, Copy, ListTodo, Settings, CheckCircle2, Zap, LogOut, UserPlus, Lock, User
 } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
 import QuizPreview from './QuizPreview';
+const logoSrc = '/logo.svg';
+
 
 const API = '/api';
 
@@ -239,7 +241,6 @@ function QuizRouter() {
 }
 
 // ─── Componente Raiz ──────────────────────────────────────────────────────────
-// IMPORTANTE: hooks sempre antes de qualquer return condicional (Rules of Hooks)
 export default function App() {
   const hostname = window.location.hostname;
   const ADMIN_HOSTS = ['localhost', '127.0.0.1'];
@@ -251,11 +252,95 @@ export default function App() {
     return <QuizRouter />;
   }
 
-  return <AdminPanel />;
+  return <AdminApp />;
+}
+
+// ─── AdminApp: gerencia auth antes de exibir o painel ─────────────────────────
+function AdminApp() {
+  const [token, setToken] = useState(() => localStorage.getItem('admin_jwt') || '');
+
+  const handleLogin = (newToken) => {
+    localStorage.setItem('admin_jwt', newToken);
+    setToken(newToken);
+  };
+  const handleLogout = () => {
+    localStorage.removeItem('admin_jwt');
+    setToken('');
+  };
+
+  if (!token) return <LoginPage onLogin={handleLogin} />;
+  return <AdminPanel token={token} onLogout={handleLogout} />;
+}
+
+// ─── LoginPage ────────────────────────────────────────────────────────────────
+function LoginPage({ onLogin }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const r = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await r.json();
+      if (!r.ok) { setError(data.error || 'Erro ao fazer login'); setLoading(false); return; }
+      onLogin(data.token);
+    } catch { setError('Erro de conexão'); setLoading(false); }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: '100%', maxWidth: 400, padding: '0 16px' }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <img src={logoSrc} alt="Logo" style={{ height: 54, filter: 'brightness(0) invert(1)', marginBottom: 12 }} />
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ background: 'rgba(30,27,75,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 20, padding: '40px 36px' }}>
+          <h2 style={{ color: '#fff', fontWeight: 700, fontSize: 22, marginBottom: 8, textAlign: 'center' }}>Painel Administrativo</h2>
+          <p style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', marginBottom: 28 }}>Entre com suas credenciais para acessar</p>
+
+          {/* Username */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: '#94a3b8', fontSize: 12, fontWeight: 600, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>USUÁRIO</label>
+            <div style={{ position: 'relative' }}>
+              <User size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#6366f1' }} />
+              <input value={username} onChange={e => setUsername(e.target.value)} placeholder="admin" autoComplete="username"
+                style={{ width: '100%', padding: '12px 12px 12px 40px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 12, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+          </div>
+
+          {/* Password */}
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ color: '#94a3b8', fontSize: 12, fontWeight: 600, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>SENHA</label>
+            <div style={{ position: 'relative' }}>
+              <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#6366f1' }} />
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password"
+                style={{ width: '100%', padding: '12px 12px 12px 40px', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: 12, color: '#fff', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+          </div>
+
+          {error && <p style={{ color: '#f87171', fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</p>}
+
+          <button type="submit" disabled={loading}
+            style={{ width: '100%', padding: '13px', background: 'linear-gradient(90deg,#6366f1,#8b5cf6)', border: 'none', borderRadius: 12, color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer', opacity: loading ? 0.7 : 1, boxShadow: '0 0 20px rgba(99,102,241,0.4)', transition: 'opacity 0.2s' }}>
+            {loading ? 'Entrando...' : 'Entrar'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 // ─── Painel Admin (separado para respeitar Rules of Hooks) ───────────────────
-function AdminPanel() {
+function AdminPanel({ token, onLogout }) {
   const [tab, setTab] = useState('quizzes');
   const [quizzes, setQuizzes] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -287,8 +372,7 @@ function AdminPanel() {
       {/* Sidebar */}
       <aside className="w-20 lg:w-64 border-r border-white/5 bg-slate-900/60 backdrop-blur-xl flex flex-col shrink-0">
         <div className="h-16 flex items-center justify-center lg:justify-start lg:px-6 border-b border-white/5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-[0_0_20px_rgba(99,102,241,0.5)] flex items-center justify-center font-bold text-white text-lg">Q</div>
-          <span className="hidden lg:block ml-3 font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">QuizSaaS</span>
+          <img src={logoSrc} alt="Logo" className="h-8" style={{ filter: 'brightness(0) invert(1)' }} />
         </div>
         <nav className="flex-1 p-3 space-y-1 mt-2">
           <NavItem icon={<Palette size={20}/>} label="Quizzes & Builder" active={tab==='quizzes'} onClick={()=>setTab('quizzes')}/>
@@ -296,9 +380,13 @@ function AdminPanel() {
           <NavItem icon={<BarChart2 size={20}/>} label="Analytics" active={tab==='analytics'} onClick={()=>setTab('analytics')}/>
           <NavItem icon={<Zap size={20}/>} label="Integrações" active={tab==='integrations'} onClick={()=>setTab('integrations')}/>
           <NavItem icon={<ListTodo size={20}/>} label="Tarefas da Equipe" active={tab==='tasks'} onClick={()=>setTab('tasks')}/>
+          <NavItem icon={<Settings size={20}/>} label="Configurações" active={tab==='settings'} onClick={()=>setTab('settings')}/>
         </nav>
         <div className="p-3 border-t border-white/5">
-          <NavItem icon={<Settings size={20}/>} label="Configurações"/>
+          <button onClick={onLogout} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 border border-transparent transition-all text-left cursor-pointer focus:outline-none">
+            <LogOut size={20} className="shrink-0" />
+            <span className="hidden lg:block text-sm font-medium">Sair</span>
+          </button>
         </div>
       </aside>
 
@@ -311,6 +399,7 @@ function AdminPanel() {
             {tab==='analytics'&&'Analytics & Métricas'}
             {tab==='integrations'&&'Integrações & Pixels'}
             {tab==='tasks'&&'Gestão de Tarefas'}
+            {tab==='settings'&&'Configurações & Usuários'}
           </h2>
           <div className="flex items-center gap-3">
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">PRO</span>
@@ -338,8 +427,98 @@ function AdminPanel() {
           {tab==='analytics' && <AnalyticsView quizzes={quizzes}/>}
           {tab==='integrations' && <IntegrationsView quizzes={quizzes}/>}
           {tab==='tasks' && <TasksView tasks={tasks} fetchTasks={fetchAllTasks}/>}
+          {tab==='settings' && <SettingsView token={token} />}
         </div>
       </main>
+    </div>
+  );
+}
+
+// ─── Settings View (User Management) ─────────────────────────────────────────
+function SettingsView({ token }) {
+  const [users, setUsers] = useState([]);
+  const [form, setForm] = useState({ username: '', password: '', email: '', role: 'admin' });
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+
+  const hdr = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+
+  const fetchUsers = () => fetch('/api/auth/users', { headers: hdr }).then(r => r.json()).then(d => setUsers(Array.isArray(d) ? d : []));
+
+  useEffect(() => { fetchUsers(); }, []);
+
+  const createUser = async () => {
+    setMsg(''); setErr('');
+    if (!form.username || !form.password) { setErr('Usuário e senha obrigatórios'); return; }
+    const r = await fetch('/api/auth/register', { method: 'POST', headers: hdr, body: JSON.stringify(form) });
+    const d = await r.json();
+    if (!r.ok) { setErr(d.error); return; }
+    setMsg('Usuário criado com sucesso!'); setForm({ username: '', password: '', email: '', role: 'admin' }); fetchUsers();
+    setTimeout(() => setMsg(''), 3000);
+  };
+
+  const removeUser = async (id) => {
+    if (!confirm('Remover este usuário?')) return;
+    const r = await fetch(`/api/auth/users/${id}`, { method: 'DELETE', headers: hdr });
+    if (!r.ok) { const d = await r.json(); setErr(d.error); return; }
+    fetchUsers();
+  };
+
+  return (
+    <div className="space-y-8 max-w-3xl">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/20 flex items-center justify-center text-2xl">⚙️</div>
+        <div>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Configurações & Usuários</h2>
+          <p className="text-sm text-slate-400 mt-0.5">Gerencie os usuários com acesso ao painel administrativo.</p>
+        </div>
+      </div>
+
+      {/* Criar novo usuário */}
+      <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 space-y-4">
+        <h3 className="text-base font-bold text-white flex items-center gap-2"><UserPlus size={17}/> Criar Novo Usuário</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input value={form.username} onChange={e => setForm(f => ({...f, username: e.target.value}))} placeholder="Usuário*"
+            className="bg-slate-800/60 border border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition-colors" />
+          <input type="password" value={form.password} onChange={e => setForm(f => ({...f, password: e.target.value}))} placeholder="Senha*"
+            className="bg-slate-800/60 border border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition-colors" />
+          <input value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} placeholder="E-mail (opcional)"
+            className="bg-slate-800/60 border border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition-colors" />
+          <select value={form.role} onChange={e => setForm(f => ({...f, role: e.target.value}))}
+            className="bg-slate-800/60 border border-slate-700 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none cursor-pointer transition-colors">
+            <option value="admin">Admin</option>
+            <option value="viewer">Visualizador</option>
+          </select>
+        </div>
+        {err && <p className="text-xs text-red-400">{err}</p>}
+        {msg && <p className="text-xs text-emerald-400">{msg}</p>}
+        <button onClick={createUser} className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+          Criar Usuário
+        </button>
+      </div>
+
+      {/* Lista de usuários */}
+      <div className="bg-slate-900/50 border border-slate-700/50 rounded-2xl p-6 space-y-3">
+        <h3 className="text-base font-bold text-white flex items-center gap-2"><Users size={17}/> Usuários Cadastrados</h3>
+        {users.length === 0 ? <p className="text-slate-500 text-sm italic">Nenhum usuário cadastrado.</p> : (
+          <div className="space-y-2">
+            {users.map(u => (
+              <div key={u.id} className="flex items-center gap-4 py-3 border-b border-slate-800/60 last:border-0">
+                <div className="w-9 h-9 rounded-full bg-indigo-500/20 border border-indigo-500/20 flex items-center justify-center text-indigo-300 font-bold text-sm shrink-0">
+                  {u.username?.[0]?.toUpperCase() || '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-100">{u.username}</p>
+                  <p className="text-xs text-slate-500">{u.email || '—'} · <span className="text-indigo-400">{u.role}</span></p>
+                </div>
+                <button onClick={() => removeUser(u.id)} className="px-3 py-1.5 text-xs bg-red-500/10 hover:bg-red-500/30 text-red-400 rounded-lg border border-red-500/20 transition-colors cursor-pointer">
+                  Remover
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
