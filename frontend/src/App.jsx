@@ -902,7 +902,7 @@ function IntegrationsView({ quizzes }) {
   );
 }
 
-// ─── Analytics View ───────────────────────────────────────────────────────────
+// ─── Analytics View (Luxury BI Dashboard) ───────────────────────────────────────────────────────────
 function AnalyticsView({ quizzes }) {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -911,7 +911,6 @@ function AnalyticsView({ quizzes }) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [leads, setLeads] = useState([]);
   const [leadsLoading, setLeadsLoading] = useState(false);
-  const [expandedLead, setExpandedLead] = useState(null);
 
   useEffect(() => {
     fetch('/api/analytics/overview')
@@ -924,7 +923,6 @@ function AnalyticsView({ quizzes }) {
     setSelectedQuiz(quiz);
     setDetailLoading(true);
     setLeadsLoading(true);
-    setExpandedLead(null);
     
     Promise.all([
       fetch(`/api/analytics/quiz/${quiz.id}`).then(r => r.json()),
@@ -932,7 +930,6 @@ function AnalyticsView({ quizzes }) {
       fetch(`/api/quizzes/${quiz.id}`).then(r => r.json())
     ])
     .then(([detailData, leadsData, quizData]) => {
-      // Build a map of step_id -> Question text from config
       const stepNaming = {};
       try {
         if (quizData && quizData.config) {
@@ -941,7 +938,6 @@ function AnalyticsView({ quizzes }) {
             config.steps.forEach(s => {
               const headerBlock = s.blocks?.find(b => b.type === 'heading' || b.type === 'text');
               if (headerBlock && headerBlock.text) {
-                // Strip HTML from rich text
                 const tmp = document.createElement("DIV");
                 tmp.innerHTML = headerBlock.text;
                 stepNaming[s.id] = (tmp.textContent || tmp.innerText || "").trim() || s.label;
@@ -951,19 +947,14 @@ function AnalyticsView({ quizzes }) {
             });
           }
         }
-      } catch (e) {
-        console.error("Failed to parse quiz config for analytics naming", e);
-      }
+      } catch (e) { console.error(e); }
 
       setQuizDetail({ ...detailData, stepNaming });
       setLeads(leadsData);
       setDetailLoading(false);
       setLeadsLoading(false);
     })
-    .catch(() => {
-      setDetailLoading(false);
-      setLeadsLoading(false);
-    });
+    .catch(() => { setDetailLoading(false); setLeadsLoading(false); });
   };
 
   const fmt = (s) => {
@@ -974,173 +965,219 @@ function AnalyticsView({ quizzes }) {
     return `${m}m ${secs > 0 ? secs + 's' : ''}`;
   };
 
-  if (loading) return <div className="text-slate-400 p-8 flex justify-center mt-20 animate-pulse">⏳ Carregando métricas globais...</div>;
-  if (!metrics) return <div className="text-red-400 p-8 flex justify-center mt-20">Erro ao carregar o Dashboard</div>;
+  if (loading) return <div className="text-slate-400 p-8 flex justify-center mt-20 animate-pulse font-mono">⏳ CARREGANDO DATA WAREHOUSE...</div>;
+  if (!metrics) return <div className="text-red-400 p-8 flex justify-center mt-20">Erro ao carregar o Data Warehouse</div>;
 
-  // ─── Drill-Down de um Quiz Específico ──────────────────────────────────────
+  // ─── Drill-Down de um Quiz Específico (Luxury BI) ──────────────────────────────────────
   if (selectedQuiz) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
+        {/* Header Compacto */}
+        <div className="flex items-center gap-4 border-b border-indigo-500/20 pb-4">
           <button onClick={() => { setSelectedQuiz(null); setQuizDetail(null); }}
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-colors cursor-pointer flex items-center gap-2">
-            ← Voltar para Overview
+            className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors cursor-pointer border border-slate-700">
+            <ChevronLeft size={16}/>
           </button>
           <div>
-            <h2 className="text-xl font-bold text-white">{selectedQuiz.title}</h2>
-            <p className="text-sm text-slate-400 font-mono">/{selectedQuiz.slug || 'quiz-' + selectedQuiz.id}</p>
+            <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+              {selectedQuiz.title}
+              <span className="text-xs px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono uppercase tracking-widest">DRILL-DOWN</span>
+            </h2>
+            <p className="text-xs text-slate-500 font-mono">/{selectedQuiz.slug || 'quiz-' + selectedQuiz.id}</p>
           </div>
         </div>
 
         {detailLoading ? (
-          <div className="text-slate-400 text-center py-16 animate-pulse">Carregando dados detalhados...</div>
+          <div className="text-slate-500 font-mono text-center py-16 animate-pulse">PROCESSANDO CUBOS DE DADOS...</div>
         ) : quizDetail ? (
           <>
-            {/* Resumo do funil */}
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { label: 'Total de Leads', value: quizDetail.total_starts, color: 'blue', icon: '👥' },
-                { label: 'Concluíram', value: quizDetail.total_finished, color: 'green', icon: '✅' },
-                { label: 'Taxa de Conversão', value: `${quizDetail.conversion_rate}%`, color: 'purple', icon: '📈' },
-              ].map((s, i) => (
-                <div key={i} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-                  <div className="text-2xl mb-2">{s.icon}</div>
-                  <p className="text-3xl font-bold text-white">{s.value}</p>
-                  <p className="text-sm text-slate-400 mt-1">{s.label}</p>
+            {/* Grid Superior: Executive Summary */}
+            <div className="grid grid-cols-3 gap-5">
+              <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5 shadow-inner relative overflow-hidden group">
+                <div className="absolute -right-10 -bottom-10 w-24 h-24 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition-all"></div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Volume de Leads</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl font-mono font-bold text-white">{quizDetail.total_starts}</p>
+                  <p className="text-xs text-slate-500 font-mono">INICIADOS</p>
                 </div>
-              ))}
+              </div>
+              
+              <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5 shadow-inner relative overflow-hidden group">
+                <div className="absolute -right-10 -bottom-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Conversão Final</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-4xl font-mono font-bold text-emerald-400">{quizDetail.conversion_rate}%</p>
+                  <p className="text-xs text-slate-500 font-mono">({quizDetail.total_finished} LEADS)</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5 shadow-inner relative overflow-hidden group flex flex-col justify-between">
+                <div className="absolute inset-0 opacity-10 pointer-events-none">
+                  <svg preserveAspectRatio="none" viewBox="0 0 100 100" className="w-full h-full fill-none stroke-cyan-400 stroke-2"><path d="M0 80 Q 25 20, 50 60 T 100 30" /></svg>
+                </div>
+                <div className="relative z-10">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1" title="Média global de tempo que um lead gasta do início ao fim/abandono">Tempo Médio Global</p>
+                  <p className="text-3xl font-mono font-bold text-cyan-400">{fmt(quizDetail.step_funnel.reduce((acc, s) => acc + (s.avg_time_seconds || 0), 0))}</p>
+                </div>
+              </div>
             </div>
 
-            {/* Funil por Etapa */}
-            <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-6">
-              <h3 className="text-lg font-bold text-white mb-5 flex items-center gap-2">
-                <span>🔽</span> Funil de Etapas (drop-off)
-              </h3>
-              {quizDetail.step_funnel.length === 0 ? (
-                <p className="text-slate-500 text-sm italic">Nenhum dado de etapa registrado ainda.</p>
-              ) : (
-                <div className="space-y-4">
-                  {quizDetail.step_funnel.map((step, i) => {
-                    const maxVisitors = quizDetail.step_funnel[0]?.visitors || 1;
-                    const pct = Math.round((step.visitors / maxVisitors) * 100);
-                    const answers = quizDetail.answers_by_step?.[step.step_id] || [];
-                    const topAnswer = answers[0];
-                    return (
-                      <div key={step.step_id} className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <span className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-300 text-xs flex items-center justify-center font-bold shrink-0">{i+1}</span>
-                          <span className="flex-1 text-sm font-medium text-slate-200 truncate">
-                            <span className="font-mono opacity-50 mr-2">{step.step_id}</span>
-                            {quizDetail.stepNaming?.[step.step_id] || ''}
-                          </span>
-                          <span className="text-xs bg-slate-800 px-2 py-1 rounded text-cyan-400 font-semibold">⏱ {fmt(step.avg_time_seconds)}</span>
-                          <span className="text-sm font-bold text-white w-16 text-right">{step.visitors} leads</span>
-                        </div>
-                        {/* Barra de drop-off */}
-                        <div className="h-2 bg-slate-800 rounded-full overflow-hidden ml-9">
-                          <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all" style={{ width: `${pct}%` }} />
-                        </div>
-                        {/* Resposta mais popular desta etapa */}
-                        {topAnswer && (
-                          <div className="ml-9 flex flex-wrap gap-2 pt-1">
-                            {answers.slice(0, 4).map((a, ai) => (
-                              <span key={ai} className={`text-xs px-2 py-0.5 rounded-full font-medium ${ai === 0 ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-slate-800 text-slate-400'}`}>
-                                {ai === 0 ? '🏆 ' : ''}{a.answer} <span className="opacity-70">({a.count}x)</span>
-                              </span>
-                            ))}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {/* Raio-X de Retenção (Horizontal) */}
+              <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5 relative">
+                <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-5 flex justify-between items-center">
+                  Raio-X de Retenção
+                  <span className="text-[10px] text-slate-500 font-normal normal-case">Volume vs Tempo/Etapa</span>
+                </h3>
+                
+                {quizDetail.step_funnel.length === 0 ? (
+                  <p className="text-slate-500 text-xs italic">Nenhum dado registrado.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {quizDetail.step_funnel.map((step, i) => {
+                      const maxVisitors = quizDetail.step_funnel[0]?.visitors || 1;
+                      const pct = Math.round((step.visitors / maxVisitors) * 100);
+                      const isHighTime = step.avg_time_seconds > 20;
+                      return (
+                        <div key={step.step_id} className="relative group">
+                          <div className="flex justify-between items-end mb-1">
+                            <span className="text-xs font-medium text-slate-300 truncate pr-4 max-w-[70%]">
+                              <span className="font-mono text-slate-600 mr-2">{i+1}.</span>
+                              {quizDetail.stepNaming?.[step.step_id] || step.step_id}
+                            </span>
+                            <span className="text-xs font-mono font-bold text-white">{step.visitors} <span className="text-[10px] text-slate-600 font-sans">leads</span></span>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            {/* Lista de Leads Individual (Drill-down) */}
-            <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-6">
-              <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                <span>🕵️</span> Lista de Leads (Jornada Individual)
-              </h3>
-              <p className="text-xs text-slate-500 mb-5">Clique em um lead para ver o caminho exato que ele percorreu.</p>
-              
-              {leadsLoading ? (
-                 <div className="text-slate-500 text-sm animate-pulse">Carregando leads...</div>
-              ) : leads.length === 0 ? (
-                 <p className="text-slate-500 text-sm italic">Nenhum evento detalhado de lead encontrado.</p>
-              ) : (
-                <div className="space-y-3">
-                  {leads.map((lead, idx) => {
-                    const isExpanded = expandedLead === lead.visitor_id;
-                    const startTime = new Date(lead.start_time).toLocaleString('pt-BR');
+                          <div className="h-1.5 bg-slate-800/80 rounded-full overflow-hidden relative">
+                            <div className="absolute top-0 left-0 h-full bg-indigo-500/80 transition-all rounded-full" style={{ width: `${pct}%` }}></div>
+                          </div>
+                          {/* Floating Pill - Tempo Overlay */}
+                          <div className={`absolute right-12 top-0 -mt-1 px-1.5 py-[2px] rounded border text-[9px] font-mono font-bold leading-none backdrop-blur-sm z-10 transition-colors ${isHighTime ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'} opacity-0 group-hover:opacity-100`}>
+                            ⏱ {fmt(step.avg_time_seconds)}
+                          </div>
+                          {/* Top Answer Mini-Badge */}
+                          {quizDetail.answers_by_step?.[step.step_id]?.[0] && (
+                            <p className="text-[9px] text-slate-500 mt-1 truncate">
+                              🏆 Fav: <span className="text-indigo-300">{quizDetail.answers_by_step[step.step_id][0].answer}</span>
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Matriz de Atrito (Vertical) */}
+              <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5 flex flex-col">
+                <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-2 flex justify-between items-center" title="Mostra em qual etapa exata o usuário abandonou a página">
+                  Matriz de Abandono
+                  <span className="text-[10px] text-slate-500 font-normal normal-case">Onde perdemos leads?</span>
+                </h3>
+                
+                <div className="flex-1 flex items-end gap-2 pt-10 pb-4 border-b border-slate-800">
+                  {quizDetail.step_funnel.map((step, i) => {
+                    // Calculando taxa de abandono (drop-off) exata NESTA etapa:
+                    // Drop-off = (visitors da etapa autal) - (visitors da próxima etapa)
+                    const nextStep = quizDetail.step_funnel[i+1];
+                    const dropOffCount = nextStep ? (step.visitors - nextStep.visitors) : (step.visitors - quizDetail.total_finished);
+                    const dropRate = step.visitors > 0 ? (dropOffCount / step.visitors) : 0;
+                    
+                    // Altura da barra baseada no número absoluto de desistências
+                    const maxDrop = Math.max(...quizDetail.step_funnel.map((s, idx) => {
+                      const ns = quizDetail.step_funnel[idx+1];
+                      return ns ? (s.visitors - ns.visitors) : (s.visitors - quizDetail.total_finished);
+                    }));
+                    const hPct = maxDrop > 0 ? (dropOffCount / maxDrop) * 100 : 0;
+                    
+                    // Cor baseada na taxa (dropRate). Acima de 30% vira amber/red
+                    const isCritical = dropRate > 0.3;
                     
                     return (
-                      <div key={lead.visitor_id} className="border border-slate-700/50 rounded-xl overflow-hidden bg-slate-800/20">
-                        {/* Header do Accordion */}
-                        <div 
-                          className="flex items-center gap-4 p-4 cursor-pointer hover:bg-slate-800/40 transition-colors"
-                          onClick={() => setExpandedLead(isExpanded ? null : lead.visitor_id)}
-                        >
-                          <div className="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-slate-400 font-bold shrink-0">
-                            {idx + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-slate-200 truncate">Lead {lead.visitor_id.substring(0,8)}</p>
-                            <p className="text-xs text-slate-500">{startTime}</p>
-                          </div>
-                          
-                          <div className="flex items-center gap-3 shrink-0">
-                            {lead.finished ? (
-                              <span className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-400 font-bold">Concluído</span>
-                            ) : (
-                              <span className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-400 font-bold">Drop-off</span>
-                            )}
-                            <span className="text-xs bg-slate-800 px-2 py-1 rounded text-cyan-400 font-semibold w-16 text-center">
-                              ⏱ {fmt(lead.total_time)}
-                            </span>
-                            <span className="text-slate-500">{isExpanded ? '▲' : '▼'}</span>
-                          </div>
+                      <div key={step.step_id} className="flex-1 flex flex-col items-center justify-end group relative h-full">
+                        {/* Tooltip */}
+                        <div className="absolute -top-8 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-20 border border-slate-600 shadow-xl font-mono">
+                          {dropOffCount} abandonos ({(dropRate*100).toFixed(1)}%)
                         </div>
-
-                        {/* Corpo Expandido - Jornada */}
-                        {isExpanded && (
-                          <div className="p-5 border-t border-slate-700/50 bg-slate-900/50 space-y-4">
-                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Histórico de Passos</h4>
-                            
-                            {lead.journey.length === 0 ? (
-                              <p className="text-xs text-slate-500 italic">Lead visualizou a tela mas não percorreu nenhuma pergunta antes do tempo acabar.</p>
-                            ) : (
-                              <div className="relative border-l-2 border-slate-700 ml-3 space-y-6">
-                                {lead.journey.map((step, sIdx) => (
-                                  <div key={sIdx} className="relative pl-6">
-                                    {/* Bolinha na linha do tempo */}
-                                    <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-indigo-500 ring-4 ring-slate-900"></div>
-                                    
-                                    <div className="flex flex-col gap-1">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-slate-200">
-                                          <span className="font-mono opacity-50 font-normal mr-2">{step.step_id}</span>
-                                          {quizDetail?.stepNaming?.[step.step_id] || ''}
-                                        </span>
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">⏱ {step.time_spent}s parados</span>
-                                      </div>
-                                      
-                                      {step.answer && (
-                                        <div className="text-sm px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-slate-300 inline-block mt-1">
-                                          Selecionou: <span className="font-semibold text-indigo-300">{step.answer}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        <div className="w-full mx-1 rounded-t-sm transition-all" 
+                          style={{ 
+                            height: `${Math.max(hPct, 5)}%`, 
+                            background: isCritical ? 'linear-gradient(to top, rgba(245,158,11,0.2), rgba(245,158,11,0.8))' : 'linear-gradient(to top, rgba(99,102,241,0.2), rgba(99,102,241,0.8))',
+                            boxShadow: isCritical ? 'inset 0 2px 4px rgba(245,158,11,0.5)' : 'none'
+                          }} 
+                        />
+                        <span className="text-[9px] text-slate-500 mt-2 font-mono">{i+1}</span>
                       </div>
                     );
                   })}
                 </div>
-              )}
+                <div className="flex justify-between mt-2 px-1">
+                  <span className="text-[10px] text-slate-500 uppercase tracking-widest">Início</span>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-widest">Fim</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabela de Comportamento Individual (Audit Log de Alta Densidade) */}
+            <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl overflow-hidden">
+              <div className="p-4 border-b border-white/5 bg-slate-900/60 flex justify-between items-center">
+                <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Log de Auditoria Individual</h3>
+                <span className="text-xs text-slate-500 font-mono text-right">{leads.length} LEADS</span>
+              </div>
+              
+              <div className="overflow-x-auto max-h-[500px] overflow-y-auto w-full custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-900/80 sticky top-0 z-10 backdrop-blur-md border-b border-white/5">
+                    <tr>
+                      <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-slate-500 tracking-widest">ID do Lead</th>
+                      <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-slate-500 tracking-widest">Status</th>
+                      <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-slate-500 tracking-widest">Última Etapa Acessada</th>
+                      <th className="py-2.5 px-4 text-[10px] uppercase font-bold text-slate-500 tracking-widest text-right">Tempo Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leadsLoading ? (
+                      <tr><td colSpan="4" className="text-center py-6 text-xs text-slate-500 font-mono animate-pulse">CARREGANDO REGISTROS...</td></tr>
+                    ) : leads.length === 0 ? (
+                      <tr><td colSpan="4" className="text-center py-6 text-xs text-slate-500 italic">Nenhum evento detalhado encontrado.</td></tr>
+                    ) : (
+                      leads.map((lead, idx) => {
+                        const lastStep = lead.journey[lead.journey.length - 1];
+                        return (
+                          <tr key={lead.visitor_id} className="border-b border-white/5 hover:bg-slate-800/40 transition-colors group">
+                            <td className="py-2 px-4 font-mono text-xs text-slate-300 whitespace-nowrap">
+                              {lead.visitor_id.substring(0,10)}
+                            </td>
+                            <td className="py-2 px-4 whitespace-nowrap">
+                              {lead.finished ? (
+                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-bold text-emerald-400 uppercase tracking-wider shadow-[inset_0_0_8px_rgba(16,185,129,0.1)]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Convertido
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-amber-500/20 bg-amber-500/10 text-[10px] font-bold text-amber-400 uppercase tracking-wider shadow-[inset_0_0_8px_rgba(245,158,11,0.1)]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Abandonou
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2 px-4 text-xs text-slate-400 truncate max-w-[200px]" title={lastStep ? quizDetail.stepNaming?.[lastStep.step_id] : 'Início'}>
+                              {lastStep ? (
+                                <>
+                                  <span className="font-mono opacity-50 mr-1">{lastStep.step_id}</span>
+                                  {quizDetail.stepNaming?.[lastStep.step_id] || ''}
+                                </>
+                              ) : (
+                                <span className="italic">N/A</span>
+                              )}
+                            </td>
+                            <td className="py-2 px-4 text-right font-mono text-xs text-cyan-400 font-medium whitespace-nowrap">
+                              {fmt(lead.total_time)}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </>
         ) : (
@@ -1150,49 +1187,84 @@ function AnalyticsView({ quizzes }) {
     );
   }
 
-  // ─── Overview Geral ───────────────────────────────────────────────────────────
+  // ─── Overview Geral (BI Luxury) ───────────────────────────────────────────────────────────
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <div className="flex justify-between items-end mb-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-white">Data Warehouse</h2>
+          <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest">Resumo de Performance Global</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {[
-          { icon: <Users size={22}/>, label: 'Total de Leads', value: metrics.overview.total_leads, sub: 'Que iniciaram o funil' },
-          { icon: <TrendingUp size={22}/>, label: 'Taxa de Conversão', value: `${metrics.overview.conversion_rate}%`, sub: 'Chegaram ao final' },
-          { icon: <CheckCircle2 size={22}/>, label: 'Quizzes Ativos', value: quizzes.filter(q=>q.is_active).length, sub: `de ${quizzes.length} total` },
+          { icon: <Users size={16}/>, label: 'TOTAL LEADS', value: metrics.overview.total_leads, sub: 'TRAFEGO INICIADO', color: 'blue' },
+          { icon: <TrendingUp size={16}/>, label: 'CONVERSÃO MÉDIA', value: `${metrics.overview.conversion_rate}%`, sub: 'GLOBAL ACROSS FUNNELS', color: 'emerald' },
+          { icon: <CheckCircle2 size={16}/>, label: 'QUIZZES ATIVOS', value: quizzes.filter(q=>q.is_active).length, sub: `DE ${quizzes.length} TOTAIS`, color: 'indigo' },
         ].map((s,i) => (
-          <div key={i} className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-            <div className="absolute -right-6 -top-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all duration-500"></div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4 shadow-[0_0_15px_rgba(99,102,241,0.2)]">{s.icon}</div>
-            <p className="text-3xl font-bold text-white mb-1 tracking-tight">{s.value}</p>
-            <p className="text-sm font-semibold text-slate-300">{s.label}</p>
-            <p className="text-xs text-slate-500 mt-1 font-medium">{s.sub}</p>
+          <div key={i} className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5 shadow-inner relative overflow-hidden group">
+            <div className={`absolute -right-8 -top-8 w-24 h-24 bg-${s.color}-500/10 rounded-full blur-xl group-hover:bg-${s.color}-500/20 transition-all duration-500`}></div>
+            <div className="flex justify-between items-start mb-4">
+              <div className={`w-8 h-8 rounded-lg bg-${s.color}-500/10 flex items-center justify-center text-${s.color}-400 shadow-[inset_0_0_10px_rgba(var(--tw-colors-${s.color}-500),0.1)] border border-${s.color}-500/20`}>
+                {s.icon}
+              </div>
+            </div>
+            <p className="text-3xl font-mono font-bold text-white tracking-tight">{s.value}</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{s.label}</p>
+            <p className="text-[9px] text-slate-600 font-mono mt-1">{s.sub}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-slate-900/40 border border-slate-700/40 rounded-2xl p-7 shadow-2xl">
-        <h3 className="text-xl font-bold text-white mb-1 tracking-tight flex items-center gap-3">
-          <BarChart2 className="w-6 h-6 text-indigo-400" />
-          Performance por Funil (Ranking)
-        </h3>
-        <p className="text-xs text-slate-500 mb-6">Clique em um quiz para ver o detalhamento completo por etapa</p>
-        {metrics.quizzes.map((q, i) => {
-          const rate = q.conversion_rate;
-          return (
-            <div key={q.id} onClick={() => loadQuizDetail(q)}
-              className="flex items-center gap-4 py-4 border-b border-slate-700/30 last:border-0 hover:bg-white/5 transition-colors px-3 -mx-3 rounded-xl cursor-pointer group">
-              <span className="text-slate-500 font-bold text-sm w-4">{i+1}</span>
-              <span className="flex-1 text-sm font-semibold text-slate-100 truncate group-hover:text-indigo-300 transition-colors">{q.title}</span>
-              <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-cyan-400 w-28 text-center">⏱ {fmt(q.avg_time_seconds)}</span>
-              <span className="text-xs font-semibold px-2 py-1 rounded bg-slate-800 text-slate-300 w-20 text-center">{q.starts} leads</span>
-              <span className="text-sm font-bold text-indigo-400 w-12 text-right">{rate}%</span>
-              <div className="w-24 h-2 bg-slate-800 rounded-full overflow-hidden shrink-0 shadow-inner">
-                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{width: `${rate}%`}} />
-              </div>
-              <span className="text-slate-600 group-hover:text-slate-300 transition-colors text-sm shrink-0">→</span>
-            </div>
-          );
-        })}
-        {metrics.quizzes.length === 0 && <p className="text-slate-500 text-sm italic">Nenhum evento registrado ainda. Rode o quiz para ver métricas.</p>}
+      <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/40 rounded-xl overflow-hidden shadow-2xl">
+        <div className="p-5 border-b border-light/5 bg-slate-900/60">
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <BarChart2 className="w-4 h-4 text-indigo-400" />
+            RANKING DE PERFORMANCE POR FUNIL
+          </h3>
+          <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest">Clique em uma linha para abrir o Drill-Down detalhado do funil</p>
+        </div>
+        
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-slate-900/80">
+            <tr>
+              <th className="py-3 px-5 text-[10px] uppercase font-bold text-slate-500 tracking-widest w-12 text-center">#</th>
+              <th className="py-3 px-5 text-[10px] uppercase font-bold text-slate-500 tracking-widest">NOME DO FUNIL</th>
+              <th className="py-3 px-5 text-[10px] uppercase font-bold text-slate-500 tracking-widest text-center">TEMPO DE SESSÃO</th>
+              <th className="py-3 px-5 text-[10px] uppercase font-bold text-slate-500 tracking-widest text-right">VOLUME (LEADS)</th>
+              <th className="py-3 px-5 text-[10px] uppercase font-bold text-slate-500 tracking-widest text-right">CONVERSÃO</th>
+              <th className="py-3 px-5 w-8"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {metrics.quizzes.map((q, i) => {
+              const rate = q.conversion_rate;
+              return (
+                <tr key={q.id} onClick={() => loadQuizDetail(q)} className="border-b border-white/5 hover:bg-slate-800/40 transition-colors cursor-pointer group">
+                  <td className="py-3 px-5 text-center font-mono text-xs text-slate-600 font-bold">{i+1}</td>
+                  <td className="py-3 px-5 text-sm font-semibold text-slate-200 group-hover:text-indigo-300 transition-colors truncate max-w-[200px]">{q.title}</td>
+                  <td className="py-3 px-5 text-center">
+                    <span className="inline-block px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700 font-mono text-[10px] text-cyan-400">⏱ {fmt(q.avg_time_seconds)}</span>
+                  </td>
+                  <td className="py-3 px-5 text-right font-mono text-xs text-slate-300">{q.starts}</td>
+                  <td className="py-3 px-5 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      <span className={`font-mono text-xs font-bold ${rate > 50 ? 'text-emerald-400' : 'text-indigo-400'}`}>{rate}%</span>
+                      <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden shrink-0 shadow-inner">
+                        <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-400" style={{width: `${rate}%`}} />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-5 text-right">
+                    <span className="text-slate-600 group-hover:text-slate-300 transition-colors">→</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {metrics.quizzes.length === 0 && <p className="text-slate-500 text-xs italic font-mono text-center py-8">NENHUM EVENTO REGISTRADO AINDA.</p>}
       </div>
     </div>
   );
