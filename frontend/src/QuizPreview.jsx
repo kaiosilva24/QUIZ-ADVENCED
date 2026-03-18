@@ -502,7 +502,12 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
       )}
 
       {/* Scrollable content */}
-      <div className="relative z-10 h-full flex flex-col overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+      <style>{`
+        .preview-scroll::-webkit-scrollbar { width: 4px; }
+        .preview-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+        .preview-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+      `}</style>
+      <div className="relative z-10 h-full flex flex-col overflow-y-auto preview-scroll">
         <div className={`flex flex-col gap-${compact ? '2' : '3'} ${compact ? 'p-4' : 'p-6'} min-h-full`}>
           {(step?.blocks || []).map(block => (
             <BlockRenderer key={block.id} block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} />
@@ -797,7 +802,7 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
           color: block.textColor || '#ffffff',
           paddingLeft: compact ? 8 : 16,
           paddingRight: compact ? 8 : 16,
-          fontSize: compact ? 10 : (block.fontSize || 15),
+          fontSize: compact ? Math.round((block.fontSize || 15) * 0.6) : (block.fontSize || 15),
           fontWeight: 600,
           fontFamily: block.fontFamily ? `'${block.fontFamily}', sans-serif` : undefined,
           borderRadius: btnRadius,
