@@ -602,9 +602,7 @@ function ImageEditor({ block, onChange }) {
           reader.readAsDataURL(file);
         }} />
       </label>
-      <Field label="Ou cole uma URL">
-        <Input value={block.src?.startsWith('data:') ? '' : (block.src || '')} onChange={v => onChange({ src: v })} placeholder="https://..." />
-      </Field>
+
       <Field label="Texto Alternativo"><Input value={block.alt} onChange={v => onChange({ alt: v })} placeholder="Descrição da imagem" /></Field>
       <Field label="Altura (px)">
         <input type="range" min={80} max={600} value={block.height || 200}
@@ -645,10 +643,7 @@ function AudioEditor({ block, onChange }) {
             </button>
           )}
         </Field>
-        {/* ── URL alternativa ── */}
-        <Field label="Ou cole uma URL de Áudio">
-          <Input value={block.src?.startsWith('data:') ? '' : block.src} onChange={v => onChange({ src: v })} placeholder="https://example.com/audio.mp3" />
-        </Field>
+
         <Field label="Duração (ex: 1:23)"><Input value={block.duration} onChange={v => onChange({ duration: v })} placeholder="0:30" /></Field>
         <Field label="Nome do Remetente"><Input value={block.senderName} onChange={v => onChange({ senderName: v })} placeholder="Fulano" /></Field>
       </Section>
@@ -673,9 +668,7 @@ function AudioEditor({ block, onChange }) {
             reader.readAsDataURL(file);
           }} />
         </label>
-        <Field label="Ou cole URL da imagem">
-          <Input value={block.avatarSrc?.startsWith('data:') ? '' : block.avatarSrc} onChange={v => onChange({ avatarSrc: v })} placeholder="https://example.com/foto.jpg" />
-        </Field>
+
       </Section>
 
       <Section title="Aparência">
