@@ -63,10 +63,30 @@ function Toggle({ label, value, onChange }) {
       <span className="text-sm text-slate-400">{label}</span>
       <button
         onClick={() => onChange(!value)}
-        className={`w-10 h-5 rounded-full transition-colors relative ${value ? 'bg-orange-500' : 'bg-slate-700'} cursor-pointer`}
-        style={value ? { backgroundColor: '#f97316' } : {}}
+        style={{
+          width: 40, height: 20,
+          borderRadius: 999,
+          background: value ? '#f97316' : '#334155',
+          border: 'none',
+          position: 'relative',
+          cursor: 'pointer',
+          flexShrink: 0,
+          transition: 'background 0.2s',
+          outline: 'none',
+        }}
       >
-        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${value ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+        <span style={{
+          position: 'absolute',
+          top: 2,
+          left: value ? 22 : 2,
+          width: 16,
+          height: 16,
+          borderRadius: '50%',
+          background: '#fff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+          transition: 'left 0.2s',
+          display: 'block',
+        }} />
       </button>
     </div>
   );
@@ -564,7 +584,27 @@ function TextEditor({ block, onChange }) {
 function ImageEditor({ block, onChange }) {
   return (
     <Section title="Imagem">
-      <Field label="URL da Imagem"><Input value={block.src} onChange={v => onChange({ src: v })} placeholder="https://..." /></Field>
+      {/* Upload do PC */}
+      {block.src?.startsWith('data:image') && (
+        <div className="relative w-full rounded-xl overflow-hidden border border-slate-700 mb-1" style={{ height: 80 }}>
+          <img src={block.src} alt="" className="w-full h-full object-cover" />
+          <button onClick={() => onChange({ src: '' })}
+            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600/90 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer text-xs">×</button>
+        </div>
+      )}
+      <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 hover:bg-slate-800/60 text-xs mb-1">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        {block.src?.startsWith('data:image') ? '✅ Imagem carregada do PC' : 'Carregar Imagem do Computador'}
+        <input type="file" accept="image/*" className="hidden" onChange={e => {
+          const file = e.target.files[0]; if (!file) return;
+          const reader = new FileReader();
+          reader.onload = ev => onChange({ src: ev.target.result });
+          reader.readAsDataURL(file);
+        }} />
+      </label>
+      <Field label="Ou cole uma URL">
+        <Input value={block.src?.startsWith('data:') ? '' : (block.src || '')} onChange={v => onChange({ src: v })} placeholder="https://..." />
+      </Field>
       <Field label="Texto Alternativo"><Input value={block.alt} onChange={v => onChange({ alt: v })} placeholder="Descrição da imagem" /></Field>
       <Field label="Altura (px)">
         <input type="range" min={80} max={600} value={block.height || 200}
