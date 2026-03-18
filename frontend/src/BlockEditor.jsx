@@ -670,6 +670,19 @@ function AudioEditor({ block, onChange }) {
 
       </Section>
 
+      <Section title="Tamanho e Forma">
+        <Field label={`Largura da Bolha: ${block.boxWidth || 80}%`}>
+          <input type="range" min={40} max={100} step={2} value={block.boxWidth || 80}
+            onChange={e => onChange({ boxWidth: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
+        <Field label={`Altura da Bolha: ${block.boxHeight || 66}px`}>
+          <input type="range" min={50} max={150} step={2} value={block.boxHeight || 66}
+            onChange={e => onChange({ boxHeight: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
+      </Section>
+
       <Section title="Aparência">
         <Field label="Cor de Fundo da Bolha"><ColorPicker value={block.bgColor || '#075e54'} onChange={v => onChange({ bgColor: v })} /></Field>
         <Field label="Cor da Bolinha (Progresso)"><ColorPicker value={block.dotColor || '#00bfff'} onChange={v => onChange({ dotColor: v })} /></Field>

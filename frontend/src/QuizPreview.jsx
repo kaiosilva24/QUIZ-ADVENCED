@@ -83,10 +83,13 @@ function AudioBlockPlayer({ block, compact }) {
       <div style={{
         display: 'inline-flex',
         flexDirection: 'column',
+        justifyContent: 'center',
         background: bubbleBg,
         borderRadius: compact ? 14 : 20,
         padding: compact ? '8px 10px 6px' : '10px 14px 8px',
+        width: block.boxWidth ? `${block.boxWidth}%` : 'auto',
         minWidth: compact ? 160 : 240,
+        minHeight: block.boxHeight ? (compact ? block.boxHeight * 0.6 : block.boxHeight) : undefined,
         maxWidth: '100%',
         boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
         gap: compact ? 3 : 4,
