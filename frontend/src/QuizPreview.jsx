@@ -845,17 +845,21 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
     case 'divider': {
       return (
         <div style={{
+          flexShrink: 0,
+          minHeight: block.thickness || 1,
           height: block.thickness || 1,
           background: block.color || '#334155',
           borderRadius: 1,
           margin: compact ? '2px 0' : '4px 0',
+          width: '100%'
         }} />
       );
     }
     
     case 'spacer': {
+      const h = compact ? Math.round((block.height || 40) * 0.5) : (block.height || 40);
       return (
-        <div style={{ height: block.height || 40, width: '100%' }} />
+        <div style={{ height: h, minHeight: h, flexShrink: 0, width: '100%' }} />
       );
     }
 
