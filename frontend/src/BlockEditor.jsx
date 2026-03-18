@@ -624,7 +624,6 @@ function AudioEditor({ block, onChange }) {
   return (
     <>
       <Section title="Áudio">
-        <Field label="URL do Arquivo de Áudio (.mp3, .ogg)"><Input value={block.src} onChange={v => onChange({ src: v })} placeholder="https://example.com/audio.mp3" /></Field>
         {/* ── Upload de áudio do PC ── */}
         <Field label="Arquivo de Áudio do Computador">
           <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 hover:bg-slate-800/60 text-xs">
@@ -698,8 +697,7 @@ function VideoEditor({ block, onChange }) {
             }} />
           </label>
         </Field>
-        <Field label="URL da Thumbnail (Poster)"><Input value={block.thumbnailSrc} onChange={v => onChange({ thumbnailSrc: v })} placeholder="https://example.com/thumb.jpg" /></Field>
-        <Field label="Ou Carregar Thumbnail do PC">
+        <Field label="Carregar Thumbnail do PC">
           <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 hover:bg-slate-800/60 text-xs">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             {block.thumbnailSrc?.startsWith('data:') ? '✅ Thumbnail carregada' : 'Clique para Carregar Thumbnail'}
