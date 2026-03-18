@@ -459,7 +459,7 @@ function VideoBlockPlayer({ block, compact }) {
 }
 
 // Renderizador fiel ao InLead: converte o config JSON em tela visual
-export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate }) {
+export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate, selectedBlockId }) {
   const step = config?.steps?.[stepIdx];
   const theme = config?.theme || {};
   const accent = theme.accent || '#6366f1';
@@ -485,6 +485,18 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
   const width = compact ? 200 : 390;
   const height = compact ? 380 : 680;
 
+  React.useEffect(() => {
+    if (selectedBlockId && compact) {
+      const el = document.getElementById(`preview-block-${selectedBlockId}`);
+      if (el) {
+        // give browser time to render new Layout then scroll
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+      }
+    }
+  }, [selectedBlockId, compact]);
+
   return (
     <div
       className="rounded-3xl overflow-hidden shadow-2xl"
@@ -508,10 +520,16 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
         .preview-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
         .preview-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
       `}</style>
-      <div className="relative z-10 h-full block overflow-y-auto preview-scroll">
+      <div className="relative z-10 h-full block overflow-y-auto preview-scroll pb-6">
         <div className={`flex flex-col gap-${compact ? '2' : '3'} ${compact ? 'px-4 pt-4 pb-16' : 'p-6'} min-h-full`}>
           {(step?.blocks || []).map(block => (
-            <BlockRenderer key={block.id} block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} />
+            <div 
+              key={block.id} 
+              id={`preview-block-${block.id}`} 
+              className={compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300' : ''}
+            >
+              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} />
+            </div>
           ))}
           {(!step?.blocks || step.blocks.length === 0) && (
             <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30">
