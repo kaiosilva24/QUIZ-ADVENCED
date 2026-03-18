@@ -526,7 +526,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
             <div 
               key={block.id} 
               id={`preview-block-${block.id}`} 
-              className={compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300' : ''}
+              className={`shrink-0 w-full ${compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300' : ''}`}
             >
               <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} />
             </div>
