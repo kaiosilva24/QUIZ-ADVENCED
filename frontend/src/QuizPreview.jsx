@@ -32,22 +32,21 @@ function buildBackground(theme) {
   return theme.bg || '#0f172a';
 }
 
-// ─── AUDIO PLAYER COMPONENT — WhatsApp Style ─────────────────────────────────
+// ─── AUDIO PLAYER COMPONENT — WhatsApp Style (fiel à referência) ─────────────
 function AudioBlockPlayer({ block, compact }) {
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration]       = useState(0);
 
-  // WhatsApp dark palette
-  const bubbleBg  = '#1f2c34';
-  const wavePlayed = '#ffffff';
-  const waveRest   = 'rgba(255,255,255,0.25)';
-  const green      = '#25d366';
-  const sz         = compact ? 30 : 42;
-  const waveCount  = compact ? 18 : 30;
-  const waveHeights = [0.3,0.6,0.4,0.9,0.5,0.7,0.35,0.8,0.45,0.65,0.55,0.75,0.4,0.85,0.5,0.6,
-                       0.3,0.7,0.45,0.9,0.35,0.65,0.5,0.8,0.4,0.6,0.55,0.75,0.35,0.7];
+  // Cores configuráveis com padrões do WPP
+  const bubbleBg   = block.bgColor    || '#075e54';
+  const dotColor   = block.dotColor   || '#00bfff';   // bolinha azul
+  const waveColor  = block.waveColor  || 'rgba(255,255,255,0.55)';
+  const waveCount  = compact ? 22 : 38;
+  const waveHeights = [0.35,0.65,0.45,0.9,0.5,0.75,0.3,0.85,0.5,0.7,0.4,0.8,0.45,0.9,0.55,0.65,
+                       0.3,0.75,0.5,0.85,0.4,0.7,0.55,0.8,0.35,0.65,0.5,0.9,0.4,0.7,0.6,0.85,
+                       0.45,0.7,0.35,0.8,0.5,0.75];
 
   useEffect(() => {
     if (audioRef.current && block.src) audioRef.current.load();
@@ -67,10 +66,12 @@ function AudioBlockPlayer({ block, compact }) {
   };
 
   const progress = duration > 0 ? currentTime / duration : 0;
+  const avatarSz  = compact ? 32 : 46;
+  const btnSz     = compact ? 22 : 32;
 
   return (
-    <div style={{ display:'flex', alignItems:'flex-end', gap: compact?6:10, width:'100%' }}>
-      {/* Hidden audio element */}
+    <div style={{ width: '100%' }}>
+      {/* Hidden audio */}
       {block.src && (
         <audio ref={audioRef} src={block.src} preload="auto"
           onTimeUpdate={e => setCurrentTime(e.target.currentTime)}
@@ -78,103 +79,114 @@ function AudioBlockPlayer({ block, compact }) {
           onEnded={() => { setPlaying(false); setCurrentTime(0); }} />
       )}
 
-      {/* Avatar circular à esquerda */}
+      {/* ── Bolha principal ── */}
       <div style={{
-        width: compact?28:40, height: compact?28:40,
-        borderRadius:'50%', overflow:'hidden', flexShrink:0,
-        border:`2px solid ${green}`,
-      }}>
-        {block.avatarSrc ? (
-          <img src={block.avatarSrc} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-        ) : (
-          <div style={{ width:'100%', height:'100%', background:'#128c7e', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <svg width={compact?12:18} height={compact?12:18} viewBox="0 0 24 24" fill="white">
-              <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/>
-            </svg>
-          </div>
-        )}
-      </div>
-
-      {/* Bolha WhatsApp escura */}
-      <div style={{
-        position: 'relative',
+        display: 'inline-flex',
+        flexDirection: 'column',
         background: bubbleBg,
-        borderRadius: compact
-          ? '10px 10px 10px 2px'
-          : '14px 14px 14px 2px',
-        padding: compact ? '6px 10px 4px' : '8px 14px 6px',
-        minWidth: compact ? 110 : 190,
-        maxWidth: '80%',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+        borderRadius: compact ? 14 : 20,
+        padding: compact ? '8px 10px 6px' : '10px 14px 8px',
+        minWidth: compact ? 160 : 240,
+        maxWidth: '100%',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+        gap: compact ? 3 : 4,
       }}>
-        {/* Rabinho à esquerda-baixo */}
-        <div style={{
-          position:'absolute', left: -7, bottom: 0,
-          width: 0, height: 0,
-          borderRight: `7px solid ${bubbleBg}`,
-          borderTop: '7px solid transparent',
-        }} />
 
-        {/* Row: botão play + waveform */}
-        <div style={{ display:'flex', alignItems:'center', gap: compact?6:10 }}>
-          {/* Botão Play/Pause — círculo escuro estilo download */}
+        {/* Row: avatar + play + waveform */}
+        <div style={{ display:'flex', alignItems:'center', gap: compact ? 7 : 10 }}>
+
+          {/* Avatar circular */}
+          <div style={{
+            width: avatarSz, height: avatarSz,
+            borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+            border: '2px solid rgba(255,255,255,0.3)',
+          }}>
+            {block.avatarSrc ? (
+              <img src={block.avatarSrc} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+            ) : (
+              <div style={{ width:'100%', height:'100%', background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <svg width={compact?14:20} height={compact?14:20} viewBox="0 0 24 24" fill="white">
+                  <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v2h20v-2c0-3.3-6.7-5-10-5z"/>
+                </svg>
+              </div>
+            )}
+          </div>
+
+          {/* Botão play/pause */}
           <button onClick={toggle} style={{
-            width: sz, height: sz,
+            width: btnSz, height: btnSz,
             borderRadius: '50%',
-            background: 'rgba(255,255,255,0.12)',
+            background: 'none',
             border: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', flexShrink: 0,
-            transition: 'background 0.15s',
+            padding: 0,
           }}>
             {playing ? (
-              <svg width={compact?10:15} height={compact?10:15} viewBox="0 0 24 24" fill="white">
-                <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+              <svg width={compact?14:20} height={compact?14:20} viewBox="0 0 24 24" fill="white">
+                <rect x="5" y="4" width="4" height="16" rx="1"/>
+                <rect x="15" y="4" width="4" height="16" rx="1"/>
               </svg>
             ) : (
-              /* ↓ ícone de download redondo, igual ao WPP antes de baixar */
-              <svg width={compact?12:18} height={compact?12:18} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="4" x2="12" y2="16"/><polyline points="8 12 12 16 16 12"/><line x1="6" y1="20" x2="18" y2="20"/>
+              <svg width={compact?14:20} height={compact?14:20} viewBox="0 0 24 24" fill="white">
+                <polygon points="6,3 20,12 6,21"/>
               </svg>
             )}
           </button>
 
-          {/* Waveform */}
-          {block.showWave !== false ? (
-            <div style={{ display:'flex', alignItems:'center', gap: compact?1.5:2, flex:1, height: compact?20:32 }}>
-              {Array.from({length: waveCount}, (_,i) => {
+          {/* Waveform com bolinha azul deslizando */}
+          <div style={{ flex: 1, position: 'relative', height: compact ? 24 : 36, display:'flex', alignItems:'center' }}>
+            {/* Barras */}
+            <div style={{ display:'flex', alignItems:'center', gap: compact ? 1.5 : 2, width:'100%', height:'100%' }}>
+              {Array.from({ length: waveCount }, (_, i) => {
                 const h = waveHeights[i % waveHeights.length];
                 const barProgress = i / waveCount;
                 const played = barProgress < progress;
                 return (
                   <div key={i} style={{
-                    width: compact ? 2 : 2.5,
-                    height: `${h * (compact?20:32)}px`,
-                    background: played ? wavePlayed : waveRest,
+                    flex: 1,
+                    height: `${h * (compact ? 22 : 34)}px`,
+                    background: played ? 'rgba(255,255,255,0.85)' : waveColor,
                     borderRadius: 2,
-                    flexShrink: 0,
                     transition: 'background 0.1s',
                   }} />
                 );
               })}
             </div>
-          ) : (
-            <div style={{ flex:1, height:2, background:'rgba(255,255,255,0.2)', borderRadius:2, position:'relative' }}>
-              <div style={{ position:'absolute', left:0, top:0, height:'100%', width:`${progress*100}%`, background:wavePlayed, borderRadius:2 }} />
-            </div>
-          )}
+
+            {/* Bolinha azul que desliza */}
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: `${progress * 100}%`,
+              transform: 'translate(-50%, -50%)',
+              width: compact ? 10 : 14,
+              height: compact ? 10 : 14,
+              borderRadius: '50%',
+              background: dotColor,
+              boxShadow: `0 0 6px ${dotColor}`,
+              transition: playing ? 'left 0.3s linear' : 'left 0.1s',
+              pointerEvents: 'none',
+              zIndex: 2,
+            }} />
+          </div>
         </div>
 
-        {/* Footer: timer + ticks — alinhados à direita */}
-        <div style={{ display:'flex', justifyContent:'flex-end', alignItems:'center', gap: compact?3:5, marginTop: compact?2:3 }}>
-          <span style={{ color:'rgba(255,255,255,0.55)', fontSize: compact?8:10, fontVariantNumeric:'tabular-nums', fontFamily:'monospace' }}>
-            {duration > 0 ? fmt(duration) : (block.duration || '0:00')}
+        {/* Footer: timer esquerda + horário e ticks direita */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingLeft: compact ? 2 : 4 }}>
+          <span style={{ color:'rgba(255,255,255,0.7)', fontSize: compact ? 8 : 10, fontFamily:'monospace', fontVariantNumeric:'tabular-nums' }}>
+            {duration > 0 ? fmt(currentTime) : '0:00'}
           </span>
-          {/* Ticks ✓✓ azul */}
-          <svg width={compact?10:14} height={compact?6:9} viewBox="0 0 20 12" fill="none">
-            <polyline points="0,6 5,11 12,1" stroke="#53bdeb" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-            <polyline points="7,6 12,11 19,1" stroke="#53bdeb" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          <div style={{ display:'flex', alignItems:'center', gap: compact ? 3 : 5 }}>
+            <span style={{ color:'rgba(255,255,255,0.6)', fontSize: compact ? 8 : 10, fontFamily:'monospace' }}>
+              {block.sentAt || ''}
+            </span>
+            {/* ✓✓ azul */}
+            <svg width={compact ? 10 : 14} height={compact ? 6 : 9} viewBox="0 0 20 12" fill="none">
+              <polyline points="0,6 5,11 12,1" stroke="#53bdeb" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <polyline points="7,6 12,11 19,1" stroke="#53bdeb" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
         </div>
       </div>
     </div>

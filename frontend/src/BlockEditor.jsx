@@ -680,8 +680,8 @@ function AudioEditor({ block, onChange }) {
 
       <Section title="Aparência">
         <Field label="Cor de Fundo da Bolha"><ColorPicker value={block.bgColor || '#075e54'} onChange={v => onChange({ bgColor: v })} /></Field>
-        <Field label="Cor da Bolha"><ColorPicker value={block.bubbleColor || '#dcf8c6'} onChange={v => onChange({ bubbleColor: v })} /></Field>
-        <Field label="Cor do Texto"><ColorPicker value={block.textColor || '#111b21'} onChange={v => onChange({ textColor: v })} /></Field>
+        <Field label="Cor da Bolinha (Progresso)"><ColorPicker value={block.dotColor || '#00bfff'} onChange={v => onChange({ dotColor: v })} /></Field>
+        <Field label="Horário exibido (ex: 22:54)"><Input value={block.sentAt} onChange={v => onChange({ sentAt: v })} placeholder="22:54" /></Field>
         <Toggle label="Mostrar Onda Sonora" value={block.showWave !== false} onChange={v => onChange({ showWave: v })} />
       </Section>
     </>
