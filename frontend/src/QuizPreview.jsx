@@ -507,7 +507,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
         .preview-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
         .preview-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
       `}</style>
-      <div className="relative z-10 h-full flex flex-col overflow-y-auto preview-scroll">
+      <div className="relative z-10 h-full block overflow-y-auto preview-scroll">
         <div className={`flex flex-col gap-${compact ? '2' : '3'} ${compact ? 'p-4' : 'p-6'} min-h-full`}>
           {(step?.blocks || []).map(block => (
             <BlockRenderer key={block.id} block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} />
