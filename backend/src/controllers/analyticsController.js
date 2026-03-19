@@ -1,5 +1,5 @@
 const { getDB } = require('../db');
-const https = require('https');
+const http = require('http');
 
 // ── Geo lookup via ip-api.com (gratuito, sem auth, 45 req/min) ────────────────
 function geoLookup(ip) {
@@ -9,7 +9,7 @@ function geoLookup(ip) {
             return resolve({ city: 'Local', state: 'DEV', country: 'BR' });
         }
         const url = `http://ip-api.com/json/${cleanIp}?lang=pt-BR&fields=status,city,regionName,countryCode`;
-        https.get(url.replace('http://', 'http://'), (res) => {
+        http.get(url, (res) => {
             let data = '';
             res.on('data', c => data += c);
             res.on('end', () => {
