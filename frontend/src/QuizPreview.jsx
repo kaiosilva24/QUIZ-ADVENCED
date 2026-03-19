@@ -976,12 +976,12 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
           {fields.map(f => (
             <div key={f} style={{
               padding: compact ? '6px 10px' : '12px 16px',
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: block.fieldBg || 'rgba(255,255,255,0.07)',
+              border: `1px solid ${block.fieldBorderColor || 'rgba(255,255,255,0.12)'}`,
               borderRadius: 10,
               fontSize: compact ? 9 : 13,
-              color: defaultText,
-              opacity: .6,
+              color: block.fieldTextColor || defaultText,
+              opacity: block.fieldTextColor ? 1 : 0.6,
             }}>
               {labels[f] || f}...
             </div>

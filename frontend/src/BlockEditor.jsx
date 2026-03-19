@@ -909,6 +909,17 @@ function LeadCaptureEditor({ block, onChange, steps, theme }) {
             value={block.fields?.includes(f)}
             onChange={v => onChange({ fields: v ? [...(block.fields || []), f] : (block.fields || []).filter(x => x !== f) })} />
         ))}
+        <div className="pt-3 border-t border-white/5 mt-3 space-y-3">
+          <Field label="Cor de Fundo do Campo">
+            <ColorPicker value={block.fieldBg || 'rgba(255,255,255,0.07)'} onChange={v => onChange({ fieldBg: v })} />
+          </Field>
+          <Field label="Cor do Texto do Campo">
+            <ColorPicker value={block.fieldTextColor || '#ffffff'} onChange={v => onChange({ fieldTextColor: v })} />
+          </Field>
+          <Field label="Cor da Borda do Campo">
+            <ColorPicker value={block.fieldBorderColor || 'rgba(255,255,255,0.12)'} onChange={v => onChange({ fieldBorderColor: v })} />
+          </Field>
+        </div>
       </Section>
       <Section title="Ação após Captura">
         <Field label="Ir para Etapa">
