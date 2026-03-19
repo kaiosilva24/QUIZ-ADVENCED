@@ -941,9 +941,30 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     case 'lead_capture': {
       const [isLoading, setIsLoading] = React.useState(false);
       const [formValues, setFormValues] = React.useState({});
+      const [errorMsg, setErrorMsg] = React.useState('');
+
+      const proceed = () => {
+        if (block.nextStep && onNavigate) {
+          onNavigate(block.nextStep, Object.keys(formValues).length > 0 ? JSON.stringify(formValues) : (block.buttonText || 'Quero meu resultado'));
+        } else if (block.redirectUrl) {
+          const url = block.redirectUrl.startsWith('http') ? block.redirectUrl : `https://${block.redirectUrl}`;
+          window.location.href = url;
+        }
+      };
 
       const handleCapture = () => {
-        // Formata e salva/envia os dados (mocked for visualization)
+        // Validation
+        if (!compact) {
+          const requiredFields = block.fields || ['name', 'email'];
+          for (const f of requiredFields) {
+             if (!formValues[f] || !formValues[f].trim()) {
+                setErrorMsg('Por favor, preencha todos os campos obrigatórios.');
+                return;
+             }
+          }
+        }
+        setErrorMsg('');
+
         if (block.enableLoading) {
            setIsLoading(true);
            const timer = setTimeout(() => {
@@ -952,15 +973,6 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
            }, (block.loadingDuration || 3) * 1000);
         } else {
            proceed();
-        }
-      };
-
-      const proceed = () => {
-        if (block.nextStep && onNavigate) {
-          onNavigate(block.nextStep, block.buttonText || 'Quero meu resultado');
-        } else if (block.redirectUrl) {
-          const url = block.redirectUrl.startsWith('http') ? block.redirectUrl : `https://${block.redirectUrl}`;
-          window.location.href = url;
         }
       };
 
@@ -1075,6 +1087,13 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
               />
             );
           })}
+
+          {errorMsg && !compact && (
+            <div style={{ color: '#ef4444', fontSize: 13, textAlign: 'center', marginTop: 4 }}>
+              {errorMsg}
+            </div>
+          )}
+
           <button 
             onClick={handleCapture}
             style={{

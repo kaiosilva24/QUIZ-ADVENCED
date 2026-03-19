@@ -742,6 +742,76 @@ function AnalyticsView({ quizzes }) {
     .catch(() => { setDetailLoading(false); setLeadsLoading(false); });
   };
 
+  const exportCsv = () => {
+    const headers = ["Lead ID", "Data/Hora", "Status", "Dispositivo", "Plataforma/OS", "Origem", "Campanha", "Cidade", "Estado", "País", "Tempo Total (s)", "Respostas/Jornada"];
+    
+    let csvRows = [];
+    csvRows.push(headers.map(h => `"${h}"`).join(","));
+
+    leads.forEach(lead => {
+      const intel = lead.intel || {};
+      const status = lead.finished ? "Concluido" : "Drop-off";
+      
+      const journeyStr = lead.journey.map(j => {
+         let ans = j.answer || 'Visualizou';
+         try {
+           const parsed = JSON.parse(j.answer);
+           if (parsed && typeof parsed === 'object') {
+              ans = Object.entries(parsed).map(([k,v]) => `${k}: ${v}`).join(' | ');
+           }
+         } catch(e) {}
+         return `[${quizDetail.stepNaming?.[j.step_id] || j.step_id}] -> ${ans}`;
+      }).join(' || ');
+
+      const row = [
+        lead.visitor_id,
+        new Date(lead.start_time).toLocaleString('pt-BR'),
+        status,
+        intel.device_type || '',
+        intel.os || '',
+        intel.source || '',
+        intel.utm_campaign || '',
+        intel.city || '',
+        intel.state || '',
+        intel.country || '',
+        lead.total_time,
+        journeyStr
+      ];
+      csvRows.push(row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","));
+    });
+
+    const blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = `leads_auditoria_${selectedQuiz.slug || selectedQuiz.id}.csv`;
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const renderAnswer = (answer) => {
+    if (!answer) return <span className="italic">Visualizou a etapa</span>;
+    try {
+      const parsed = JSON.parse(answer);
+      if (parsed && typeof parsed === 'object') {
+         return (
+           <div className="flex flex-col gap-1 mt-1">
+             {Object.entries(parsed).map(([k, v]) => (
+               <div key={k} className="text-[11px] bg-slate-800/80 px-2 py-1 rounded text-slate-300 border border-slate-700/50 inline-block w-fit">
+                 <span className="font-semibold text-indigo-300 capitalize mr-1">{k}:</span>
+                 {v}
+               </div>
+             ))}
+           </div>
+         );
+      }
+    } catch (e) {}
+    return <span>{answer}</span>;
+  };
+
   const fmt = (s) => {
     if (!s || s === 0) return '0s';
     if (s < 60) return `${Number(s.toFixed(1))}s`;
@@ -1099,7 +1169,13 @@ function AnalyticsView({ quizzes }) {
             <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl overflow-hidden">
               <div className="p-4 border-b border-slate-700 bg-slate-800/60 flex justify-between items-center">
                 <h3 className="text-sm font-bold text-slate-300">Log de Auditoria Individual</h3>
-                <span className="text-xs text-slate-500 font-mono text-right">{leads.length} LEADS</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-500 font-mono text-right shrink-0">{leads.length} LEADS</span>
+                  <button onClick={exportCsv} disabled={leads.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-lg text-xs font-semibold cursor-pointer transition-colors disabled:opacity-50">
+                    ⬇ Exportar CSV
+                  </button>
+                </div>
               </div>
               
               <div className="overflow-x-auto max-h-[500px] overflow-y-auto w-full custom-scrollbar">
@@ -1169,7 +1245,7 @@ function AnalyticsView({ quizzes }) {
                                         <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
                                         <p className="text-slate-300 font-medium">{quizDetail.stepNaming?.[p.step_id] || p.step_id}</p>
                                         <div className="flex justify-between items-end mt-1 gap-2">
-                                          <span className="text-slate-500 break-words max-w-[80%]">{p.answer || <span className="italic">Visualizou a etapa</span>}</span>
+                                          <div className="text-slate-500 break-words max-w-[80%]">{renderAnswer(p.answer)}</div>
                                           <span className="font-mono text-cyan-400/80 whitespace-nowrap bg-slate-800 px-1.5 py-0.5 rounded">{fmt(p.time_spent)}</span>
                                         </div>
                                       </div>
