@@ -905,9 +905,20 @@ function LeadCaptureEditor({ block, onChange, steps, theme }) {
     <>
       <Section title="Campos do Formulário">
         {all.map(f => (
-          <Toggle key={f} label={labels[f]}
-            value={block.fields?.includes(f)}
-            onChange={v => onChange({ fields: v ? [...(block.fields || []), f] : (block.fields || []).filter(x => x !== f) })} />
+          <div key={f} className="space-y-2">
+            <Toggle label={labels[f]}
+              value={block.fields?.includes(f)}
+              onChange={v => onChange({ fields: v ? [...(block.fields || []), f] : (block.fields || []).filter(x => x !== f) })} />
+            {block.fields?.includes(f) && (
+              <div className="pl-2 border-l-2 border-slate-700/50 mb-2">
+                <Input 
+                  value={block.placeholders?.[f] || ''} 
+                  onChange={val => onChange({ placeholders: { ...(block.placeholders || {}), [f]: val } })}
+                  placeholder={`Placeholder: Ex: Seu ${labels[f].toLowerCase()}...`}
+                />
+              </div>
+            )}
+          </div>
         ))}
         <div className="pt-3 border-t border-white/5 mt-3 space-y-3">
           <Field label="Cor de Fundo do Campo">

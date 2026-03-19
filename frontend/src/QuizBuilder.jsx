@@ -86,6 +86,45 @@ function SortableBlock({ block, isSelected, onSelect, onDelete, onClone }) {
   );
 }
 
+function SortableStep({ step, idx, currentStepIdx, onClick, updateLabel, onClone, onDelete }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: step.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+  
+  return (
+    <div ref={setNodeRef} style={style}
+      onClick={onClick}
+      className={`group flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all border ${idx === currentStepIdx ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-300' : 'bg-transparent hover:bg-slate-800/60 text-slate-400 border-transparent'}`}>
+      
+      <button {...attributes} {...listeners}
+        onClick={e => e.stopPropagation()}
+        className="text-slate-600 hover:text-slate-400 cursor-grab active:cursor-grabbing touch-none shrink-0 focus:outline-none"
+        aria-label="Arrastar etapa">
+        <GripVertical size={12} />
+      </button>
+
+      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${idx === currentStepIdx ? 'bg-indigo-500 text-white' : 'bg-slate-700 text-slate-400'}`}>{idx + 1}</div>
+      <input value={step.label} onClick={e => e.stopPropagation()}
+        onChange={e => updateLabel(idx, e.target.value)}
+        className="flex-1 bg-transparent text-xs truncate outline-none"
+        placeholder={`Etapa ${idx + 1}`} />
+      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+        <button onClick={e => { e.stopPropagation(); onClone(idx); }}
+          className="hover:text-blue-400 cursor-pointer focus:outline-none"
+          aria-label="Duplicar etapa">
+          <Copy size={11} />
+        </button>
+        {onDelete && (
+          <button onClick={e => { e.stopPropagation(); onDelete(idx); }}
+            className="hover:text-red-400 cursor-pointer focus:outline-none"
+            aria-label="Remover etapa">
+            <Trash2 size={11} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function QuizBuilder({ quiz, domain, onBack }) {
   const [title, setTitle] = useState(quiz.title || 'Novo Quiz');
   const [config, setConfig] = useState(() => {
@@ -209,6 +248,23 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
     }));
   };
 
+  const handleStepDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    
+    setConfig(c => {
+      const oldIdx = c.steps.findIndex(s => s.id === active.id);
+      const newIdx = c.steps.findIndex(s => s.id === over.id);
+      
+      const activeStep = c.steps[currentStepIdx];
+      const newSteps = arrayMove(c.steps, oldIdx, newIdx);
+      const newCurrentIdx = newSteps.findIndex(s => s.id === activeStep.id);
+      
+      setCurrentStepIdx(newCurrentIdx);
+      return { ...c, steps: newSteps };
+    });
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -288,31 +344,22 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
           <div className="flex-1 overflow-y-auto flex flex-col">
             {/* Step Tabs */}
             <div className="p-2 space-y-1 border-b border-white/5">
-              {config.steps.map((step, idx) => (
-                <div key={step.id}
-                  onClick={() => { setCurrentStepIdx(idx); setSelectedBlockId(null); }}
-                  className={`group flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-all ${idx === currentStepIdx ? 'bg-indigo-500/15 border border-indigo-500/30 text-indigo-300' : 'hover:bg-slate-800/60 text-slate-400 border border-transparent'}`}>
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${idx === currentStepIdx ? 'bg-indigo-500 text-white' : 'bg-slate-700 text-slate-400'}`}>{idx + 1}</div>
-                  <input value={step.label} onClick={e => e.stopPropagation()}
-                    onChange={e => updateStepLabel(idx, e.target.value)}
-                    className="flex-1 bg-transparent text-xs truncate outline-none"
-                    placeholder={`Etapa ${idx + 1}`} />
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                    <button onClick={e => { e.stopPropagation(); cloneStep(idx); }}
-                      className="hover:text-blue-400 cursor-pointer focus:outline-none"
-                      aria-label="Duplicar etapa">
-                      <Copy size={11} />
-                    </button>
-                    {config.steps.length > 1 && (
-                      <button onClick={e => { e.stopPropagation(); deleteStep(idx); }}
-                        className="hover:text-red-400 cursor-pointer focus:outline-none"
-                        aria-label="Remover etapa">
-                        <Trash2 size={11} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleStepDragEnd}>
+                <SortableContext items={config.steps.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                  {config.steps.map((step, idx) => (
+                    <SortableStep
+                      key={step.id}
+                      step={step}
+                      idx={idx}
+                      currentStepIdx={currentStepIdx}
+                      onClick={() => { setCurrentStepIdx(idx); setSelectedBlockId(null); }}
+                      updateLabel={updateStepLabel}
+                      onClone={cloneStep}
+                      onDelete={config.steps.length > 1 ? deleteStep : null}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
               <button onClick={addStep}
                 className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all cursor-pointer border border-dashed border-slate-700 hover:border-indigo-500/40 focus:outline-none">
                 <Plus size={12} /> Adicionar Etapa

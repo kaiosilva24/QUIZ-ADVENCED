@@ -940,6 +940,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
     case 'lead_capture': {
       const [isLoading, setIsLoading] = React.useState(false);
+      const [formValues, setFormValues] = React.useState({});
 
       const handleCapture = () => {
         // Formata e salva/envia os dados (mocked for visualization)
@@ -1028,23 +1029,52 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       }
 
       const fields = block.fields || ['name', 'email'];
-      const labels = { name: 'Seu nome completo', email: 'Seu melhor e-mail', phone: 'Seu WhatsApp', title: 'Seu cargo' };
+      const defaultLabels = { name: 'Seu nome completo', email: 'Seu melhor e-mail', phone: 'Seu WhatsApp', message: 'Sua mensagem' };
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 6 : 10, animation: 'fadeIn 0.4s ease-out' }}>
           <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-          {fields.map(f => (
-            <div key={f} style={{
+          {fields.map(f => {
+            const placeholder = block.placeholders?.[f] || defaultLabels[f] || f;
+            const fieldStyle = {
               padding: compact ? '6px 10px' : '12px 16px',
               background: block.fieldBg || 'rgba(255,255,255,0.07)',
               border: `1px solid ${block.fieldBorderColor || 'rgba(255,255,255,0.12)'}`,
               borderRadius: 10,
               fontSize: compact ? 9 : 13,
               color: block.fieldTextColor || defaultText,
-              opacity: block.fieldTextColor ? 1 : 0.6,
-            }}>
-              {labels[f] || f}...
-            </div>
-          ))}
+              width: '100%',
+              outline: 'none',
+              fontFamily: 'inherit',
+              transition: 'border-color 0.2s ease',
+            };
+            if (compact) {
+              return (
+                <div key={f} style={{...fieldStyle, opacity: block.fieldTextColor ? 1 : 0.6}}>
+                  {placeholder}...
+                </div>
+              );
+            }
+            if (f === 'message') {
+               return (
+                  <textarea key={f}
+                    value={formValues[f] || ''}
+                    onChange={e => setFormValues({...formValues, [f]: e.target.value})}
+                    placeholder={placeholder + '...'}
+                    rows={3}
+                    style={{...fieldStyle, resize: 'none'}} 
+                  />
+               );
+            }
+            return (
+              <input key={f}
+                type={f === 'email' ? 'email' : f === 'phone' ? 'tel' : 'text'}
+                value={formValues[f] || ''}
+                onChange={e => setFormValues({...formValues, [f]: e.target.value})}
+                placeholder={placeholder + '...'}
+                style={fieldStyle}
+              />
+            );
+          })}
           <button 
             onClick={handleCapture}
             style={{
