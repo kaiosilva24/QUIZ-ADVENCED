@@ -110,8 +110,10 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
     return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`;
   };
 
-  React.useEffect(() => { return () => { if (audioRef.current) triggerFinalPing(audioRef.current.duration); } }, []);
-  React.useEffect(() => { return () => { if (videoRef.current) triggerFinalPing(videoRef.current.duration); } }, []);
+  // Cleanup: send final ping when leaving the step
+  React.useEffect(() => {
+    return () => { if (audioRef.current) triggerFinalPing(audioRef.current.duration); };
+  }, []);
   const progress = duration > 0 ? currentTime / duration : 0;
   const avatarSz  = compact ? 32 : 46;
   const btnSz     = compact ? 22 : 32;
@@ -121,9 +123,12 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
       {/* Hidden audio */}
       {block.src && (
         <audio ref={audioRef} src={block.src} preload="auto"
-          onTimeUpdate={e => setCurrentTime(e.target.currentTime)}
+          onTimeUpdate={e => {
+            setCurrentTime(e.target.currentTime);
+            trackTime(e.target.currentTime, e.target.duration);
+          }}
           onLoadedMetadata={e => setDuration(e.target.duration)}
-          onEnded={() => { setPlaying(false); setCurrentTime(0); }} />
+          onEnded={() => { setPlaying(false); setCurrentTime(0); triggerFinalPing(audioRef.current?.duration); }} />
       )}
 
       {/* ── Bolha principal ── */}
@@ -371,15 +376,21 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
 
         {/* MP4/base64 nativo — sem controles nativos nunca */}
         {src && !isEmbed && (
-          <video onTimeUpdate={(e) => { trackTime(e.target.currentTime, e.target.duration); }} ref={videoRef} src={src}
+          <video
+            ref={videoRef}
+            src={src}
             style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', pointerEvents:'none' }}
             loop={block.loop}
             playsInline
             disablePictureInPicture
             onCanPlay={handleCanPlay}
-            onTimeUpdate={e => setCurrentTime(e.target.currentTime)}
+            onTimeUpdate={e => {
+              setCurrentTime(e.target.currentTime);
+              trackTime(e.target.currentTime, e.target.duration);
+            }}
             onLoadedMetadata={e => setDuration(e.target.duration)}
-            onEnded={() => { setPlaying(false); setEnded(true); }} />
+            onEnded={() => { setPlaying(false); setEnded(true); triggerFinalPing(videoRef.current?.duration); }}
+          />
         )}
 
         {/* Thumbnail overlay */}
