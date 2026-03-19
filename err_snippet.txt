@@ -1,0 +1,4 @@
+nc Object.buildApp (file:///c:/Users/kaiob/.gemini/antigravity/scratch/novo%20projeto/frontend/node_modules/vite/dist/node/chunks/node.js:33213:153)
+    at async CAC.<anonymous> (file:///c:/Users/kaiob/.gemini/antigravity/scratch/novo%20projeto/frontend/node_modules/vite/dist/node/cli.js:778:3) {
+  errors: [Getter/Setter]
+}[39m

@@ -169,6 +169,33 @@ async function runMigrations(db) {
     // Pixel individual por quiz
     await db.query(`ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS meta_pixel_id TEXT`);
 
+    // Tabela: Media Visitor Progress (tracking max duration and which seconds watched per block/visitor)
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS media_visitor_progress (
+            id SERIAL PRIMARY KEY,
+            quiz_id INTEGER NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+            step_id TEXT,
+            block_id TEXT NOT NULL,
+            visitor_id TEXT NOT NULL,
+            media_type TEXT,
+            watched_seconds TEXT NOT NULL DEFAULT '[]',
+            duration INTEGER DEFAULT 0,
+            last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(block_id, visitor_id)
+        );
+    `);
+    
+    // Tabela: Media Retention (Global aggregate of unique views per second per block)
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS media_retention (
+            quiz_id INTEGER NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
+            block_id TEXT NOT NULL,
+            second_mark INTEGER NOT NULL,
+            unique_views INTEGER DEFAULT 0,
+            PRIMARY KEY (block_id, second_mark)
+        );
+    `);
+
     console.log('[DB] Migrations executed successfully.');
 }
 

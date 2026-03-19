@@ -6,6 +6,7 @@ import {
   Video as VideoIcon, Volume2, Copy, ListTodo, Settings, CheckCircle2, Zap, LogOut, UserPlus, Lock, User
 } from 'lucide-react';
 import QuizBuilder from './QuizBuilder';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 const logoSrc = '/logo3.svg';
 const API = '/api';
@@ -105,8 +106,6 @@ function AdminPanel({ token, onLogout }) {
   const [tasks, setTasks] = useState([]);
   const [editingQuiz, setEditingQuiz] = useState(null);
 
-  useEffect(() => { fetchQuizzes(); fetchAllTasks(); }, []);
-
   const fetchQuizzes = async () => {
     const r = await fetch(`${API}/quizzes`);
     const data = await r.json();
@@ -115,6 +114,8 @@ function AdminPanel({ token, onLogout }) {
   const fetchAllTasks = async () => {
     const r = await fetch(`${API}/tasks`); setTasks(await r.json());
   };
+
+  useEffect(() => { fetchQuizzes(); fetchAllTasks(); }, []);
 
   if (editingQuiz !== null) {
     return (
@@ -419,7 +420,7 @@ function RoundRobinView({ quizzes }) {
       .catch(() => {});
   }, []);
 
-  const isSelected = (id) => rrConfig.quiz_ids.includes(id);
+
 
   const toggleQuiz = (id) => {
     setRrConfig(c => ({
@@ -682,6 +683,8 @@ function AnalyticsView({ quizzes }) {
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [mediaMetrics, setMediaMetrics] = useState(null);
+  const [activeTab, setActiveTab] = useState('geral');
   const [quizDetail, setQuizDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [leads, setLeads] = useState([]);
@@ -703,9 +706,12 @@ function AnalyticsView({ quizzes }) {
     Promise.all([
       fetch(`/api/analytics/quiz/${quiz.id}`).then(r => r.json()),
       fetch(`/api/analytics/quiz/${quiz.id}/leads`).then(r => r.json()),
-      fetch(`/api/quizzes/${quiz.id}`).then(r => r.json())
+      fetch(`/api/quizzes/${quiz.id}`).then(r => r.json()),
+      fetch(`/api/analytics/quiz/${quiz.id}/media`).then(r => r.json())
     ])
-    .then(([detailData, leadsData, quizData]) => {
+    .then(([detailData, leadsData, quizData, mediaData]) => {
+      setMediaMetrics(mediaData);
+      setActiveTab('geral');
       const stepNaming = {};
       try {
         if (quizData && quizData.config) {
@@ -749,17 +755,25 @@ function AnalyticsView({ quizzes }) {
     return (
       <div className="space-y-6">
         {/* Header Compacto */}
-        <div className="flex items-center gap-4 border-b border-indigo-500/20 pb-4">
-          <button onClick={() => { setSelectedQuiz(null); setQuizDetail(null); }}
-            className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors cursor-pointer border border-slate-700">
-            <ChevronLeft size={16}/>
-          </button>
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-              {selectedQuiz.title}
-              <span className="text-xs px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono uppercase tracking-widest">DRILL-DOWN</span>
-            </h2>
-            <p className="text-xs text-slate-500 font-mono">/{selectedQuiz.slug || 'quiz-' + selectedQuiz.id}</p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-indigo-500/20 pb-4">
+          <div className="flex items-center gap-4">
+            <button onClick={() => { setSelectedQuiz(null); setQuizDetail(null); }}
+              className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-colors cursor-pointer border border-slate-700">
+              <ChevronLeft size={16}/>
+            </button>
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                {selectedQuiz.title}
+                <span className="text-xs px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono uppercase tracking-widest">DRILL-DOWN</span>
+              </h2>
+              <p className="text-xs text-slate-500 font-mono">/{selectedQuiz.slug || 'quiz-' + selectedQuiz.id}</p>
+            </div>
+          </div>
+          
+          {/* Navegação de Tabs */}
+          <div className="flex p-1 bg-slate-900/60 border border-slate-800 rounded-lg">
+            <button onClick={() => setActiveTab('geral')} className={`px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${activeTab === 'geral' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>Visão Funil</button>
+            <button onClick={() => setActiveTab('midia')} className={`px-4 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${activeTab === 'midia' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}>Retenção de Mídia</button>
           </div>
         </div>
 
@@ -767,7 +781,96 @@ function AnalyticsView({ quizzes }) {
           <div className="text-slate-500 font-mono text-center py-16 animate-pulse">PROCESSANDO CUBOS DE DADOS...</div>
         ) : quizDetail ? (
           <>
-            {/* Grid Superior: Executive Summary */}
+            {activeTab === 'midia' ? (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/5 border border-indigo-500/20 rounded-xl p-5 mb-6">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2"><PlayCircle size={18} className="text-indigo-400"/> Central de Retenção (Estilo Panda/Vimeo)</h3>
+                  <p className="text-xs text-slate-400 mt-1">Acompanhe segundo a segundo onde os leads estão engajando ou abandonando seus Áudios e VSLs.</p>
+                </div>
+                
+                {(!mediaMetrics || Object.keys(mediaMetrics).length === 0) ? (
+                  <div className="py-20 text-center border border-dashed border-slate-700/50 rounded-2xl bg-slate-900/20">
+                    <VideoIcon size={40} className="text-slate-700 mx-auto mb-3"/>
+                    <p className="text-slate-400 font-medium">Nenhum dado de mídia captado ainda.</p>
+                    <p className="text-xs text-slate-500 mt-1">Coloque um bloco de Áudio WhatsApp ou Vídeo nativo no funil e atraia leads.</p>
+                  </div>
+                ) : (
+                  Object.entries(mediaMetrics).map(([blockId, mProps]) => {
+                    const { curve, stats } = mProps;
+                    let bName = 'Bloco de Mídia';
+                    let typeIcon = <PlayCircle size={14}/>;
+                    if (quizDetail.config && quizDetail.config.steps) {
+                      for (const st of quizDetail.config.steps) {
+                        const b = st.blocks?.find(x => x.id === blockId);
+                        if (b) {
+                          bName = (quizDetail.stepNaming?.[st.id] || st.label) + ' - ' + (b.type === 'audio' ? 'Áudio (Wpp)' : 'Vídeo VSL');
+                          typeIcon = b.type === 'audio' ? <Volume2 size={14}/> : <VideoIcon size={14}/>;
+                          break;
+                        }
+                      }
+                    }
+                    
+                    const maxViews = curve.length > 0 ? Math.max(...curve.map(c => c.views)) : 0;
+                    const cData = curve.map(c => ({
+                      timeFmt: fmt(c.time),
+                      timeRaw: c.time,
+                      views: c.views,
+                      retention: maxViews > 0 ? Math.round((c.views / maxViews) * 100) : 0
+                    }));
+
+                    return (
+                      <div key={blockId} className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5 shadow-lg">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-white/5 pb-4 gap-4">
+                          <h4 className="text-lg font-bold text-slate-200 flex items-center gap-2">{typeIcon} {bName}</h4>
+                          <div className="flex gap-4">
+                            <div className="text-right">
+                              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Total Plays</p>
+                              <p className="text-xl font-mono text-white font-bold">{stats.totalPlays}</p>
+                            </div>
+                            <div className="w-px bg-slate-800"></div>
+                            <div className="text-right">
+                              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Tempo Assistido</p>
+                              <p className="text-xl font-mono text-cyan-400 font-bold">{fmt(stats.duration)}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {cData.length > 0 ? (
+                          <div className="h-72 w-full mt-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={cData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <defs>
+                                  <linearGradient id={`colorRet${blockId}`} x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4}/>
+                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                                <XAxis dataKey="timeRaw" tickFormatter={fmt} stroke="#64748b" tick={{fontSize: 11, fill: '#94a3b8'}} tickMargin={10} minTickGap={30}/>
+                                <YAxis yAxisId="left" stroke="#64748b" tick={{fontSize: 11, fill: '#94a3b8'}} />
+                                <YAxis yAxisId="right" orientation="right" stroke="#64748b" tick={{fontSize: 11, fill: '#94a3b8'}} tickFormatter={(v)=>v+'%'} />
+                                <RechartsTooltip 
+                                  contentStyle={{backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc', boxShadow: '0 10px 25px rgba(0,0,0,0.5)'}}
+                                  itemStyle={{color: '#818cf8', fontWeight: 'bold'}}
+                                  labelFormatter={(x) => 'Momento: ' + fmt(x)}
+                                  formatter={(val, name) => [name === 'views' ? val : val+'%', name === 'views' ? 'Visualizações Únicas' : 'Retenção']}
+                                />
+                                <Area yAxisId="left" type="monotone" dataKey="views" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill={`url(#colorRet${blockId})`} activeDot={{r: 6, fill: '#6366f1', stroke: '#fff', strokeWidth: 2}} />
+                                <Area yAxisId="right" type="monotone" dataKey="retention" stroke="none" fill="none" />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          </div>
+                        ) : (
+                          <div className="text-center py-10 text-slate-500 text-sm font-mono">Curva sendo calculada... Aguardando os primeiros leads.</div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Grid Superior: Executive Summary */}
             <div className="grid grid-cols-3 gap-5">
               <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5 shadow-inner relative overflow-hidden group">
                 <div className="absolute -right-10 -bottom-10 w-24 h-24 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition-all"></div>
@@ -938,8 +1041,8 @@ function AnalyticsView({ quizzes }) {
                     ) : leads.length === 0 ? (
                       <tr><td colSpan="4" className="text-center py-6 text-sm text-slate-500 italic">Nenhum evento detalhado encontrado.</td></tr>
                     ) : (
-                      leads.map((lead, idx) => {
-                        const lastStep = lead.journey[lead.journey.length - 1];
+                      leads.map((lead) => {
+
                         const isExpanded = !!expandedLeads[lead.visitor_id];
                         return (
                           <React.Fragment key={lead.visitor_id}>
@@ -969,7 +1072,7 @@ function AnalyticsView({ quizzes }) {
                               <tr className="bg-slate-900/40 border-b border-slate-800/60">
                                 <td colSpan="4" className="py-3 px-8">
                                   <div className="space-y-4 max-w-sm py-2">
-                                    {lead.journey.map((p, pIdx) => (
+                                    {lead.journey.map((p) => (
                                       <div key={p.step_id} className="text-xs border-l-2 border-slate-700 pl-4 relative ml-2 mt-1">
                                         <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>
                                         <p className="text-slate-300 font-medium">{quizDetail.stepNaming?.[p.step_id] || p.step_id}</p>
@@ -991,6 +1094,8 @@ function AnalyticsView({ quizzes }) {
                 </table>
               </div>
             </div>
+            </div>
+            )}
           </>
         ) : (
           <p className="text-slate-500 text-sm text-center py-12">Nenhum dado para este quiz ainda.</p>

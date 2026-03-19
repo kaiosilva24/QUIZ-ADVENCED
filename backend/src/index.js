@@ -19,6 +19,7 @@ const { getQuizAnalytics, trackEvent, getAnalyticsOverview, getQuizLeads } = req
 const { getRoundRobin, updateRoundRobin, getNextRoundRobinQuiz } = require('./controllers/roundRobinController');
 const { getIntegrations, setIntegration, setQuizPixel, getQuizPixel } = require('./controllers/integrationsController');
 const { login, register, listUsers, deleteUser, authMiddleware } = require('./controllers/authController');
+const { trackMediaPulse, getMediaRetention } = require('./controllers/mediaAnalyticsController');
 
 // --- Auth routes (public) ---
 app.post('/api/auth/login', login);
@@ -48,7 +49,9 @@ app.delete('/api/tasks/:id', deleteTask);
 app.get('/api/analytics/overview', getAnalyticsOverview);
 app.get('/api/analytics/quiz/:quizId', getQuizAnalytics);
 app.get('/api/analytics/quiz/:quizId/leads', getQuizLeads);
+app.get('/api/analytics/quiz/:quizId/media', getMediaRetention);
 app.post('/api/analytics/track', trackEvent);
+app.post('/api/analytics/media/pulse', trackMediaPulse);
 
 // Round Robin A/B Test
 app.get('/api/roundrobin', getRoundRobin);

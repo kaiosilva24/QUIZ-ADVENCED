@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 
 
 import QuizPreview from './QuizPreview';
-const logoSrc = '/logo3.svg';
-
 
 const API = '/api';
 
@@ -235,6 +233,8 @@ function QuizRouter() {
           stepIdx={currentStep}
           compact={false}
           onNavigate={handleNavigate}
+          quizId={quizData.quiz_id || quizData.id}
+          visitorId={getVisitorId()}
         />
       </div>
     </div>

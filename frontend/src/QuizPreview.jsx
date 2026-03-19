@@ -32,9 +32,54 @@ function buildBackground(theme) {
   return theme.bg || '#0f172a';
 }
 
+// ─── TELEMETRY HOOK ─── tracks seconds watched and sends pulses ───────────────
+function useMediaTelemetry(mediaType, blockId, quizId, visitorId, stepId, compact) {
+  const watchedSecondsRef = useRef(new Set());
+  const lastPingRef = useRef(Date.now());
+
+  function pingTelemetry(duration) {
+    const seconds = Array.from(watchedSecondsRef.current);
+    if (seconds.length === 0) return;
+    const batch = [...seconds];
+    watchedSecondsRef.current.clear();
+    fetch('/api/analytics/media/pulse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        quiz_id: quizId,
+        step_id: stepId,
+        block_id: blockId,
+        visitor_id: visitorId,
+        media_type: mediaType,
+        watched_seconds: batch,
+        duration: Math.floor(duration || 0)
+      })
+    }).catch(() => {});
+  }
+
+  function handleTimeUpdate(currentTime, duration) {
+    if (compact || !quizId || !visitorId) return;
+    const sec = Math.floor(currentTime);
+    watchedSecondsRef.current.add(sec);
+    const now = Date.now();
+    if (now - lastPingRef.current > 5000) {
+      pingTelemetry(duration);
+      lastPingRef.current = now;
+    }
+  }
+
+  function triggerFinalPing(duration) {
+    if (compact || !quizId || !visitorId) return;
+    pingTelemetry(duration);
+  }
+
+  return { handleTimeUpdate, triggerFinalPing };
+}
+
 // ─── AUDIO PLAYER COMPONENT — WhatsApp Style (fiel à referência) ─────────────
-function AudioBlockPlayer({ block, compact }) {
+function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
   const audioRef = useRef(null);
+  const { handleTimeUpdate: trackTime, triggerFinalPing } = useMediaTelemetry('audio', block.id, quizId, visitorId, stepId, compact);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration]       = useState(0);
@@ -65,6 +110,8 @@ function AudioBlockPlayer({ block, compact }) {
     return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`;
   };
 
+  React.useEffect(() => { return () => { if (audioRef.current) triggerFinalPing(audioRef.current.duration); } }, []);
+  React.useEffect(() => { return () => { if (videoRef.current) triggerFinalPing(videoRef.current.duration); } }, []);
   const progress = duration > 0 ? currentTime / duration : 0;
   const avatarSz  = compact ? 32 : 46;
   const btnSz     = compact ? 22 : 32;
@@ -198,9 +245,10 @@ function AudioBlockPlayer({ block, compact }) {
 
 
 // ─── VIDEO PLAYER COMPONENT (totalmente funcional) ────────────────────────────
-function VideoBlockPlayer({ block, compact }) {
+function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
   const videoRef   = useRef(null);
   const startedRef = useRef(false);
+  const { handleTimeUpdate: trackTime, triggerFinalPing } = useMediaTelemetry('video', block.id, quizId, visitorId, stepId, compact);
   const [playing, setPlaying]             = useState(false);
   const [showThumb, setShowThumb]         = useState(true);
   const [currentTime, setCurrentTime]     = useState(0);
@@ -323,7 +371,7 @@ function VideoBlockPlayer({ block, compact }) {
 
         {/* MP4/base64 nativo — sem controles nativos nunca */}
         {src && !isEmbed && (
-          <video ref={videoRef} src={src}
+          <video onTimeUpdate={(e) => { trackTime(e.target.currentTime, e.target.duration); }} ref={videoRef} src={src}
             style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', pointerEvents:'none' }}
             loop={block.loop}
             playsInline
@@ -459,7 +507,7 @@ function VideoBlockPlayer({ block, compact }) {
 }
 
 // Renderizador fiel ao InLead: converte o config JSON em tela visual
-export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate, selectedBlockId }) {
+export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate, selectedBlockId, quizId, visitorId }) {
   const step = config?.steps?.[stepIdx];
   const theme = config?.theme || {};
   const accent = theme.accent || '#6366f1';
@@ -528,7 +576,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
               id={`preview-block-${block.id}`} 
               className={`shrink-0 w-full ${compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300' : ''}`}
             >
-              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} />
+              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} />
             </div>
           ))}
           {(!step?.blocks || step.blocks.length === 0) && (
@@ -544,7 +592,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
   );
 }
 
-function BlockRenderer({ block, theme, compact, onNavigate }) {
+function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId }) {
   const scale = compact ? 0.6 : 1;
   const { accent, textColor: defaultText } = theme;
 
@@ -783,10 +831,10 @@ function BlockRenderer({ block, theme, compact, onNavigate }) {
 
 
     case 'audio':
-      return <AudioBlockPlayer block={block} compact={compact} />;
+      return <AudioBlockPlayer block={block} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} />;
 
     case 'video':
-      return <VideoBlockPlayer block={block} compact={compact} />;
+      return <VideoBlockPlayer block={block} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} />;
 
     case 'button': {
       const pos = block.emojiPosition || 'left_inside';

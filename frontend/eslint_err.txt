@@ -1,0 +1,59 @@
+
+C:\Users\kaiob\.gemini\antigravity\scratch\novo projeto\frontend\src\Admin.jsx
+   109:21  error    Error: Cannot access variable before it is declared
+
+`fetchQuizzes` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  107 |   const [editingQuiz, setEditingQuiz] = useState(null);
+  108 |
+> 109 |   useEffect(() => { fetchQuizzes(); fetchAllTasks(); }, []);
+      |                     ^^^^^^^^^^^^ `fetchQuizzes` accessed before it is declared
+  110 |
+  111 |   const fetchQuizzes = async () => {
+  112 |     const r = await fetch(`${API}/quizzes`);
+
+  109 |   useEffect(() => { fetchQuizzes(); fetchAllTasks(); }, []);
+  110 |
+> 111 |   const fetchQuizzes = async () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 112 |     const r = await fetch(`${API}/quizzes`);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 113 |     const data = await r.json();
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 114 |     setQuizzes(Array.isArray(data) ? data : []);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 115 |   };
+      | ^^^^^ `fetchQuizzes` is declared here
+  116 |   const fetchAllTasks = async () => {
+  117 |     const r = await fetch(`${API}/tasks`); setTasks(await r.json());
+  118 |   };  react-hooks/immutability
+   109:37  error    Error: Cannot access variable before it is declared
+
+`fetchAllTasks` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  107 |   const [editingQuiz, setEditingQuiz] = useState(null);
+  108 |
+> 109 |   useEffect(() => { fetchQuizzes(); fetchAllTasks(); }, []);
+      |                                     ^^^^^^^^^^^^^ `fetchAllTasks` accessed before it is declared
+  110 |
+  111 |   const fetchQuizzes = async () => {
+  112 |     const r = await fetch(`${API}/quizzes`);
+
+  114 |     setQuizzes(Array.isArray(data) ? data : []);
+  115 |   };
+> 116 |   const fetchAllTasks = async () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 117 |     const r = await fetch(`${API}/tasks`); setTasks(await r.json());
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 118 |   };
+      | ^^^^^ `fetchAllTasks` is declared here
+  119 |
+  120 |   if (editingQuiz !== null) {
+  121 |     return (                                                                                                                                                                                                                    react-hooks/immutability
+   208:38  warning  React Hook useEffect has a missing dependency: 'fetchUsers'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react-hooks/exhaustive-deps
+   365:17  error    'stepCount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-unused-vars
+   423:9   error    'isSelected' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-unused-vars
+  1045:31  error    'lastStep' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
+
+✖ 6 problems (5 errors, 1 warning)
+

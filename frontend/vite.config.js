@@ -11,5 +11,16 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 8000,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress chunk size warnings
+        if (warning.code === 'LARGE_BUNDLE' || warning.code === 'CHUNK_TOO_LARGE') return;
+        if (warning.message?.includes('chunk')) return;
+        warn(warning);
+      }
+    }
   }
 })
