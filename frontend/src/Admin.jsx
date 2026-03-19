@@ -684,6 +684,7 @@ function AnalyticsView({ quizzes }) {
   const [loading, setLoading] = useState(true);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [mediaMetrics, setMediaMetrics] = useState(null);
+  const [intelData, setIntelData] = useState(null);
   const [activeTab, setActiveTab] = useState('geral');
   const [quizDetail, setQuizDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -707,10 +708,12 @@ function AnalyticsView({ quizzes }) {
       fetch(`/api/analytics/quiz/${quiz.id}`).then(r => r.json()),
       fetch(`/api/analytics/quiz/${quiz.id}/leads`).then(r => r.json()),
       fetch(`/api/quizzes/${quiz.id}`).then(r => r.json()),
-      fetch(`/api/analytics/quiz/${quiz.id}/media`).then(r => r.json())
+      fetch(`/api/analytics/quiz/${quiz.id}/media`).then(r => r.json()),
+      fetch(`/api/analytics/quiz/${quiz.id}/intel`).then(r => r.json()).catch(() => null)
     ])
-    .then(([detailData, leadsData, quizData, mediaData]) => {
+    .then(([detailData, leadsData, quizData, mediaData, intel]) => {
       setMediaMetrics(mediaData);
+      setIntelData(intel || null);
       setActiveTab('geral');
       const stepNaming = {};
       try {
@@ -901,6 +904,80 @@ function AnalyticsView({ quizzes }) {
               </div>
             </div>
 
+            {/* ── Lead Intelligence Cards ── */}
+            {intelData && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {/* Dispositivos */}
+                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">📱 Dispositivos</h3>
+                  <div className="space-y-2.5">
+                    {(intelData.devices || []).map(d => {
+                      const icon = d.label === 'mobile' ? '📱' : d.label === 'tablet' ? '🖥️' : '💻';
+                      const total = (intelData.devices || []).reduce((s,x) => s + x.count, 0);
+                      const pct = total > 0 ? Math.round(d.count / total * 100) : 0;
+                      return (
+                        <div key={d.label}>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-slate-300 capitalize">{icon} {d.label}</span>
+                            <span className="text-slate-500 font-mono">{d.count} <span className="text-indigo-400">({pct}%)</span></span>
+                          </div>
+                          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-indigo-500 to-blue-400 rounded-full" style={{width:`${pct}%`}} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {(!intelData.devices || intelData.devices.length === 0) && <p className="text-slate-600 text-xs italic">Aguardando dados...</p>}
+                  </div>
+                </div>
+                {/* Origens */}
+                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">🌐 Origens de Tráfego</h3>
+                  <div className="space-y-2.5">
+                    {(intelData.sources || []).map(s => {
+                      const srcIcons = { instagram:'🟣', facebook:'🔵', youtube:'🔴', google:'🟡', tiktok:'⚫', whatsapp:'🟢', email:'📧', twitter:'❌', direct:'🔗', other:'🌐' };
+                      const total = (intelData.sources || []).reduce((sum,x) => sum + x.count, 0);
+                      const pct = total > 0 ? Math.round(s.count / total * 100) : 0;
+                      return (
+                        <div key={s.label}>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-slate-300 capitalize">{srcIcons[s.label] || '🌐'} {s.label}</span>
+                            <span className="text-slate-500 font-mono">{s.count} <span className="text-indigo-400">({pct}%)</span></span>
+                          </div>
+                          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-purple-500 to-pink-400 rounded-full" style={{width:`${pct}%`}} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {(!intelData.sources || intelData.sources.length === 0) && <p className="text-slate-600 text-xs italic">Aguardando dados...</p>}
+                  </div>
+                </div>
+                {/* Localidades */}
+                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">📍 Top Localidades</h3>
+                  <div className="space-y-2.5">
+                    {(intelData.cities || []).map(c => {
+                      const total = (intelData.cities || []).reduce((sum,x) => sum + x.count, 0);
+                      const pct = total > 0 ? Math.round(c.count / total * 100) : 0;
+                      return (
+                        <div key={c.label}>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-slate-300 truncate max-w-[65%]">📍 {c.label}</span>
+                            <span className="text-slate-500 font-mono">{c.count} <span className="text-indigo-400">({pct}%)</span></span>
+                          </div>
+                          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-cyan-500 to-teal-400 rounded-full" style={{width:`${pct}%`}} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {(!intelData.cities || intelData.cities.length === 0) && <p className="text-slate-600 text-xs italic">Aguardando dados de geo...</p>}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {/* Raio-X de Retenção (Horizontal) */}
               <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5 relative">
@@ -1030,6 +1107,7 @@ function AnalyticsView({ quizzes }) {
                   <thead className="bg-slate-900/80 sticky top-0 z-10 backdrop-blur-md border-b border-slate-700">
                     <tr>
                       <th className="py-3 px-4 text-xs font-semibold text-slate-400">Lead</th>
+                      <th className="py-3 px-4 text-xs font-semibold text-slate-400">Intel</th>
                       <th className="py-3 px-4 text-xs font-semibold text-slate-400">Status</th>
                       <th className="py-3 px-4 text-xs font-semibold text-slate-400">Progresso & Respostas</th>
                       <th className="py-3 px-4 text-xs font-semibold text-slate-400 text-right">Tempo</th>
@@ -1046,31 +1124,45 @@ function AnalyticsView({ quizzes }) {
                         const isExpanded = !!expandedLeads[lead.visitor_id];
                         return (
                           <React.Fragment key={lead.visitor_id}>
-                            <tr className="border-b border-slate-800/60 hover:bg-slate-800/40 transition-colors align-middle cursor-pointer" onClick={() => setExpandedLeads(p => ({...p, [lead.visitor_id]: !p[lead.visitor_id]}))}>
-                              <td className="py-3 px-4">
-                                <p className="font-semibold text-sm text-slate-200">Lead {lead.visitor_id.substring(0,8)}</p>
-                                <p className="text-xs text-slate-500 mt-0.5">{new Date(lead.start_time).toLocaleString('pt-BR')}</p>
-                              </td>
-                              <td className="py-3 px-4">
-                                {lead.finished ? (
-                                  <span className="inline-block px-2 py-1 rounded bg-emerald-500/10 text-xs font-medium text-emerald-400 border border-emerald-500/20">✔ Concluído</span>
-                                ) : (
-                                  <span className="inline-block px-2 py-1 rounded bg-amber-500/10 text-xs font-medium text-amber-400 border border-amber-500/20">Drop-off</span>
-                                )}
-                              </td>
-                              <td className="py-3 px-4 text-xs text-slate-400">
-                                {lead.journey.length} etapas percorridas
-                              </td>
-                              <td className="py-3 px-4 text-right">
-                                <span className="font-mono text-sm text-cyan-400 font-medium flex items-center justify-end gap-3">
-                                  <span><span className="text-[10px]">⏱</span> {fmt(lead.total_time)}</span>
-                                  <ChevronDown size={14} className={`text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                                </span>
-                              </td>
-                            </tr>
+                            {/* Lead Source Icons mapping */}
+                            {(() => {
+                              const srcIcons = { instagram:'🟣', facebook:'🔵', youtube:'🔴', google:'🟡', tiktok:'⚫', whatsapp:'🟢', email:'📧', twitter:'❌', direct:'🔗', other:'🌐' };
+                              const devIcons = { mobile:'📱', tablet:'🖥️', desktop:'💻' };
+                              const intel = lead.intel || {};
+                              return (
+                                <tr className="border-b border-slate-800/60 hover:bg-slate-800/40 transition-colors align-middle cursor-pointer" onClick={() => setExpandedLeads(p => ({...p, [lead.visitor_id]: !p[lead.visitor_id]}))}>
+                                  <td className="py-3 px-4">
+                                    <p className="font-semibold text-sm text-slate-200">Lead {lead.visitor_id.substring(0,8)}</p>
+                                    <p className="text-xs text-slate-500 mt-0.5">{new Date(lead.start_time).toLocaleString('pt-BR')}</p>
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <div className="flex flex-wrap gap-1">
+                                      {intel.device_type && <span title={`${intel.browser || ''} / ${intel.os || ''}`} className="text-xs px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono cursor-help">{devIcons[intel.device_type] || '💻'} {intel.device_type}</span>}
+                                      {intel.source && <span className="text-xs px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono">{srcIcons[intel.source] || '🌐'} {intel.source}</span>}
+                                      {intel.city && <span className="text-xs px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-mono">📍 {intel.city}{intel.state ? `, ${intel.state}` : ''}</span>}
+                                    </div>
+                                    {intel.utm_campaign && <p className="text-[10px] text-indigo-400/70 mt-1 font-mono">🏷️ {intel.utm_campaign}</p>}
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    {lead.finished ? (
+                                      <span className="inline-block px-2 py-1 rounded bg-emerald-500/10 text-xs font-medium text-emerald-400 border border-emerald-500/20">✔ Concluído</span>
+                                    ) : (
+                                      <span className="inline-block px-2 py-1 rounded bg-amber-500/10 text-xs font-medium text-amber-400 border border-amber-500/20">Drop-off</span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4 text-xs text-slate-400">{lead.journey.length} etapas percorridas</td>
+                                  <td className="py-3 px-4 text-right">
+                                    <span className="font-mono text-sm text-cyan-400 font-medium flex items-center justify-end gap-3">
+                                      <span><span className="text-[10px]">⏱</span> {fmt(lead.total_time)}</span>
+                                      <ChevronDown size={14} className={`text-slate-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })()}
                             {isExpanded && (
                               <tr className="bg-slate-900/40 border-b border-slate-800/60">
-                                <td colSpan="4" className="py-3 px-8">
+                                <td colSpan="5" className="py-3 px-8">
                                   <div className="space-y-4 max-w-sm py-2">
                                     {lead.journey.map((p) => (
                                       <div key={p.step_id} className="text-xs border-l-2 border-slate-700 pl-4 relative ml-2 mt-1">

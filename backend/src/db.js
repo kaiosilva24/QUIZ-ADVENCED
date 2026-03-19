@@ -196,6 +196,27 @@ async function runMigrations(db) {
         );
     `);
 
+    // Tabela: Lead Metadata (device, geo, source por visitante)
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS lead_metadata (
+            visitor_id TEXT PRIMARY KEY,
+            quiz_id INTEGER,
+            device_type TEXT,
+            browser TEXT,
+            os TEXT,
+            city TEXT,
+            state TEXT,
+            country TEXT,
+            source TEXT,
+            utm_source TEXT,
+            utm_medium TEXT,
+            utm_campaign TEXT,
+            referrer TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    `);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_lead_metadata_quiz ON lead_metadata(quiz_id)`);
+
     console.log('[DB] Migrations executed successfully.');
 }
 

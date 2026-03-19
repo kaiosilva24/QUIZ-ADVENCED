@@ -22,14 +22,55 @@ function stripHtml(html) {
   return (tmp.textContent || tmp.innerText || '').trim() || null;
 }
 
+// ─── Lead Intelligence: Coleta dispositivo, browser, OS e origem ──────────────
+function collectLeadIntel() {
+  const cached = localStorage.getItem('quiz_saas_lead_intel');
+  if (cached) { try { return JSON.parse(cached); } catch {} }
+
+  const ua = navigator.userAgent || '';
+  // Device type
+  let device_type = 'desktop';
+  if (/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) device_type = 'mobile';
+  else if (/Tablet|iPad/i.test(ua)) device_type = 'tablet';
+  // Browser
+  let browser = 'other';
+  if (/Edg\//i.test(ua)) browser = 'Edge';
+  else if (/OPR\/|Opera/i.test(ua)) browser = 'Opera';
+  else if (/Chrome\/\d/i.test(ua) && !/Chromium/i.test(ua)) browser = 'Chrome';
+  else if (/Firefox\/\d/i.test(ua)) browser = 'Firefox';
+  else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
+  else if (/MSIE|Trident/i.test(ua)) browser = 'IE';
+  // OS
+  let os = 'other';
+  if (/Android/i.test(ua)) os = 'Android';
+  else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS';
+  else if (/Windows/i.test(ua)) os = 'Windows';
+  else if (/Mac OS X/i.test(ua)) os = 'macOS';
+  else if (/Linux/i.test(ua)) os = 'Linux';
+  // UTM params
+  const params = new URLSearchParams(window.location.search);
+  const utm_source = params.get('utm_source') || (params.get('fbclid') ? 'facebook' : null) || (params.get('igshid') ? 'instagram' : null) || null;
+  const utm_medium = params.get('utm_medium') || null;
+  const utm_campaign = params.get('utm_campaign') || null;
+  const referrer = document.referrer || null;
+
+  const intel = { device_type, browser, os, utm_source, utm_medium, utm_campaign, referrer };
+  localStorage.setItem('quiz_saas_lead_intel', JSON.stringify(intel));
+  return intel;
+}
+
 function trackEvent(quizId, eventType, stepId = null, answerValue = null, timeSpent = 0) {
   const visitorId = getVisitorId();
-  // strip HTML tags from answer text (in case it came from rich-text buttons)
   const cleanAnswer = stripHtml(answerValue);
+  const body = { quiz_id: quizId, visitor_id: visitorId, event_type: eventType, step_id: stepId, answer_value: cleanAnswer, time_spent_seconds: timeSpent };
+  // Include intel data on 'start' event
+  if (eventType === 'start') {
+    Object.assign(body, collectLeadIntel());
+  }
   fetch('/api/analytics/track', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ quiz_id: quizId, visitor_id: visitorId, event_type: eventType, step_id: stepId, answer_value: cleanAnswer, time_spent_seconds: timeSpent })
+    body: JSON.stringify(body)
   }).catch(() => {}); // fire-and-forget
 }
 

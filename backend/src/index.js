@@ -15,7 +15,7 @@ const { getDomains, createDomain } = require('./controllers/domainController');
 const { getQuizzes, createQuiz, updateQuiz, deleteQuiz, getQuizById } = require('./controllers/quizController');
 const { handleQuizRouting } = require('./controllers/routerController');
 const { getTasks, createTask, updateTask, deleteTask } = require('./controllers/taskController');
-const { getQuizAnalytics, trackEvent, getAnalyticsOverview, getQuizLeads } = require('./controllers/analyticsController');
+const { getQuizAnalytics, trackEvent, getAnalyticsOverview, getQuizLeads, getLeadIntelStats } = require('./controllers/analyticsController');
 const { getRoundRobin, updateRoundRobin, getNextRoundRobinQuiz } = require('./controllers/roundRobinController');
 const { getIntegrations, setIntegration, setQuizPixel, getQuizPixel } = require('./controllers/integrationsController');
 const { login, register, listUsers, deleteUser, authMiddleware } = require('./controllers/authController');
@@ -50,6 +50,7 @@ app.get('/api/analytics/overview', getAnalyticsOverview);
 app.get('/api/analytics/quiz/:quizId', getQuizAnalytics);
 app.get('/api/analytics/quiz/:quizId/leads', getQuizLeads);
 app.get('/api/analytics/quiz/:quizId/media', getMediaRetention);
+app.get('/api/analytics/quiz/:quizId/intel', getLeadIntelStats);
 app.post('/api/analytics/track', trackEvent);
 app.post('/api/analytics/media/pulse', trackMediaPulse);
 
