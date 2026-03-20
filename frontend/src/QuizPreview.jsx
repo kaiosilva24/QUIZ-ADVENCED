@@ -1183,11 +1183,20 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       return (
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 8 : 16, alignItems: 'center', animation: 'fadeIn 0.5s ease-out' }}>
           <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-          <div style={{ display: 'flex', fontSize: compact ? 24 : 48 }}>
-            {block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 36 : 72} /> : (block.emoji || '🎉')}
-          </div>
-          <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{block.heading || 'Parabéns!'}</p>
-          <p style={{ color: defaultText, opacity: .7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{block.text || ''}</p>
+          
+          {(block.emojiUnified || (block.emoji ?? '🎉')) ? (
+            <div style={{ display: 'flex', fontSize: compact ? 24 : 48 }}>
+              {block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 36 : 72} /> : (block.emoji ?? '🎉')}
+            </div>
+          ) : null}
+          
+          {(block.heading ?? 'Parabéns!') ? (
+            <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{block.heading ?? 'Parabéns!'}</p>
+          ) : null}
+
+          {(block.text || '') ? (
+            <p style={{ color: defaultText, opacity: .7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{block.text}</p>
+          ) : null}
           {block.buttonText && (
             <button 
               onClick={() => {
