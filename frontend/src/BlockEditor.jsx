@@ -776,6 +776,12 @@ function VideoEditor({ block, onChange }) {
             onChange={e => onChange({ ctaRadius: Number(e.target.value) })}
             className="w-full accent-indigo-500 cursor-pointer" />
         </Field>
+        <Field label={`Afastamento Interno: ${block.ctaPadding ?? 16}px`}>
+          <input type="range" min={4} max={48} step={2} value={block.ctaPadding ?? 16}
+            onChange={e => onChange({ ctaPadding: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
+        <p className="text-xs text-slate-500 mt-1">⚠️ O botão CTA só aparece após o visitante pressionar Play.</p>
       </Section>
     </>
   );
