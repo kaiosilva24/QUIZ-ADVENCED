@@ -80,6 +80,7 @@ function QuizRouter() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
+  const [transitionLoading, setTransitionLoading] = useState(false);
   const stepStartTime = React.useRef(Date.now());
 
   const QUIZ_ID_KEY = 'quiz_saas_lead_quiz_id';
@@ -217,8 +218,6 @@ function QuizRouter() {
       const quizId = quizData.quiz_id || quizData.id;
       const currentStepObj = steps[currentStep];
 
-      // BULLETPROOF: Se answerText não veio pelo callback, busca o texto do botão
-      // que aponta para nextStepId dentro dos blocos da etapa atual
       let finalAnswer = answerText;
       if (!finalAnswer && currentStepObj && currentStepObj.blocks) {
         const clickedBtn = currentStepObj.blocks.find(
@@ -229,15 +228,20 @@ function QuizRouter() {
         }
       }
 
-      // Track step completado com tempo e última resposta
       trackEvent(quizId, 'step_reached', currentStepObj?.id, finalAnswer, timeSpent);
       stepStartTime.current = Date.now();
-      setCurrentStep(idx);
+
       if (idx === steps.length - 1) {
         trackEvent(quizId, 'finished', nextStepId, null, 0);
-        // Fire Lead event on Meta Pixel if loaded
         if (window.fbq) window.fbq('track', 'Lead');
       }
+
+      // Tela de carregamento entre etapas
+      setTransitionLoading(true);
+      setTimeout(() => {
+        setCurrentStep(idx);
+        setTransitionLoading(false);
+      }, 600);
     }
   };
 
@@ -267,7 +271,28 @@ function QuizRouter() {
   if (!quizData) return null;
 
   return (
-    <div style={{minHeight:'100vh',width:'100%',display:'flex',alignItems:'center',justifyContent:'center',background:'#000'}}>
+    <div style={{minHeight:'100vh',width:'100%',display:'flex',alignItems:'center',justifyContent:'center',background:'#000',position:'relative'}}>
+      {transitionLoading && (
+        <div style={{
+          position:'fixed', inset:0, zIndex:9999,
+          display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20,
+          background:'rgba(2,6,23,0.92)',
+          backdropFilter:'blur(8px)',
+          animation:'fadeInOverlay 0.15s ease-out',
+        }}>
+          <style>{`
+            @keyframes fadeInOverlay { from { opacity:0 } to { opacity:1 } }
+            @keyframes spinRing { to { transform: rotate(360deg); } }
+          `}</style>
+          <div style={{
+            width: 48, height: 48,
+            border: '4px solid rgba(99,102,241,0.2)',
+            borderTopColor: '#6366f1',
+            borderRadius: '50%',
+            animation: 'spinRing 0.7s linear infinite',
+          }} />
+        </div>
+      )}
       <div style={{width:'100%',maxWidth:'440px',minHeight:'100vh'}}>
         <QuizPreview
           config={quizData.config}
