@@ -878,7 +878,7 @@ function AnalyticsView({ quizzes }) {
                       for (const st of quizDetail.config.steps) {
                         const b = st.blocks?.find(x => x.id === blockId);
                         if (b) {
-                          bName = (quizDetail.stepNaming?.[st.id] || st.label) + ' - ' + (b.type === 'audio' ? 'Áudio (Wpp)' : 'Vídeo VSL');
+                          bName = b.type === 'audio' ? 'Áudio' : 'Vídeo';
                           typeIcon = b.type === 'audio' ? <Volume2 size={14}/> : <VideoIcon size={14}/>;
                           break;
                         }
