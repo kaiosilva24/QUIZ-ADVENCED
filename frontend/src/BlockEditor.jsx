@@ -335,6 +335,8 @@ function TiptapColorPopover({ icon, title, isActive, onSelectColor, onRemoveColo
 // ────────────────────────────────────────────────────────────────────────────
 
 function TiptapEditor({ value, onChange, placeholder, minHeight = 60 }) {
+  const [, setTick] = useState(0);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -357,6 +359,8 @@ function TiptapEditor({ value, onChange, placeholder, minHeight = 60 }) {
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
+    onSelectionUpdate: () => setTick(t => t + 1),
+    onTransaction: () => setTick(t => t + 1),
     editorProps: {
       attributes: {
         style: `min-height: ${minHeight}px`,
