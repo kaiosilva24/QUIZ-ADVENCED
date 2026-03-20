@@ -127,6 +127,7 @@ function SortableStep({ step, idx, currentStepIdx, onClick, updateLabel, onClone
 
 export default function QuizBuilder({ quiz, domain, onBack }) {
   const [title, setTitle] = useState(quiz.title || 'Novo Quiz');
+  const [slug, setSlug] = useState(quiz.slug || '');
   const [config, setConfig] = useState(() => {
     try {
       const parsed = JSON.parse(quiz.config_json || '{}');
@@ -289,11 +290,14 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
     }
     setSaving(true);
     const config_json = JSON.stringify(config);
+    let finalSlug = slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/(^-|-$)/g, '') : '';
+    setSlug(finalSlug);
+
     const API = '/api';
     if (quiz.id) {
-      await fetch(`${API}/quizzes/${quiz.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: finalTitle, config_json, is_active: 1 }) });
+      await fetch(`${API}/quizzes/${quiz.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: finalTitle, slug: finalSlug, config_json, is_active: 1 }) });
     } else {
-      await fetch(`${API}/quizzes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: finalTitle, config_json }) });
+      await fetch(`${API}/quizzes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: finalTitle, slug: finalSlug, config_json }) });
     }
     setSaving(false);
     onBack();
@@ -325,9 +329,17 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
             aria-label="Voltar">
             <ChevronLeft size={16} />
           </button>
-          <input value={title} onChange={e => setTitle(e.target.value)}
-            className="flex-1 bg-transparent text-sm font-semibold text-white outline-none truncate focus:text-indigo-300 transition-colors"
-            placeholder="Nome do Quiz" />
+          <div className="flex-1 flex flex-col justify-center min-w-0">
+            <input value={title} onChange={e => setTitle(e.target.value)}
+              className="bg-transparent text-sm font-semibold text-white outline-none w-full truncate focus:text-indigo-300 transition-colors"
+              placeholder="Nome do Quiz" />
+            <div className="flex items-center text-[10px] text-slate-500 mt-0.5" title="Link ou URL slug do quiz">
+              <span className="shrink-0">{domain ? domain + '/' : '/'}</span>
+              <input value={slug} onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))}
+                className="bg-transparent text-emerald-400 outline-none w-full truncate hover:text-emerald-300 focus:text-indigo-400 transition-colors font-mono"
+                placeholder="nome-do-quiz" spellCheck="false" />
+            </div>
+          </div>
         </div>
 
         {/* Tabs */}

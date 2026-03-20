@@ -176,6 +176,7 @@ function AdminPanel({ token, onLogout }) {
               onNew={() => setEditingQuiz({
                 id: null,
                 title: 'Novo Quiz',
+                slug: '',
                 config_json: JSON.stringify({
                   theme: { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '', overlay: true },
                   steps: [{ id: 'step_1', label: 'Etapa 1', blocks: [] }]
