@@ -116,7 +116,7 @@ function EmojiSelect({ emoji, unified, onChange }) {
           </span>
           <span className="text-xs text-slate-500">▼</span>
         </button>
-        {(emoji || unified) && (
+        {(emoji !== '' && unified !== '') && (
           <button onClick={() => onChange('', '')} title="Remover emoji"
             className="w-9 h-9 flex items-center justify-center bg-red-600/20 hover:bg-red-600/40 border border-red-600/30 hover:border-red-500 rounded-xl text-red-400 text-sm transition-colors cursor-pointer">
             ✕
