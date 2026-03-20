@@ -746,46 +746,6 @@ function VideoEditor({ block, onChange }) {
           </>
         )}
       </Section>
-      <Section title="🏁 Tela de Resultado Incorporada">
-        <Toggle label="Mostrar Resultado após VSL" value={block.showResultConfig} onChange={v => onChange({ showResultConfig: v })} />
-        {block.showResultConfig && (
-          <div className="space-y-4 pt-2">
-            <Field label="Aparecimento (Delay)">
-              <Select value={block.resDelay || 'none'} onChange={v => onChange({ resDelay: v })} options={[
-                { value: 'none', label: 'Imediatamente' },
-                { value: 'on_end', label: 'Ao terminar o vídeo' },
-                { value: 'custom', label: 'Após X segundos' }
-              ]} />
-            </Field>
-            {block.resDelay === 'custom' && (
-              <Field label={`Aparecer após: ${block.resDelaySeconds || 0}s`}>
-                <input type="range" min={0} max={600} step={1} value={block.resDelaySeconds || 0}
-                  onChange={e => onChange({ resDelaySeconds: Number(e.target.value) })}
-                  className="w-full accent-indigo-500 cursor-pointer" />
-              </Field>
-            )}
-            <p className="text-xs text-slate-500 mt-1 mb-3">⚠️ O resultado só aparece após o visitante pressionar Play no vídeo.</p>
-
-            <div className="border border-slate-700/50 rounded-lg p-3 space-y-4 bg-black/10">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Conteúdo do Resultado</span>
-              
-              <Field label="Emoji Gigante">
-                <EmojiSelect emoji={block.resEmoji} unified={block.resEmojiUnified} onChange={(e, u) => onChange({ resEmoji: e, resEmojiUnified: u })} />
-              </Field>
-              <Field label="Título"><Input value={block.resHeading ?? 'Parabéns!'} onChange={v => onChange({ resHeading: v })} placeholder="🎉 Parabéns!" /></Field>
-              <Field label="Texto">
-                <textarea value={block.resText || ''} onChange={e => onChange({ resText: e.target.value })} rows={3}
-                  className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none" />
-              </Field>
-              
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block pt-2 border-t border-slate-700/50">Botão de Ação</span>
-              <Field label="Texto do Botão"><Input value={block.resBtnText ?? 'Acessar agora →'} onChange={v => onChange({ resBtnText: v })} /></Field>
-              <Field label="URL do Botão"><Input value={block.resBtnUrl} onChange={v => onChange({ resBtnUrl: v })} placeholder="https://..."/></Field>
-              <Field label="Cor do Botão"><ColorPicker value={block.resBtnBg || '#10b981'} onChange={v => onChange({ resBtnBg: v })} /></Field>
-            </div>
-          </div>
-        )}
-      </Section>
     </>
   );
 }
@@ -1001,6 +961,22 @@ function LeadCaptureEditor({ block, onChange, steps, theme }) {
 function ResultEditor({ block, onChange, theme }) {
   return (
     <>
+      <Section title="Aparecimento (Atraso / VSL)">
+        <Field label="Exibir Bloco">
+          <Select value={block.resDelay || 'none'} onChange={v => onChange({ resDelay: v })} options={[
+            { value: 'none', label: 'Imediatamente' },
+            { value: 'on_end', label: 'Ao terminar o VSL' },
+            { value: 'custom', label: 'X seg. após Play no VSL' }
+          ]} />
+        </Field>
+        {block.resDelay === 'custom' && (
+          <Field label={`Aparecer após: ${block.resDelaySeconds || 0}s`}>
+            <input type="range" min={0} max={600} step={1} value={block.resDelaySeconds || 0}
+              onChange={e => onChange({ resDelaySeconds: Number(e.target.value) })}
+              className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+        )}
+      </Section>
       <Section title="Resultado">
         <Field label="Emoji Gigante"><EmojiSelect emoji={block.emoji} unified={block.emojiUnified} onChange={(e, u) => onChange({ emoji: e, emojiUnified: u })} /></Field>
         <Field label="Título"><Input value={block.heading} onChange={v => onChange({ heading: v })} /></Field>

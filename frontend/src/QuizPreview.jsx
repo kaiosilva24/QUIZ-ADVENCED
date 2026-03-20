@@ -259,8 +259,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const [currentTime, setCurrentTime]     = useState(0);
   const [duration, setDuration]           = useState(0);
   const [ended, setEnded]                 = useState(false);
-  const [resVisible, setResVisible]       = useState(false);
-  const [hasStarted, setHasStarted]       = useState(false); // Result only appears after play is pressed
+  const [hasStarted, setHasStarted]       = useState(false);
 
   const ar       = block.aspectRatio || '16/9';
   const radius   = block.rounded ? (compact?10:16) : 0;
@@ -295,24 +294,15 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   useEffect(() => {
     startedRef.current = false;
     setPlaying(false); setShowThumb(true); setCurrentTime(0);
-    setDuration(0); setEnded(false); setResVisible(false); setHasStarted(false);
+    setDuration(0); setEnded(false); setHasStarted(false);
   }, [src]);
 
-  // Embedded Result Array delay logic
+  // Sync to QuizPreview context
   useEffect(() => {
-    if (!block.showResultConfig) { setResVisible(false); return; }
-    // In compact (editor preview) mode: always show so creator can see/edit the result screen
-    if (compact) { setResVisible(true); return; }
-    if (!hasStarted) { setResVisible(false); return; }
-    
-    const delay = block.resDelay || 'none';
-    if (delay === 'none') { setResVisible(true); return; }
-    if (delay === 'on_end') { setResVisible(ended); return; }
-    if (delay === 'custom') {
-      const secs = block.resDelaySeconds || 0;
-      if (currentTime >= secs) { setResVisible(true); }
+    if (block.setMediaState) {
+      block.setMediaState({ hasStarted, currentTime, ended });
     }
-  }, [block.showResultConfig, block.resDelay, block.resDelaySeconds, ended, currentTime, hasStarted, compact]);
+  }, [hasStarted, currentTime, ended, block.setMediaState]);
 
   // The overlay is shown when: video is configured as autoplay+muted AND user hasn't unmuted yet
   const [userUnmuted, setUserUnmuted] = useState(false);
@@ -515,66 +505,6 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
           </div>
         )}
       </div>
-
-      {/* Embedded Result screen (Delayed) */}
-      {block.showResultConfig && resVisible && (
-        <div style={{ padding: compact?'12px 14px':'20px 24px', background:'linear-gradient(135deg,#1e293b,#0f172a)', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 8 : 16, alignItems: 'center', animation: 'fadeIn 0.5s ease-out' }}>
-            <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-            
-            {(block.resEmojiUnified || (block.resEmoji ?? '🎉')) ? (
-              <div style={{ display: 'flex', fontSize: compact ? 24 : 48 }}>
-                {block.resEmojiUnified ? <Emoji unified={block.resEmojiUnified} size={compact ? 36 : 72} /> : (block.resEmoji ?? '🎉')}
-              </div>
-            ) : null}
-            
-            {(block.resHeading ?? 'Parabéns!') ? (
-              <p style={{ color: '#ffffff', fontWeight: 700, fontSize: compact ? 13 : 20, margin: 0 }}>{block.resHeading ?? 'Parabéns!'}</p>
-            ) : null}
-
-            {(block.resText || '') ? (
-              <p style={{ color: '#ffffff', opacity: .7, fontSize: compact ? 9 : 13, lineHeight: 1.6, margin: 0 }}>{block.resText}</p>
-            ) : null}
-
-            {(block.resBtnText ?? 'Acessar agora →') && (
-              <button 
-                onClick={() => {
-                  if (block.resBtnUrl) {
-                    const url = block.resBtnUrl.startsWith('http') ? block.resBtnUrl : `https://${block.resBtnUrl}`;
-                    window.location.href = url;
-                  }
-                }}
-                style={{
-                  width: '100%',
-                  background: block.resBtnBg || theme?.accent || '#10b981',
-                  color: '#fff',
-                  padding: compact ? '8px 16px' : '14px 28px',
-                  borderRadius: compact ? 8 : 12,
-                  border: 'none',
-                  fontSize: compact ? 10 : 14,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  marginTop: compact ? 4 : 8,
-                  boxShadow: `0 4px 20px ${(block.resBtnBg || theme?.accent || '#10b981')}50`,
-                }}>
-                {block.resBtnText ?? 'Acessar agora →'}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Preview hint for Embedded Result (editor only, before play) */}
-      {block.showResultConfig && !resVisible && (
-        <div style={{ padding: compact?'6px 10px':'10px 18px', background:'#0f172a', borderTop:'1px solid rgba(255,255,255,0.05)', opacity:0.4 }}>
-          <p style={{ color:'#475569', fontSize: compact?8:11, textAlign:'center', margin:0 }}>
-            {!hasStarted ? 'Tela de resultado aparece após iniciar o vídeo' : (
-              block.resDelay === 'on_end' ? 'Tela de resultado aparece ao terminar o vídeo' :
-              block.resDelay === 'custom' ? `Tela de resultado aparece após ${block.resDelaySeconds||0}s` : ''
-            )}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
@@ -593,6 +523,9 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
   const showOverlay = hasImage;
   const overlayColor = theme.overlayColor || '#000000';
   const overlayOpacity = theme.overlayOpacity ?? 0.45;
+
+  // Global media state for VSL sync
+  const [mediaState, setMediaState] = React.useState({ hasStarted: false, ended: false, currentTime: 0 });
 
   const containerStyle = {
     background: buildBackground(theme),
@@ -649,7 +582,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
               id={`preview-block-${block.id}`} 
               className={`shrink-0 w-full ${compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300' : ''}`}
             >
-              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} />
+              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} />
             </div>
           ))}
           {(!step?.blocks || step.blocks.length === 0) && (
@@ -665,7 +598,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
   );
 }
 
-function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId }) {
+function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId, mediaState, setMediaState }) {
   const scale = compact ? 0.6 : 1;
   const { accent, textColor: defaultText } = theme;
 
@@ -907,7 +840,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       return <AudioBlockPlayer block={block} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} />;
 
     case 'video':
-      return <VideoBlockPlayer block={block} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} theme={theme} />;
+      return <VideoBlockPlayer block={{...block, setMediaState}} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} theme={theme} />;
 
     case 'button': {
       const pos = block.emojiPosition || 'left_inside';
@@ -1176,10 +1109,42 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     }
 
     case 'result': {
-      // Usar refs para manter estado de carregamento sem re-renderizar todo o quiz
-      const [isLoading, setIsLoading] = React.useState(block.enableLoading);
+      const [resVisible, setResVisible] = React.useState(false);
 
       React.useEffect(() => {
+        const delay = block.resDelay || 'none';
+        if (compact) { setResVisible(true); return; } // Editor preview
+        if (delay === 'none') { setResVisible(true); return; }
+        
+        if (!mediaState || !mediaState.hasStarted) {
+          setResVisible(false);
+          return;
+        }
+
+        if (delay === 'on_end') {
+          setResVisible(mediaState.ended);
+          return;
+        }
+
+        if (delay === 'custom') {
+          const secs = block.resDelaySeconds || 0;
+          if (mediaState.currentTime >= secs) {
+            setResVisible(true);
+          } else {
+            setResVisible(false);
+          }
+        }
+      }, [block.resDelay, block.resDelaySeconds, mediaState, compact]);
+
+      // Usar refs para manter estado de carregamento sem re-renderizar todo o quiz
+      const [isLoading, setIsLoading] = React.useState(false);
+
+      React.useEffect(() => {
+        if (!resVisible) {
+          setIsLoading(false);
+          return;
+        }
+
         if (!block.enableLoading) {
             setIsLoading(false);
             return;
@@ -1193,7 +1158,9 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         }, (block.loadingDuration || 3) * 1000);
 
         return () => clearTimeout(timer);
-      }, [block.id, block.enableLoading, block.loadingDuration]);
+      }, [block.id, block.enableLoading, block.loadingDuration, resVisible]);
+
+      if (!resVisible) return null;
 
       if (isLoading) {
         const style = block.loadingStyle || 'spinner';
