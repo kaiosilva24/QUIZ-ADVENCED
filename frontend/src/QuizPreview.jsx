@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Emoji } from 'emoji-picker-react';
 import { customList } from 'country-codes-list';
+import 'flag-icons/css/flag-icons.min.css';
 
 function getFlagEmoji(countryCode) {
   if (!countryCode) return '';
@@ -1308,7 +1309,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                         >
                            {countryChoices.map(c => <option key={c.code} value={c.code}>{c.emoji} {c.code} {c.dial}</option>)}
                         </select>
-                        <span style={{ fontSize: 18, marginRight: 6 }}>{getFlagEmoji(dialCountry)}</span>
+                        <span className={`fi fi-${dialCountry.toLowerCase()}`} style={{ fontSize: 20, width: 26, borderRadius: 2, marginRight: 6 }}></span>
                         <span style={{ fontSize: 10, color: fieldStyle.color, opacity: 0.7 }}>▼</span>
                      </div>
                      <input
