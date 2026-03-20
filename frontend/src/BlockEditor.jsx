@@ -889,6 +889,8 @@ function ProgressEditor({ block, onChange }) {
 function LeadCaptureEditor({ block, onChange, steps, theme }) {
   const all = ['name', 'email', 'phone', 'message'];
   const labels = { name: 'Nome', email: 'E-mail', phone: 'Telefone', message: 'Mensagem' };
+  const defaultPlaceholders = { name: 'Digite aqui seu Nome', email: 'Digite aqui seu Email', phone: 'Digite seu DDD + WhatsApp', message: 'Sua mensagem' };
+
   return (
     <>
       <Section title="Campos do Formulário">
@@ -902,7 +904,7 @@ function LeadCaptureEditor({ block, onChange, steps, theme }) {
                 <Input 
                   value={block.placeholders?.[f] || ''} 
                   onChange={val => onChange({ placeholders: { ...(block.placeholders || {}), [f]: val } })}
-                  placeholder={`Placeholder: Ex: Seu ${labels[f].toLowerCase()}...`}
+                  placeholder={`Placeholder: ${defaultPlaceholders[f]}`}
                 />
               </div>
             )}

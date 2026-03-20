@@ -1,5 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Emoji } from 'emoji-picker-react';
+import { customList } from 'country-codes-list';
+
+function getFlagEmoji(countryCode) {
+  if (!countryCode) return '';
+  const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
+  return String.fromCodePoint(...codePoints);
+}
+
+const countryDialCodes = customList('countryCode', '{countryCallingCode}');
+const countryChoices = Object.keys(countryDialCodes).map(code => ({
+  code,
+  dial: `+${countryDialCodes[code]}`,
+  emoji: getFlagEmoji(code)
+})).sort((a,b) => a.code.localeCompare(b.code));
 
 // Injects a Google Font link once
 const _loadedFonts = new Set();
@@ -1128,10 +1142,18 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const [isLoading, setIsLoading] = React.useState(false);
       const [formValues, setFormValues] = React.useState({});
       const [errorMsg, setErrorMsg] = React.useState('');
+      const [dialCode, setDialCode] = React.useState('+55');
+      const [dialCountry, setDialCountry] = React.useState('BR');
+
+      const fields = block.fields || ['name', 'email'];
 
       const proceed = () => {
+        const finalObj = {...formValues};
+        if (fields.includes('phone') && finalObj.phone) {
+           finalObj.phone = `${dialCode} ${finalObj.phone}`;
+        }
         if (block.nextStep && onNavigate) {
-          onNavigate(block.nextStep, Object.keys(formValues).length > 0 ? JSON.stringify(formValues) : (block.buttonText || 'Quero meu resultado'));
+          onNavigate(block.nextStep, Object.keys(finalObj).length > 0 ? JSON.stringify(finalObj) : (block.buttonText || 'Quero meu resultado'));
         } else if (block.redirectUrl) {
           const url = block.redirectUrl.startsWith('http') ? block.redirectUrl : `https://${block.redirectUrl}`;
           window.location.href = url;
@@ -1141,7 +1163,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const handleCapture = () => {
         // Validation
         if (!compact) {
-          const requiredFields = block.fields || ['name', 'email'];
+          const requiredFields = fields;
           for (const f of requiredFields) {
              if (!formValues[f] || !formValues[f].trim()) {
                 setErrorMsg('Por favor, preencha todos os campos obrigatórios.');
@@ -1226,51 +1248,105 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         );
       }
 
-      const fields = block.fields || ['name', 'email'];
-      const defaultLabels = { name: 'Seu nome completo', email: 'Seu melhor e-mail', phone: 'Seu WhatsApp', message: 'Sua mensagem' };
+      const defaultFieldTitles = { name: 'Nome', email: 'E-mail', phone: 'Telefone', message: 'Mensagem' };
+      const defaultPlaceholders = { name: 'Digite aqui seu Nome', email: 'Digite aqui seu Email', phone: 'Digite seu DDD + WhatsApp', message: 'Sua mensagem' };
+
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 6 : 10, animation: 'fadeIn 0.4s ease-out' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 6 : 14, animation: 'fadeIn 0.4s ease-out' }}>
           <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
           {fields.map(f => {
-            const placeholder = block.placeholders?.[f] || defaultLabels[f] || f;
+            const placeholder = block.placeholders?.[f] || defaultPlaceholders[f] || f;
+            const fieldTitle = defaultFieldTitles[f] || f;
+
             const fieldStyle = {
-              padding: compact ? '6px 10px' : '12px 16px',
+              padding: compact ? '6px 10px' : '10px 14px',
               background: block.fieldBg || 'rgba(255,255,255,0.07)',
               border: `1px solid ${block.fieldBorderColor || 'rgba(255,255,255,0.12)'}`,
               borderRadius: 10,
-              fontSize: compact ? 9 : 13,
+              fontSize: compact ? 10 : 14,
               color: block.fieldTextColor || defaultText,
               width: '100%',
               outline: 'none',
               fontFamily: 'inherit',
               transition: 'border-color 0.2s ease',
             };
+
+            const inputWrapperStyle = {
+               opacity: block.fieldTextColor ? 1 : 0.6,
+               display: 'flex',
+               flexDirection: 'column',
+               gap: compact ? 4 : 6,
+            };
+
+            const labelElem = (
+               <label style={{ fontSize: compact ? 10 : 13, fontWeight: 700, color: block.fieldTextColor || defaultText, margin: 0 }}>
+                  {fieldTitle}
+               </label>
+            );
+
             if (compact) {
-              return (
-                <div key={f} style={{...fieldStyle, opacity: block.fieldTextColor ? 1 : 0.6}}>
-                  {placeholder}...
-                </div>
-              );
-            }
-            if (f === 'message') {
                return (
-                  <textarea key={f}
-                    value={formValues[f] || ''}
-                    onChange={e => setFormValues({...formValues, [f]: e.target.value})}
-                    placeholder={placeholder + '...'}
-                    rows={3}
-                    style={{...fieldStyle, resize: 'none'}} 
+                  <div key={f} style={inputWrapperStyle}>
+                     {labelElem}
+                     <div style={{...fieldStyle}}>{placeholder}...</div>
+                  </div>
+               );
+            }
+
+            let inputElem;
+            if (f === 'phone') {
+               inputElem = (
+                  <div style={{ display: 'flex', background: fieldStyle.background, border: fieldStyle.border, borderRadius: fieldStyle.borderRadius, overflow: 'hidden', alignItems: 'stretch' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px', background: 'rgba(0,0,0,0.15)', cursor: 'pointer', position: 'relative' }}>
+                        <select
+                           value={dialCountry}
+                           onChange={e => {
+                              setDialCountry(e.target.value);
+                              setDialCode(countryChoices.find(c => c.code === e.target.value)?.dial || '+55');
+                           }}
+                           style={{ position: 'absolute', opacity: 0, inset: 0, width: '100%', cursor: 'pointer' }}
+                        >
+                           {countryChoices.map(c => <option key={c.code} value={c.code}>{c.emoji} {c.code} {c.dial}</option>)}
+                        </select>
+                        <span style={{ fontSize: 18, marginRight: 6 }}>{getFlagEmoji(dialCountry)}</span>
+                        <span style={{ fontSize: 10, color: fieldStyle.color, opacity: 0.7 }}>▼</span>
+                     </div>
+                     <input
+                        type="tel"
+                        value={formValues[f] || ''}
+                        onChange={e => setFormValues({...formValues, [f]: e.target.value})}
+                        placeholder={placeholder}
+                        style={{...fieldStyle, border: 'none', borderRadius: 0, flex: 1, background: 'transparent'}}
+                     />
+                  </div>
+               );
+            } else if (f === 'message') {
+               inputElem = (
+                  <textarea
+                     value={formValues[f] || ''}
+                     onChange={e => setFormValues({...formValues, [f]: e.target.value})}
+                     placeholder={placeholder}
+                     rows={3}
+                     style={{...fieldStyle, resize: 'none'}} 
+                  />
+               );
+            } else {
+               inputElem = (
+                  <input
+                     type={f === 'email' ? 'email' : 'text'}
+                     value={formValues[f] || ''}
+                     onChange={e => setFormValues({...formValues, [f]: e.target.value})}
+                     placeholder={placeholder}
+                     style={fieldStyle}
                   />
                );
             }
+
             return (
-              <input key={f}
-                type={f === 'email' ? 'email' : f === 'phone' ? 'tel' : 'text'}
-                value={formValues[f] || ''}
-                onChange={e => setFormValues({...formValues, [f]: e.target.value})}
-                placeholder={placeholder + '...'}
-                style={fieldStyle}
-              />
+               <div key={f} style={inputWrapperStyle}>
+                  {labelElem}
+                  {inputElem}
+               </div>
             );
           })}
 
