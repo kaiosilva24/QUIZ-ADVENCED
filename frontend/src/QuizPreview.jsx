@@ -259,6 +259,8 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
   const [currentTime, setCurrentTime]     = useState(0);
   const [duration, setDuration]           = useState(0);
   const [ended, setEnded]                 = useState(false);
+  const [resVisible, setResVisible]       = useState(false);
+  const [hasStarted, setHasStarted]       = useState(false); // Result only appears after play is pressed
 
   const ar       = block.aspectRatio || '16/9';
   const radius   = block.rounded ? (compact?10:16) : 0;
@@ -293,8 +295,24 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
   useEffect(() => {
     startedRef.current = false;
     setPlaying(false); setShowThumb(true); setCurrentTime(0);
-    setDuration(0); setEnded(false);
+    setDuration(0); setEnded(false); setResVisible(false); setHasStarted(false);
   }, [src]);
+
+  // Embedded Result Array delay logic
+  useEffect(() => {
+    if (!block.showResultConfig) { setResVisible(false); return; }
+    // In compact (editor preview) mode: always show so creator can see/edit the result screen
+    if (compact) { setResVisible(true); return; }
+    if (!hasStarted) { setResVisible(false); return; }
+    
+    const delay = block.resDelay || 'none';
+    if (delay === 'none') { setResVisible(true); return; }
+    if (delay === 'on_end') { setResVisible(ended); return; }
+    if (delay === 'custom') {
+      const secs = block.resDelaySeconds || 0;
+      if (currentTime >= secs) { setResVisible(true); }
+    }
+  }, [block.showResultConfig, block.resDelay, block.resDelaySeconds, ended, currentTime, hasStarted, compact]);
 
   // The overlay is shown when: video is configured as autoplay+muted AND user hasn't unmuted yet
   const [userUnmuted, setUserUnmuted] = useState(false);
@@ -325,6 +343,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
     v.currentTime = 0;
     v.play().then(() => {
       setPlaying(true);
+      setHasStarted(true);
       setUserUnmuted(true);   // hides overlay
       setShowThumb(false);
     }).catch(console.error);
@@ -336,7 +355,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
     if (showUnmuteOverlay) { handleUnmute(); return; }
     if (playing) { v.pause(); setPlaying(false); }
     else {
-      v.play().then(() => { setPlaying(true); setShowThumb(false); setEnded(false); }).catch(console.error);
+      v.play().then(() => { setPlaying(true); setHasStarted(true); setShowThumb(false); setEnded(false); }).catch(console.error);
     }
   };
 
@@ -496,6 +515,66 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
           </div>
         )}
       </div>
+
+      {/* Embedded Result screen (Delayed) */}
+      {block.showResultConfig && resVisible && (
+        <div style={{ padding: compact?'12px 14px':'20px 24px', background:'linear-gradient(135deg,#1e293b,#0f172a)', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 8 : 16, alignItems: 'center', animation: 'fadeIn 0.5s ease-out' }}>
+            <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+            
+            {(block.resEmojiUnified || (block.resEmoji ?? '🎉')) ? (
+              <div style={{ display: 'flex', fontSize: compact ? 24 : 48 }}>
+                {block.resEmojiUnified ? <Emoji unified={block.resEmojiUnified} size={compact ? 36 : 72} /> : (block.resEmoji ?? '🎉')}
+              </div>
+            ) : null}
+            
+            {(block.resHeading ?? 'Parabéns!') ? (
+              <p style={{ color: '#ffffff', fontWeight: 700, fontSize: compact ? 13 : 20, margin: 0 }}>{block.resHeading ?? 'Parabéns!'}</p>
+            ) : null}
+
+            {(block.resText || '') ? (
+              <p style={{ color: '#ffffff', opacity: .7, fontSize: compact ? 9 : 13, lineHeight: 1.6, margin: 0 }}>{block.resText}</p>
+            ) : null}
+
+            {(block.resBtnText ?? 'Acessar agora →') && (
+              <button 
+                onClick={() => {
+                  if (block.resBtnUrl) {
+                    const url = block.resBtnUrl.startsWith('http') ? block.resBtnUrl : `https://${block.resBtnUrl}`;
+                    window.location.href = url;
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  background: block.resBtnBg || theme?.accent || '#10b981',
+                  color: '#fff',
+                  padding: compact ? '8px 16px' : '14px 28px',
+                  borderRadius: compact ? 8 : 12,
+                  border: 'none',
+                  fontSize: compact ? 10 : 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  marginTop: compact ? 4 : 8,
+                  boxShadow: `0 4px 20px ${(block.resBtnBg || theme?.accent || '#10b981')}50`,
+                }}>
+                {block.resBtnText ?? 'Acessar agora →'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Preview hint for Embedded Result (editor only, before play) */}
+      {block.showResultConfig && !resVisible && (
+        <div style={{ padding: compact?'6px 10px':'10px 18px', background:'#0f172a', borderTop:'1px solid rgba(255,255,255,0.05)', opacity:0.4 }}>
+          <p style={{ color:'#475569', fontSize: compact?8:11, textAlign:'center', margin:0 }}>
+            {!hasStarted ? 'Tela de resultado aparece após iniciar o vídeo' : (
+              block.resDelay === 'on_end' ? 'Tela de resultado aparece ao terminar o vídeo' :
+              block.resDelay === 'custom' ? `Tela de resultado aparece após ${block.resDelaySeconds||0}s` : ''
+            )}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
