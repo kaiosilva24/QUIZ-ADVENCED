@@ -820,6 +820,7 @@ function ButtonEditor({ block, onChange, steps }) {
         <Field label="Ir para Etapa">
           <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} placeholder="-- Próxima Etapa --" />
         </Field>
+        <Toggle label="⏳ Ativar Tela de Carregamento ao Clicar" value={!!block.showLoading} onChange={v => onChange({ showLoading: v })} />
         <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
       </Section>
     </>
@@ -843,6 +844,7 @@ function ArrowButtonEditor({ block, onChange, steps }) {
         <Field label="Ir para Etapa">
           <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} />
         </Field>
+        <Toggle label="⏳ Ativar Tela de Carregamento ao Clicar" value={!!block.showLoading} onChange={v => onChange({ showLoading: v })} />
         <Toggle label="Mostrar ícone de seta" value={block.showIcon !== false} onChange={v => onChange({ showIcon: v })} />
         <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
       </Section>

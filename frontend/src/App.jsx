@@ -210,7 +210,7 @@ function QuizRouter() {
       }).catch(() => {});
   }, [quizData]);
 
-  const handleNavigate = (nextStepId, answerText = null) => {
+  const handleNavigate = (nextStepId, answerText = null, withLoading = false) => {
     const steps = quizData?.config?.steps || [];
     const idx = steps.findIndex(s => s.id === nextStepId);
     if (idx >= 0) {
@@ -236,12 +236,15 @@ function QuizRouter() {
         if (window.fbq) window.fbq('track', 'Lead');
       }
 
-      // Tela de carregamento entre etapas
-      setTransitionLoading(true);
-      setTimeout(() => {
+      if (withLoading) {
+        setTransitionLoading(true);
+        setTimeout(() => {
+          setCurrentStep(idx);
+          setTransitionLoading(false);
+        }, 600);
+      } else {
         setCurrentStep(idx);
-        setTransitionLoading(false);
-      }, 600);
+      }
     }
   };
 
