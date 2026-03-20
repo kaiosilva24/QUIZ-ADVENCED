@@ -298,11 +298,12 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
     setDuration(0); setEnded(false); setCtaVisible(false); setHasStarted(false);
   }, [src]);
 
-  // showUnmuteOverlay is computed directly from block config — NEVER stored as state
-  // This ensures it always renders correctly after page reload or prop changes
-  // CTA delay logic: only runs once hasStarted (play pressed)
+  // CTA delay logic: gates behind hasStarted in real quiz; in compact editor preview always shows
   useEffect(() => {
-    if (!block.ctaText || !hasStarted) { setCtaVisible(false); return; }
+    if (!block.ctaText) { setCtaVisible(false); return; }
+    // In compact (editor preview) mode: always show so creator can see/edit the button
+    if (compact) { setCtaVisible(true); return; }
+    if (!hasStarted) { setCtaVisible(false); return; }
     const delay = block.ctaDelay || 'none';
     if (delay === 'none') { setCtaVisible(true); return; }
     if (delay === 'on_end') { setCtaVisible(ended); return; }
@@ -310,7 +311,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
       const secs = block.ctaDelaySeconds || 0;
       if (currentTime >= secs) { setCtaVisible(true); }
     }
-  }, [block.ctaText, block.ctaDelay, block.ctaDelaySeconds, ended, currentTime, hasStarted]);
+  }, [block.ctaText, block.ctaDelay, block.ctaDelaySeconds, ended, currentTime, hasStarted, compact]);
 
   // The overlay is shown when: video is configured as autoplay+muted AND user hasn't unmuted yet
   const [userUnmuted, setUserUnmuted] = useState(false);
