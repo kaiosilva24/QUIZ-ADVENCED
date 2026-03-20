@@ -958,7 +958,7 @@ function LeadCaptureEditor({ block, onChange, steps, theme }) {
   );
 }
 
-function ResultEditor({ block, onChange, theme }) {
+function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
   return (
     <>
       <Section title="⏰ Aparecimento (Delay)">
