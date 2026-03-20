@@ -817,11 +817,45 @@ function ButtonEditor({ block, onChange, steps }) {
       </Section>
 
       <Section title="Ação">
-        <Field label="Ir para Etapa">
-          <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} placeholder="-- Próxima Etapa --" />
+        <Field label="Ao clicar">
+          <Select value={block.actionType || 'step'} onChange={v => onChange({ actionType: v })} options={[
+            { value: 'step', label: 'Ir para Etapa' },
+            { value: 'url', label: 'Abrir URL' },
+          ]} />
         </Field>
-        <Toggle label="⏳ Ativar Tela de Carregamento ao Clicar" value={!!block.showLoading} onChange={v => onChange({ showLoading: v })} />
+        {(block.actionType || 'step') === 'step' && (
+          <Field label="Ir para Etapa">
+            <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} placeholder="-- Próxima Etapa --" />
+          </Field>
+        )}
+        {block.actionType === 'url' && (
+          <Field label="URL de Destino">
+            <Input value={block.buttonUrl || ''} onChange={v => onChange({ buttonUrl: v })} placeholder="https://meusite.com" />
+          </Field>
+        )}
         <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
+      </Section>
+      <Section title="Tela de Carregamento (Opcional)">
+        <Toggle label="⏳ Ativar ao Clicar" value={!!block.showLoading} onChange={v => onChange({ showLoading: v })} />
+        {block.showLoading && (
+          <>
+            <Field label="Estilo da Animação">
+              <Select value={block.loadingStyle || 'spinner'} onChange={v => onChange({ loadingStyle: v })} options={[
+                { value: 'spinner', label: 'Círculo Girando' },
+                { value: 'pulse', label: 'Círculo Pulsando' },
+                { value: 'dots', label: 'Três Pontinhos' },
+              ]} />
+            </Field>
+            <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || theme?.accent || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
+            <Field label="Texto de Carregamento"><Input value={block.loadingText || ''} onChange={v => onChange({ loadingText: v })} placeholder="Analisando suas respostas..." /></Field>
+            <Field label="Texto Secundário (opcional)"><Input value={block.progressText || ''} onChange={v => onChange({ progressText: v })} placeholder="Aguarde um momento..." /></Field>
+            <Field label={`Duração: ${block.loadingDuration || 3}s`}>
+              <input type="range" min={1} max={15} step={1} value={block.loadingDuration || 3}
+                onChange={e => onChange({ loadingDuration: Number(e.target.value) })}
+                className="w-full accent-indigo-500 cursor-pointer" />
+            </Field>
+          </>
+        )}
       </Section>
     </>
   );
@@ -841,10 +875,42 @@ function ArrowButtonEditor({ block, onChange, steps }) {
         </Field>
       </Section>
       <Section title="Ação">
-        <Field label="Ir para Etapa">
-          <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} />
+        <Field label="Ao clicar">
+          <Select value={block.actionType || 'step'} onChange={v => onChange({ actionType: v })} options={[
+            { value: 'step', label: 'Ir para Etapa' },
+            { value: 'url', label: 'Abrir URL' },
+          ]} />
         </Field>
+        {(block.actionType || 'step') === 'step' && (
+          <Field label="Ir para Etapa">
+            <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} />
+          </Field>
+        )}
+        {block.actionType === 'url' && (
+          <Field label="URL de Destino">
+            <Input value={block.buttonUrl || ''} onChange={v => onChange({ buttonUrl: v })} placeholder="https://meusite.com" />
+          </Field>
+        )}
         <Toggle label="⏳ Ativar Tela de Carregamento ao Clicar" value={!!block.showLoading} onChange={v => onChange({ showLoading: v })} />
+        {block.showLoading && (
+          <>
+            <Field label="Estilo da Animação">
+              <Select value={block.loadingStyle || 'spinner'} onChange={v => onChange({ loadingStyle: v })} options={[
+                { value: 'spinner', label: 'Círculo Girando' },
+                { value: 'pulse', label: 'Círculo Pulsando' },
+                { value: 'dots', label: 'Três Pontinhos' },
+              ]} />
+            </Field>
+            <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || theme?.accent || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
+            <Field label="Texto de Carregamento"><Input value={block.loadingText || ''} onChange={v => onChange({ loadingText: v })} placeholder="Analisando suas respostas..." /></Field>
+            <Field label="Texto Secundário (opcional)"><Input value={block.progressText || ''} onChange={v => onChange({ progressText: v })} placeholder="Aguarde um momento..." /></Field>
+            <Field label={`Duração: ${block.loadingDuration || 3}s`}>
+              <input type="range" min={1} max={15} step={1} value={block.loadingDuration || 3}
+                onChange={e => onChange({ loadingDuration: Number(e.target.value) })}
+                className="w-full accent-indigo-500 cursor-pointer" />
+            </Field>
+          </>
+        )}
         <Toggle label="Mostrar ícone de seta" value={block.showIcon !== false} onChange={v => onChange({ showIcon: v })} />
         <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
       </Section>

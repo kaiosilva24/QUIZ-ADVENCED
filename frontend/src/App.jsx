@@ -81,6 +81,7 @@ function QuizRouter() {
   const [loading, setLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [transitionLoading, setTransitionLoading] = useState(false);
+  const [loadingConfig, setLoadingConfig] = useState(null);
   const stepStartTime = React.useRef(Date.now());
 
   const QUIZ_ID_KEY = 'quiz_saas_lead_quiz_id';
@@ -237,11 +238,15 @@ function QuizRouter() {
       }
 
       if (withLoading) {
+        const cfg = typeof withLoading === 'object' ? withLoading : {};
+        const dur = (cfg.loadingDuration || 3) * 1000;
+        setLoadingConfig(cfg);
         setTransitionLoading(true);
         setTimeout(() => {
           setCurrentStep(idx);
           setTransitionLoading(false);
-        }, 600);
+          setLoadingConfig(null);
+        }, dur);
       } else {
         setCurrentStep(idx);
       }
@@ -275,27 +280,44 @@ function QuizRouter() {
 
   return (
     <div style={{minHeight:'100vh',width:'100%',display:'flex',alignItems:'center',justifyContent:'center',background:'#000',position:'relative'}}>
-      {transitionLoading && (
-        <div style={{
-          position:'fixed', inset:0, zIndex:9999,
-          display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20,
-          background:'rgba(2,6,23,0.92)',
-          backdropFilter:'blur(8px)',
-          animation:'fadeInOverlay 0.15s ease-out',
-        }}>
-          <style>{`
-            @keyframes fadeInOverlay { from { opacity:0 } to { opacity:1 } }
-            @keyframes spinRing { to { transform: rotate(360deg); } }
-          `}</style>
+      {transitionLoading && (() => {
+        const cfg = loadingConfig || {};
+        const style = cfg.loadingStyle || 'spinner';
+        const color = cfg.loadingColor || '#6366f1';
+        return (
           <div style={{
-            width: 48, height: 48,
-            border: '4px solid rgba(99,102,241,0.2)',
-            borderTopColor: '#6366f1',
-            borderRadius: '50%',
-            animation: 'spinRing 0.7s linear infinite',
-          }} />
-        </div>
-      )}
+            position:'fixed', inset:0, zIndex:9999,
+            display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:20,
+            background:'rgba(2,6,23,0.95)',
+            backdropFilter:'blur(8px)',
+            animation:'fadeInOverlay 0.15s ease-out',
+          }}>
+            <style>{`
+              @keyframes fadeInOverlay { from { opacity:0 } to { opacity:1 } }
+              @keyframes spinRing { to { transform: rotate(360deg); } }
+              @keyframes quizPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: .7; } }
+              @keyframes quizBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+            `}</style>
+            {style === 'spinner' && (
+              <div style={{ width:48, height:48, border:`4px solid ${color}30`, borderTopColor:color, borderRadius:'50%', animation:'spinRing 0.7s linear infinite' }} />
+            )}
+            {style === 'pulse' && (
+              <div style={{ width:56, height:56, background:`${color}20`, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', animation:'quizPulse 1.5s ease-in-out infinite' }}>
+                <div style={{ width:'50%', height:'50%', background:color, borderRadius:'50%' }} />
+              </div>
+            )}
+            {style === 'dots' && (
+              <div style={{ display:'flex', gap:8 }}>
+                {[0,1,2].map(i => <div key={i} style={{ width:12, height:12, background:color, borderRadius:'50%', animation:`quizBounce 0.6s infinite ${i*0.1}s alternate` }} />)}
+              </div>
+            )}
+            <div style={{ display:'flex', flexDirection:'column', gap:8, textAlign:'center' }}>
+              {cfg.loadingText && <p style={{ color:'#fff', fontWeight:700, fontSize:18, margin:0 }}>{cfg.loadingText}</p>}
+              {cfg.progressText && <p style={{ color:'#94a3b8', fontSize:14, margin:0 }}>{cfg.progressText}</p>}
+            </div>
+          </div>
+        );
+      })()}
       <div style={{width:'100%',maxWidth:'440px',minHeight:'100vh'}}>
         <QuizPreview
           config={quizData.config}

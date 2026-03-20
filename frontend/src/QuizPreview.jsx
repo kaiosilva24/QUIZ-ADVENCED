@@ -1078,7 +1078,15 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                 filter: `drop-shadow(0 0 ${compact ? 6 : 12}px ${color}80)`,
               }}
               aria-label="Navegar para próxima etapa"
-              onClick={() => block.nextStep && onNavigate && onNavigate(block.nextStep, block.text || 'Avançar', !!block.showLoading)}
+              onClick={() => {
+                const isUrl = block.actionType === 'url';
+                if (isUrl && block.buttonUrl) {
+                  const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
+                  window.open(url, '_blank');
+                } else if (block.nextStep && onNavigate) {
+                  onNavigate(block.nextStep, block.text || 'Avançar', block.showLoading ? block : false);
+                }
+              }}
             >
               {icon}
             </button>
@@ -1142,7 +1150,15 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           gap: pos === 'top_large' ? (compact ? 6 : 10) : (compact ? 6 : 8),
           ...glassStyle,
         }}
-        onClick={() => block.nextStep && onNavigate && onNavigate(block.nextStep, block.text || 'Avançar', !!block.showLoading)}
+        onClick={() => {
+            const isUrl = block.actionType === 'url';
+            if (isUrl && block.buttonUrl) {
+              const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
+              window.open(url, '_blank');
+            } else if (block.nextStep && onNavigate) {
+              onNavigate(block.nextStep, block.text || 'Avançar', block.showLoading ? block : false);
+            }
+          }}
         >
           {pos === 'left_inside' && (block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 16 : 20} /> : block.emoji && <span>{block.emoji}</span>)}
           {pos === 'top_large' && (block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 24 : 36} /> : block.emoji && <span style={{fontSize: compact ? 24 : 36, lineHeight: 1}}>{block.emoji}</span>)}
