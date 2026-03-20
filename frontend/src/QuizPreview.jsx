@@ -788,7 +788,7 @@ function AnimatedProgressBar({ block, compact }) {
   );
 }
 
-function CountrySelectDropdown({ dialCountry, setDialCountry, setDialCode, compact, fieldColor }) {
+function CountrySelectDropdown({ dialCountry, setDialCountry, setDialCode, compact, fieldColor, borderRadius }) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef(null);
 
@@ -807,7 +807,7 @@ function CountrySelectDropdown({ dialCountry, setDialCountry, setDialCode, compa
   };
 
   return (
-    <div ref={ref} onClick={() => setIsOpen(!isOpen)} style={{ display: 'flex', alignItems: 'center', padding: compact ? '0 8px' : '0 12px', background: 'rgba(0,0,0,0.15)', cursor: 'pointer', position: 'relative' }}>
+    <div ref={ref} onClick={() => setIsOpen(!isOpen)} style={{ display: 'flex', alignItems: 'center', padding: compact ? '0 8px' : '0 12px', background: 'rgba(0,0,0,0.15)', cursor: 'pointer', position: 'relative', borderTopLeftRadius: borderRadius || 0, borderBottomLeftRadius: borderRadius || 0 }}>
        <span className={`fi fi-${dialCountry.toLowerCase()}`} style={{ fontSize: compact ? 16 : 20, width: compact ? 22 : 26, borderRadius: 2, marginRight: 6, display: 'block' }}></span>
        <span style={{ fontSize: 10, color: fieldColor, opacity: 0.7 }}>▼</span>
 
@@ -1343,20 +1343,21 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             let inputElem;
             if (f === 'phone') {
                inputElem = (
-                  <div style={{ display: 'flex', background: fieldStyle.background, border: fieldStyle.border, borderRadius: fieldStyle.borderRadius, overflow: 'hidden', alignItems: 'stretch' }}>
+                  <div style={{ display: 'flex', background: fieldStyle.background, border: fieldStyle.border, borderRadius: fieldStyle.borderRadius, position: 'relative', alignItems: 'stretch' }}>
                      <CountrySelectDropdown
                         dialCountry={dialCountry}
                         setDialCountry={setDialCountry}
                         setDialCode={setDialCode}
                         compact={compact}
                         fieldColor={fieldStyle.color}
+                        borderRadius={fieldStyle.borderRadius}
                      />
                      <input
                         type="tel"
                         value={formValues[f] || ''}
                         onChange={e => setFormValues({...formValues, [f]: e.target.value})}
                         placeholder={placeholder}
-                        style={{...fieldStyle, border: 'none', borderRadius: 0, flex: 1, background: 'transparent'}}
+                        style={{...fieldStyle, border: 'none', flex: 1, background: 'transparent', borderTopRightRadius: fieldStyle.borderRadius, borderBottomRightRadius: fieldStyle.borderRadius, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
                      />
                   </div>
                );
