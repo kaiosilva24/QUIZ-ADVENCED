@@ -1039,6 +1039,50 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
   );
 }
 
+function AnimatedProgressEditor({ block, onChange }) {
+  return (
+    <>
+      <Section title="Barra Animada">
+        <Field label="Padrão de Texto (use {pct} para o número)">
+          <Input value={block.text} onChange={v => onChange({ text: v })} placeholder="Ex: {pct}% das vagas preenchidas..." />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Início (%)">
+            <input type="number" value={block.startVal ?? 0} onChange={e => onChange({ startVal: Number(e.target.value) })}
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
+          </Field>
+          <Field label="Fim (%)">
+            <input type="number" value={block.endVal ?? 84} onChange={e => onChange({ endVal: Number(e.target.value) })}
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
+          </Field>
+        </div>
+        <Field label="Duração da animação (segundos)">
+          <input type="number" value={block.duration ?? 5} step={0.5} onChange={e => onChange({ duration: Number(e.target.value) })}
+            className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
+        </Field>
+        <Field label="Delay (Segundos, antes de começar)">
+          <input type="number" value={block.delay ?? 0} step={0.5} onChange={e => onChange({ delay: Number(e.target.value) })}
+            className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
+        </Field>
+      </Section>
+      <Section title="Design">
+        <Field label="Cor de Fundo da Barra"><ColorPicker value={block.bg} onChange={v => onChange({ bg: v })} /></Field>
+        <Field label="Cor do Progresso (Preenchimento)"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
+        <Field label="Cor da Borda"><ColorPicker value={block.border} onChange={v => onChange({ border: v })} /></Field>
+        <Field label="Cor do Texto"><ColorPicker value={block.textColor} onChange={v => onChange({ textColor: v })} /></Field>
+        <Field label="Arredondamento">
+          <Select value={block.rounded || 'none'} onChange={v => onChange({ rounded: v })} options={[
+            { value: 'none', label: 'Quadrado' },
+            { value: 'md', label: 'Médio' },
+            { value: 'xl', label: 'Grande' },
+            { value: 'full', label: 'Totalmente Arredondado' },
+          ]} />
+        </Field>
+      </Section>
+    </>
+  );
+}
+
 function SpacerEditor({ block, onChange }) {
   return (
     <Section title="Espaçamento Vazio">
@@ -1068,6 +1112,7 @@ export default function BlockEditor({ block, theme, steps, currentStepIdx, onCha
     arrow_button: ArrowButtonEditor,
     divider: DividerEditor,
     progress: ProgressEditor,
+    animated_progress: AnimatedProgressEditor,
     lead_capture: LeadCaptureEditor,
     result: ResultEditor,
     spacer: SpacerEditor,

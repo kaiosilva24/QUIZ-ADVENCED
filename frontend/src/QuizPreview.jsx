@@ -688,6 +688,91 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
   );
 }
 
+function AnimatedProgressBar({ block, compact }) {
+  const [currentVal, setCurrentVal] = useState(block.startVal ?? 0);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    setCurrentVal(block.startVal ?? 0);
+    setStarted(false);
+    
+    const start = block.startVal ?? 0;
+    const end = block.endVal ?? 84;
+    const durSec = (block.duration ?? 5) || 5; 
+    const delaySec = block.delay ?? 0;
+    
+    let animationFrame;
+    let startTime;
+    let delayTimeout;
+    
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = timestamp - startTime;
+      const durMs = durSec * 1000;
+      
+      if (progress < durMs) {
+        const ease = 1 - Math.pow(1 - progress / durMs, 3);
+        setCurrentVal(Math.round(start + (end - start) * ease));
+        animationFrame = requestAnimationFrame(animate);
+      } else {
+        setCurrentVal(end);
+      }
+    };
+
+    delayTimeout = setTimeout(() => {
+      setStarted(true);
+      animationFrame = requestAnimationFrame(animate);
+    }, delaySec * 1000);
+    
+    return () => {
+      clearTimeout(delayTimeout);
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+  }, [block.startVal, block.endVal, block.duration, block.delay, block.id]);
+
+  const p = currentVal;
+  const pctWidth = started ? Math.max(0, Math.min(100, p)) : (block.startVal ?? 0);
+  const displayText = (block.text || '{pct}% das vagas preenchidas...').replace('{pct}', p);
+  
+  const rMap = { none: 0, md: 8, xl: 16, full: 999 };
+  const radius = (rMap[block.rounded || 'full'] ?? 999) * (compact ? 0.6 : 1);
+  const pad = compact ? 2 : 4;
+
+  return (
+    <div className="w-full relative overflow-hidden flex items-center" style={{
+      background: block.bg || '#e2e8f0',
+      border: `1px solid ${block.border || '#cbd5e1'}`,
+      borderRadius: radius,
+      height: compact ? 24 : 36,
+      padding: pad,
+      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)',
+    }}>
+      <div style={{
+        height: '100%',
+        width: `${pctWidth}%`,
+        background: block.color || '#ef4444',
+        borderRadius: radius > 0 ? Math.max(radius - pad, 2) : 0,
+        transition: 'width 0.1s linear',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+      }} />
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: block.textColor || '#ffffff',
+        fontSize: compact ? 10 : 13,
+        fontWeight: 700,
+        zIndex: 10,
+        textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+      }}>
+        {displayText}
+      </div>
+    </div>
+  );
+}
+
 function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId, mediaState, setMediaState, steps, stepIdx }) {
   const scale = compact ? 0.6 : 1;
   const { accent, textColor: defaultText } = theme;
@@ -714,6 +799,14 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           <div style={{ background: block.bg || '#1e293b', borderRadius: 99, height: compact ? 4 : 6, overflow: 'hidden' }}>
             <div style={{ width: `${pct}%`, height: '100%', background: block.color || accent, borderRadius: 99, transition: 'width 0.4s ease' }} />
           </div>
+        </div>
+      );
+    }
+
+    case 'animated_progress': {
+      return (
+        <div className="w-full" style={{ marginBottom: compact ? 4 : 8, marginTop: compact ? 2 : 4 }}>
+          <AnimatedProgressBar block={block} compact={compact} />
         </div>
       );
     }
