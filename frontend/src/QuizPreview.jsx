@@ -250,7 +250,7 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
 
 
 // ─── VIDEO PLAYER COMPONENT (totalmente funcional) ────────────────────────────
-function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
+function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) {
   const videoRef   = useRef(null);
   const startedRef = useRef(false);
   const { handleTimeUpdate: trackTime, triggerFinalPing } = useMediaTelemetry('video', block.id, quizId, visitorId, stepId, compact);
@@ -907,7 +907,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       return <AudioBlockPlayer block={block} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} />;
 
     case 'video':
-      return <VideoBlockPlayer block={block} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} />;
+      return <VideoBlockPlayer block={block} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} theme={theme} />;
 
     case 'button': {
       const pos = block.emojiPosition || 'left_inside';
