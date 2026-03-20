@@ -243,7 +243,7 @@ function QuizRouter() {
 
   if (loading) return (
     <div style={{minHeight:'100vh',background:'#020617',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:18}}>
-      Carregando quiz...
+      Carregando...
     </div>
   );
 

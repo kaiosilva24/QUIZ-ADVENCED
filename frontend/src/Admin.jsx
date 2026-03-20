@@ -745,7 +745,7 @@ function AnalyticsView({ quizzes }) {
   };
 
   const exportCsv = () => {
-    const headers = ["Lead ID", "Data/Hora", "Status", "Dispositivo", "Plataforma/OS", "Origem", "Campanha", "Cidade", "Estado", "País", "Tempo Total (s)", "Respostas/Jornada"];
+    const headers = ["Lead ID", "Data/Hora", "Status", "Dispositivo", "Plataforma/OS", "Origem", "Campanha", "Cidade", "Estado", "País", "Tempo Total (s)", "Nome", "E-mail", "Telefone", "Mensagem", "Respostas/Jornada"];
     
     let csvRows = [];
     csvRows.push(headers.map(h => `"${h}"`).join(","));
@@ -754,11 +754,20 @@ function AnalyticsView({ quizzes }) {
       const intel = lead.intel || {};
       const status = lead.finished ? "Concluido" : "Drop-off";
       
+      let name = '';
+      let email = '';
+      let phone = '';
+      let message = '';
+
       const journeyStr = lead.journey.map(j => {
          let ans = j.answer || 'Visualizou';
          try {
            const parsed = JSON.parse(j.answer);
            if (parsed && typeof parsed === 'object') {
+              if (parsed.name) name = parsed.name;
+              if (parsed.email) email = parsed.email;
+              if (parsed.phone) phone = parsed.phone;
+              if (parsed.message) message = parsed.message;
               ans = Object.entries(parsed).map(([k,v]) => `${k}: ${v}`).join(' | ');
            }
          } catch(e) {}
@@ -777,6 +786,10 @@ function AnalyticsView({ quizzes }) {
         intel.state || '',
         intel.country || '',
         lead.total_time,
+        name,
+        email,
+        phone,
+        message,
         journeyStr
       ];
       csvRows.push(row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","));
