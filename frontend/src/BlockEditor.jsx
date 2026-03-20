@@ -728,21 +728,54 @@ function VideoEditor({ block, onChange }) {
         <Field label="Texto do Botão de Desmutar">
           <Input value={block.unmuteText || ''} onChange={v => onChange({ unmuteText: v })} placeholder="🔊 Clique para ouvir" />
         </Field>
+        <Field label="Cor do Ícone Animado"><ColorPicker value={block.muteIconColor || '#06b6d4'} onChange={v => onChange({ muteIconColor: v })} /></Field>
+        <Field label="Cor de Fundo da Caixa"><ColorPicker value={block.muteBgColor || 'rgba(0,0,0,0.6)'} onChange={v => onChange({ muteBgColor: v })} /></Field>
+        <Field label="Cor do Texto"><ColorPicker value={block.muteTextColor || '#ffffff'} onChange={v => onChange({ muteTextColor: v })} /></Field>
       </Section>
       <Section title="⏱️ Duração Falsa (VSL)">
         <Toggle label="Usar Duração Falsa" value={block.useFakeDuration} onChange={v => onChange({ useFakeDuration: v })} />
         {block.useFakeDuration && (
-          <Field label="Duração em segundos">
-            <input type="number" value={block.fakeDuration || 120} min={10} max={7200}
-              onChange={e => onChange({ fakeDuration: Number(e.target.value) })}
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
-            />
-          </Field>
+          <>
+            <Field label="Duração em segundos">
+              <input type="number" value={block.fakeDuration || 120} min={10} max={7200}
+                onChange={e => onChange({ fakeDuration: Number(e.target.value) })}
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
+              />
+            </Field>
+            <Field label="Cor da Barra de Progresso"><ColorPicker value={block.fakeProgressColor || '#ef4444'} onChange={v => onChange({ fakeProgressColor: v })} /></Field>
+          </>
         )}
       </Section>
       <Section title="Botão CTA (Opcional)">
         <Field label="Texto do Botão"><Input value={block.ctaText} onChange={v => onChange({ ctaText: v })} placeholder="Quero mais informações →" /></Field>
         <Field label="URL do Botão"><Input value={block.ctaUrl} onChange={v => onChange({ ctaUrl: v })} placeholder="https://..." /></Field>
+        <Field label="Posição">
+          <Select value={block.ctaPosition || 'inside'} onChange={v => onChange({ ctaPosition: v })} options={[
+            { value: 'inside', label: 'Dentro do Vídeo (Sobreposto)' },
+            { value: 'outside', label: 'Fora do Vídeo (Abaixo)' }
+          ]} />
+        </Field>
+        <Field label="Aparecimento (Delay)">
+          <Select value={block.ctaDelay || 'none'} onChange={v => onChange({ ctaDelay: v })} options={[
+            { value: 'none', label: 'Imediatamente' },
+            { value: 'on_end', label: 'Ao terminar o vídeo' },
+            { value: 'custom', label: 'Após X segundos' }
+          ]} />
+        </Field>
+        {block.ctaDelay === 'custom' && (
+          <Field label={`Aparecer após: ${block.ctaDelaySeconds || 0}s`}>
+            <input type="range" min={0} max={600} step={1} value={block.ctaDelaySeconds || 0}
+              onChange={e => onChange({ ctaDelaySeconds: Number(e.target.value) })}
+              className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+        )}
+        <Field label="Cor de Fundo da CTA"><ColorPicker value={block.ctaBgColor || '#ef4444'} onChange={v => onChange({ ctaBgColor: v })} /></Field>
+        <Field label="Cor do Texto da CTA"><ColorPicker value={block.ctaTextColor || '#ffffff'} onChange={v => onChange({ ctaTextColor: v })} /></Field>
+        <Field label={`Arredondamento: ${block.ctaRadius ?? 8}px`}>
+          <input type="range" min={0} max={32} step={1} value={block.ctaRadius ?? 8}
+            onChange={e => onChange({ ctaRadius: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
       </Section>
     </>
   );
