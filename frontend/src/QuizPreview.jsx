@@ -788,6 +788,52 @@ function AnimatedProgressBar({ block, compact }) {
   );
 }
 
+function CountrySelectDropdown({ dialCountry, setDialCountry, setDialCode, compact, fieldColor }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (ref.current && !ref.current.contains(event.target)) setIsOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelect = (code, dial) => {
+    setDialCountry(code);
+    setDialCode(dial);
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={ref} onClick={() => setIsOpen(!isOpen)} style={{ display: 'flex', alignItems: 'center', padding: compact ? '0 8px' : '0 12px', background: 'rgba(0,0,0,0.15)', cursor: 'pointer', position: 'relative' }}>
+       <span className={`fi fi-${dialCountry.toLowerCase()}`} style={{ fontSize: compact ? 16 : 20, width: compact ? 22 : 26, borderRadius: 2, marginRight: 6, display: 'block' }}></span>
+       <span style={{ fontSize: 10, color: fieldColor, opacity: 0.7 }}>▼</span>
+
+       {isOpen && (
+         <div style={{ 
+            position: 'absolute', top: '100%', left: 0, marginTop: 4, 
+            background: '#1e293b', border: '1px solid #334155', borderRadius: 8, 
+            maxHeight: 220, overflowY: 'auto', zIndex: 50, minWidth: 160, 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)', padding: '4px 0' 
+         }}>
+           {countryChoices.map(c => (
+             <div key={c.code} 
+                 className="hover:bg-white/10 transition-colors"
+                 onClick={(e) => { e.stopPropagation(); handleSelect(c.code, c.dial); }}
+                 style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+             >
+                <span className={`fi fi-${c.code.toLowerCase()}`} style={{ fontSize: 16, width: 22, borderRadius: 2, display: 'block' }} />
+                <span style={{ fontSize: 13, color: '#fff', whiteSpace: 'nowrap' }}>{c.code} {c.dial}</span>
+             </div>
+           ))}
+         </div>
+       )}
+    </div>
+  );
+}
+
 function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId, mediaState, setMediaState, steps, stepIdx }) {
   const scale = compact ? 0.6 : 1;
   const { accent, textColor: defaultText } = theme;
@@ -1298,20 +1344,13 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             if (f === 'phone') {
                inputElem = (
                   <div style={{ display: 'flex', background: fieldStyle.background, border: fieldStyle.border, borderRadius: fieldStyle.borderRadius, overflow: 'hidden', alignItems: 'stretch' }}>
-                     <div style={{ display: 'flex', alignItems: 'center', padding: '0 12px', background: 'rgba(0,0,0,0.15)', cursor: 'pointer', position: 'relative' }}>
-                        <select
-                           value={dialCountry}
-                           onChange={e => {
-                              setDialCountry(e.target.value);
-                              setDialCode(countryChoices.find(c => c.code === e.target.value)?.dial || '+55');
-                           }}
-                           style={{ position: 'absolute', opacity: 0, inset: 0, width: '100%', cursor: 'pointer' }}
-                        >
-                           {countryChoices.map(c => <option key={c.code} value={c.code}>{c.emoji} {c.code} {c.dial}</option>)}
-                        </select>
-                        <span className={`fi fi-${dialCountry.toLowerCase()}`} style={{ fontSize: 20, width: 26, borderRadius: 2, marginRight: 6 }}></span>
-                        <span style={{ fontSize: 10, color: fieldStyle.color, opacity: 0.7 }}>▼</span>
-                     </div>
+                     <CountrySelectDropdown
+                        dialCountry={dialCountry}
+                        setDialCountry={setDialCountry}
+                        setDialCode={setDialCode}
+                        compact={compact}
+                        fieldColor={fieldStyle.color}
+                     />
                      <input
                         type="tel"
                         value={formValues[f] || ''}
