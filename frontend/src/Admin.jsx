@@ -717,8 +717,10 @@ function AnalyticsView({ quizzes }) {
       setActiveTab('geral');
       const stepNaming = {};
       try {
-        if (quizData && quizData.config) {
-          const config = typeof quizData.config === 'string' ? JSON.parse(quizData.config) : quizData.config;
+        const configRaw = quizData?.config_json || quizData?.config;
+        if (configRaw) {
+          const config = typeof configRaw === 'string' ? JSON.parse(configRaw) : configRaw;
+          quizData.config = config;
           if (config.steps) {
             config.steps.forEach(s => {
               const headerBlock = s.blocks?.find(b => b.type === 'heading' || b.type === 'text');
@@ -734,7 +736,7 @@ function AnalyticsView({ quizzes }) {
         }
       } catch (e) { console.error(e); }
 
-      setQuizDetail({ ...detailData, stepNaming });
+      setQuizDetail({ ...detailData, config: quizData?.config, stepNaming });
       setLeads(leadsData);
       setDetailLoading(false);
       setLeadsLoading(false);
