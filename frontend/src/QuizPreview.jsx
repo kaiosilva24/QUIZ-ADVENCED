@@ -259,8 +259,6 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
   const [currentTime, setCurrentTime]     = useState(0);
   const [duration, setDuration]           = useState(0);
   const [ended, setEnded]                 = useState(false);
-  const [ctaVisible, setCtaVisible]       = useState(false);
-  const [hasStarted, setHasStarted]       = useState(false); // CTA only appears after play is pressed
 
   const ar       = block.aspectRatio || '16/9';
   const radius   = block.rounded ? (compact?10:16) : 0;
@@ -295,23 +293,8 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
   useEffect(() => {
     startedRef.current = false;
     setPlaying(false); setShowThumb(true); setCurrentTime(0);
-    setDuration(0); setEnded(false); setCtaVisible(false); setHasStarted(false);
+    setDuration(0); setEnded(false);
   }, [src]);
-
-  // CTA delay logic: gates behind hasStarted in real quiz; in compact editor preview always shows
-  useEffect(() => {
-    if (!block.ctaText) { setCtaVisible(false); return; }
-    // In compact (editor preview) mode: always show so creator can see/edit the button
-    if (compact) { setCtaVisible(true); return; }
-    if (!hasStarted) { setCtaVisible(false); return; }
-    const delay = block.ctaDelay || 'none';
-    if (delay === 'none') { setCtaVisible(true); return; }
-    if (delay === 'on_end') { setCtaVisible(ended); return; }
-    if (delay === 'custom') {
-      const secs = block.ctaDelaySeconds || 0;
-      if (currentTime >= secs) { setCtaVisible(true); }
-    }
-  }, [block.ctaText, block.ctaDelay, block.ctaDelaySeconds, ended, currentTime, hasStarted, compact]);
 
   // The overlay is shown when: video is configured as autoplay+muted AND user hasn't unmuted yet
   const [userUnmuted, setUserUnmuted] = useState(false);
@@ -342,7 +325,6 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
     v.currentTime = 0;
     v.play().then(() => {
       setPlaying(true);
-      setHasStarted(true);
       setUserUnmuted(true);   // hides overlay
       setShowThumb(false);
     }).catch(console.error);
@@ -354,17 +336,14 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
     if (showUnmuteOverlay) { handleUnmute(); return; }
     if (playing) { v.pause(); setPlaying(false); }
     else {
-      v.play().then(() => { setPlaying(true); setHasStarted(true); setShowThumb(false); setEnded(false); }).catch(console.error);
+      v.play().then(() => { setPlaying(true); setShowThumb(false); setEnded(false); }).catch(console.error);
     }
   };
 
   const progress = duration > 0 ? currentTime / duration : 0;
   const displayDuration = block.useFakeDuration ? (block.fakeDuration || 120) : duration;
   const displayCurrentTime = block.useFakeDuration ? (progress * displayDuration) : currentTime;
-  const ctaPad = block.ctaPadding ?? 16;
-  const ctaRadiusVal = block.ctaRadius ?? 8;
 
-  // Outer wrapper — preserves rounded corners across video + CTA container
   return (
     <div style={{ width:'100%', borderRadius:radius, overflow:'hidden', position:'relative', background:'#000', boxShadow: compact?'none':'0 8px 40px rgba(0,0,0,0.6)' }}>
       <style>{`
@@ -517,38 +496,6 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
           </div>
         )}
       </div>
-
-      {/* CTA button — outside (below video) */}
-      {block.ctaText && block.ctaPosition === 'outside' && ctaVisible && (
-        <div style={{ padding: compact ? `${Math.round(ctaPad*0.6)}px` : `${ctaPad}px`, background:'linear-gradient(135deg,#1e293b,#0f172a)', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
-          <button onClick={() => block.ctaUrl && window.open(block.ctaUrl,'_blank')}
-            style={{ width:'100%', padding: compact?'8px':'13px', background: block.ctaBgColor || '#ef4444', color: block.ctaTextColor || '#fff', border:'none', borderRadius: compact ? Math.min(6, ctaRadiusVal) : ctaRadiusVal, fontSize: compact?10:14, fontWeight:700, cursor:'pointer', boxShadow:`0 4px 20px ${(block.ctaBgColor||'#ef4444')}66`, letterSpacing:'0.01em' }}>
-            {block.ctaText}
-          </button>
-        </div>
-      )}
-
-      {/* CTA inside (at the bottom, inside the video container) */}
-      {block.ctaText && block.ctaPosition !== 'outside' && ctaVisible && (
-        <div style={{ padding: compact ? `${Math.round(ctaPad*0.6)}px` : `${ctaPad}px`, background:'linear-gradient(135deg,#1e293b,#0f172a)', borderTop:'1px solid rgba(255,255,255,0.05)' }}>
-          <button onClick={() => block.ctaUrl && window.open(block.ctaUrl,'_blank')}
-            style={{ width:'100%', padding: compact?'8px':'13px', background: block.ctaBgColor || '#ef4444', color: block.ctaTextColor || '#fff', border:'none', borderRadius: compact ? Math.min(6, ctaRadiusVal) : ctaRadiusVal, fontSize: compact?10:14, fontWeight:700, cursor:'pointer', boxShadow:`0 4px 20px ${(block.ctaBgColor||'#ef4444')}66`, letterSpacing:'0.01em' }}>
-            {block.ctaText}
-          </button>
-        </div>
-      )}
-
-      {/* Preview hint (editor only, before play) */}
-      {block.ctaText && !ctaVisible && (
-        <div style={{ padding: compact?'6px 10px':'10px 18px', background:'#0f172a', borderTop:'1px solid rgba(255,255,255,0.05)', opacity:0.4 }}>
-          <p style={{ color:'#475569', fontSize: compact?8:11, textAlign:'center', margin:0 }}>
-            {!hasStarted ? 'CTA aparece após iniciar o vídeo' : (
-              block.ctaDelay === 'on_end' ? 'CTA aparece ao terminar o vídeo' :
-              block.ctaDelay === 'custom' ? `CTA aparece após ${block.ctaDelaySeconds||0}s` : ''
-            )}
-          </p>
-        </div>
-      )}
     </div>
   );
 }

@@ -746,43 +746,6 @@ function VideoEditor({ block, onChange }) {
           </>
         )}
       </Section>
-      <Section title="Botão CTA (Opcional)">
-        <Field label="Texto do Botão"><Input value={block.ctaText} onChange={v => onChange({ ctaText: v })} placeholder="Quero mais informações →" /></Field>
-        <Field label="URL do Botão"><Input value={block.ctaUrl} onChange={v => onChange({ ctaUrl: v })} placeholder="https://..." /></Field>
-        <Field label="Posição">
-          <Select value={block.ctaPosition || 'inside'} onChange={v => onChange({ ctaPosition: v })} options={[
-            { value: 'inside', label: 'Dentro do Vídeo (Sobreposto)' },
-            { value: 'outside', label: 'Fora do Vídeo (Abaixo)' }
-          ]} />
-        </Field>
-        <Field label="Aparecimento (Delay)">
-          <Select value={block.ctaDelay || 'none'} onChange={v => onChange({ ctaDelay: v })} options={[
-            { value: 'none', label: 'Imediatamente' },
-            { value: 'on_end', label: 'Ao terminar o vídeo' },
-            { value: 'custom', label: 'Após X segundos' }
-          ]} />
-        </Field>
-        {block.ctaDelay === 'custom' && (
-          <Field label={`Aparecer após: ${block.ctaDelaySeconds || 0}s`}>
-            <input type="range" min={0} max={600} step={1} value={block.ctaDelaySeconds || 0}
-              onChange={e => onChange({ ctaDelaySeconds: Number(e.target.value) })}
-              className="w-full accent-indigo-500 cursor-pointer" />
-          </Field>
-        )}
-        <Field label="Cor de Fundo da CTA"><ColorPicker value={block.ctaBgColor || '#ef4444'} onChange={v => onChange({ ctaBgColor: v })} /></Field>
-        <Field label="Cor do Texto da CTA"><ColorPicker value={block.ctaTextColor || '#ffffff'} onChange={v => onChange({ ctaTextColor: v })} /></Field>
-        <Field label={`Arredondamento: ${block.ctaRadius ?? 8}px`}>
-          <input type="range" min={0} max={32} step={1} value={block.ctaRadius ?? 8}
-            onChange={e => onChange({ ctaRadius: Number(e.target.value) })}
-            className="w-full accent-indigo-500 cursor-pointer" />
-        </Field>
-        <Field label={`Afastamento Interno: ${block.ctaPadding ?? 16}px`}>
-          <input type="range" min={4} max={48} step={2} value={block.ctaPadding ?? 16}
-            onChange={e => onChange({ ctaPadding: Number(e.target.value) })}
-            className="w-full accent-indigo-500 cursor-pointer" />
-        </Field>
-        <p className="text-xs text-slate-500 mt-1">⚠️ O botão CTA só aparece após o visitante pressionar Play.</p>
-      </Section>
     </>
   );
 }
