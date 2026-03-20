@@ -38,9 +38,11 @@ async function updateQuiz(req, res) {
     const { title, config_json, is_active, slug } = req.body;
     try {
         const db = await getDB();
+        const current = await db.get('SELECT slug FROM quizzes WHERE id=$1', [id]);
+        const finalSlug = slug !== undefined ? slug : current?.slug;
         await db.run(
             'UPDATE quizzes SET title=$1, config_json=$2, is_active=$3, slug=$4 WHERE id=$5',
-            [title, config_json, is_active !== undefined ? is_active : true, slug, id]
+            [title, config_json, is_active !== undefined ? is_active : true, finalSlug, id]
         );
         res.json({ success: true });
     } catch (error) {
