@@ -269,9 +269,8 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const isVimeo  = src.includes('vimeo');
   const isEmbed  = isYT || isVimeo;
 
-  // Se usar duração fake, OBRIGATORIAMENTE ocultamos controles nativos
-  // (pois os nativos revelariam a duração real)
-  const isControlsHidden = block.hideControls || block.useFakeDuration;
+  // Controles nativos sempre ocultos por padrão (conforme pedido)
+  const isControlsHidden = true;
 
   const getEmbedUrl = (url) => {
     if (!url) return '';
@@ -360,7 +359,10 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
     const v = videoRef.current;
     if (!v) return;
     if (showUnmuteOverlay) { handleUnmute(); return; }
-    if (playing) { v.pause(); setPlaying(false); }
+    if (playing) {
+      if (block.disablePause) return; // Impede pausar
+      v.pause(); setPlaying(false);
+    }
     else {
       v.play().then(() => { setPlaying(true); setHasStarted(true); setShowThumb(false); setEnded(false); }).catch(console.error);
     }

@@ -719,7 +719,7 @@ function VideoEditor({ block, onChange }) {
         <Toggle label="Autoplay (inicia mudo)" value={block.autoplay} onChange={v => onChange({ autoplay: v })} />
         <Toggle label="Iniciar Mudo" value={block.muted} onChange={v => onChange({ muted: v })} />
         <Toggle label="Loop" value={block.loop} onChange={v => onChange({ loop: v })} />
-        <Toggle label="Ocultar Controles Nativos" value={block.hideControls} onChange={v => onChange({ hideControls: v })} />
+        <Toggle label="Impedir Pausa após Play" value={block.disablePause} onChange={v => onChange({ disablePause: v })} />
         <Toggle label="Mostrar Timer" value={block.showTimer !== false} onChange={v => onChange({ showTimer: v })} />
         <Toggle label="Bordas Arredondadas" value={block.rounded !== false} onChange={v => onChange({ rounded: v })} />
       </Section>
