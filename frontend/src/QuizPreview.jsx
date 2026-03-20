@@ -259,6 +259,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const [currentTime, setCurrentTime]     = useState(0);
   const [duration, setDuration]           = useState(0);
   const [ended, setEnded]                 = useState(false);
+  const [resVisible, setResVisible]       = useState(false);
   const [hasStarted, setHasStarted]       = useState(false);
 
   const ar       = block.aspectRatio || '16/9';
@@ -294,8 +295,24 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   useEffect(() => {
     startedRef.current = false;
     setPlaying(false); setShowThumb(true); setCurrentTime(0);
-    setDuration(0); setEnded(false); setHasStarted(false);
+    setDuration(0); setEnded(false); setResVisible(false); setHasStarted(false);
   }, [src]);
+
+  // Embedded Result Array delay logic
+  useEffect(() => {
+    if (!block.showResultConfig) { setResVisible(false); return; }
+    // In compact (editor preview) mode: always show so creator can see/edit the result screen
+    if (compact) { setResVisible(true); return; }
+    if (!hasStarted) { setResVisible(false); return; }
+    
+    const delay = block.resDelay || 'none';
+    if (delay === 'none') { setResVisible(true); return; }
+    if (delay === 'on_end') { setResVisible(ended); return; }
+    if (delay === 'custom') {
+      const secs = block.resDelaySeconds || 0;
+      if (currentTime >= secs) { setResVisible(true); }
+    }
+  }, [block.showResultConfig, block.resDelay, block.resDelaySeconds, ended, currentTime, hasStarted, compact]);
 
   // Sync to QuizPreview context
   useEffect(() => {
@@ -354,8 +371,10 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const displayCurrentTime = block.useFakeDuration ? (progress * displayDuration) : currentTime;
 
   return (
-    <div style={{ width:'100%', borderRadius:radius, overflow:'hidden', position:'relative', background:'#000', boxShadow: compact?'none':'0 8px 40px rgba(0,0,0,0.6)' }}>
-      <style>{`
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: compact ? 8 : 16 }}>
+      {/* Container do video em si mantendo o border radius original */}
+      <div style={{ width:'100%', borderRadius:radius, overflow:'hidden', position:'relative', background:'#000', boxShadow: compact?'none':'0 8px 40px rgba(0,0,0,0.6)' }}>
+        <style>{`
         @keyframes vslMutePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
         @keyframes vslMuteBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
         @keyframes vslRipple    { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(2.6);opacity:0} }
@@ -505,6 +524,75 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
           </div>
         )}
       </div>
+    </div>
+
+      {/* Embedded Result screen (Delayed) - SEPARATED FROM VIDEO PLAYER BORDER */}
+      {block.showResultConfig && resVisible && (
+        <div style={{ 
+          padding: compact?'16px':'32px', 
+          background: 'linear-gradient(135deg,rgba(30,41,59,0.8),rgba(15,23,42,0.8))', 
+          backdropFilter: 'blur(10px)',
+          borderRadius: radius,
+          border: '1px solid rgba(255,255,255,0.08)',
+          boxShadow: compact ? 'none' : '0 10px 40px rgba(0,0,0,0.3)',
+        }}>
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 8 : 16, alignItems: 'center', animation: 'fadeIn 0.5s ease-out' }}>
+            <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+            
+            {(block.resEmojiUnified || (block.resEmoji ?? '🎉')) ? (
+              <div style={{ display: 'flex', fontSize: compact ? 24 : 48 }}>
+                {block.resEmojiUnified ? <Emoji unified={block.resEmojiUnified} size={compact ? 36 : 72} /> : (block.resEmoji ?? '🎉')}
+              </div>
+            ) : null}
+            
+            {(block.resHeading ?? 'Parabéns!') ? (
+              <p style={{ color: '#ffffff', fontWeight: 700, fontSize: compact ? 13 : 20, margin: 0 }}>{block.resHeading ?? 'Parabéns!'}</p>
+            ) : null}
+
+            {(block.resText || '') ? (
+              <p style={{ color: '#a0aec0', fontSize: compact ? 9 : 13, lineHeight: 1.6, margin: 0 }}>{block.resText}</p>
+            ) : null}
+
+            {(block.resBtnText ?? 'Acessar agora →') && (
+              <button 
+                onClick={() => {
+                  if (block.resBtnUrl) {
+                    const url = block.resBtnUrl.startsWith('http') ? block.resBtnUrl : `https://${block.resBtnUrl}`;
+                    window.location.href = url;
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  background: block.resBtnBg || theme?.accent || '#10b981',
+                  color: '#fff',
+                  padding: compact ? '8px 16px' : '14px 28px',
+                  borderRadius: compact ? 8 : 12,
+                  border: 'none',
+                  fontSize: compact ? 10 : 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  marginTop: compact ? 8 : 16,
+                  boxShadow: `0 4px 20px ${(block.resBtnBg || theme?.accent || '#10b981')}50`,
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                }}>
+                {block.resBtnText ?? 'Acessar agora →'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Preview hint for Embedded Result (editor only, before play) */}
+      {block.showResultConfig && !resVisible && (
+        <div style={{ padding: compact?'10px':'18px', background:'rgba(15,23,42,0.6)', border:'1px dashed rgba(255,255,255,0.1)', borderRadius: radius, opacity:0.6 }}>
+          <p style={{ color:'#64748b', fontSize: compact?8:11, textAlign:'center', margin:0 }}>
+            {!hasStarted ? '🎬 A Tela de Resultado configurada aparecerá aqui após o lead iniciar o vídeo.' : (
+              block.resDelay === 'on_end' ? '🎬 A Tela de Resultado aparecerá aqui ao terminar o vídeo.' :
+              block.resDelay === 'custom' ? `🎬 A Tela de Resultado aparecerá aqui após ${block.resDelaySeconds||0} segundos de vídeo.` : ''
+            )}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
