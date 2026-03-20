@@ -1026,7 +1026,7 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
           <Field label="Etapa Destino">
             <Select value={block.nextStep || ''} onChange={v => onChange({ nextStep: v })} options={[
               { value: '', label: 'Próxima etapa automaticamente' },
-              ...(steps || []).filter((_, i) => i !== currentStepIdx).map(s => ({ value: s.id, label: s.title || `Etapa ${s.id}` }))
+              ...(steps || []).filter((_, i) => i !== currentStepIdx).map((s, i) => ({ value: s.id, label: s.label || `Etapa ${i + 1}` }))
             ]} />
           </Field>
         )}

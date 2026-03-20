@@ -670,7 +670,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
               id={`preview-block-${block.id}`} 
               className={`shrink-0 w-full ${compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300' : ''}`}
             >
-              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} />
+              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} />
             </div>
           ))}
           {(!step?.blocks || step.blocks.length === 0) && (
@@ -686,9 +686,17 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
   );
 }
 
-function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId, mediaState, setMediaState }) {
+function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId, mediaState, setMediaState, steps, stepIdx }) {
   const scale = compact ? 0.6 : 1;
   const { accent, textColor: defaultText } = theme;
+
+  // Resolve next step ID for 'próxima automaticamente'
+  const resolveNextStep = (explicitId) => {
+    if (explicitId) return explicitId;
+    const allSteps = steps || [];
+    const nextIdx = (stepIdx ?? 0) + 1;
+    return allSteps[nextIdx]?.id || null;
+  };
 
   switch (block.type) {
 
@@ -1318,7 +1326,8 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const handleAction = () => {
         if (!compact) {
           if (block.buttonAction === 'next_step') {
-            if (onNavigate) onNavigate(block.nextStep || null, block.buttonText || 'Resultado');
+            const targetId = resolveNextStep(block.nextStep);
+            if (onNavigate && targetId) onNavigate(targetId, block.buttonText || 'Resultado');
           } else if (block.buttonUrl) {
             const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
             window.location.href = url;
