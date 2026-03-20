@@ -471,13 +471,6 @@ function HeadingEditor({ block, onChange }) {
           ]} />
         </Field>
         <Field label="Fonte do Título"><FontPicker value={block.fontFamily} onChange={v => onChange({ fontFamily: v })} /></Field>
-        <Field label="Alinhamento">
-          <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
-            { value: 'left', label: 'Esquerda' }, { value: 'center', label: 'Centro' }, { value: 'right', label: 'Direita' }
-          ]} />
-        </Field>
-        <Field label="Cor do Texto"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
-        <Toggle label="Negrito" value={block.bold} onChange={v => onChange({ bold: v })} />
       </Section>
 
       <Section title="Fundo da Caixa">
@@ -531,13 +524,6 @@ function TextEditor({ block, onChange }) {
             { value: 'base', label: 'Médio' }, { value: 'lg', label: 'Grande' }
           ]} />
         </Field>
-        <Field label="Alinhamento">
-          <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
-            { value: 'left', label: 'Esquerda' }, { value: 'center', label: 'Centro' }, { value: 'right', label: 'Direita' }
-          ]} />
-        </Field>
-        <Field label="Cor do Texto"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
-        <Toggle label="Negrito" value={block.bold} onChange={v => onChange({ bold: v })} />
       </Section>
 
       <Section title="Efeitos do Texto">
