@@ -481,13 +481,12 @@ function HeadingEditor({ block, onChange }) {
       </Section>
 
       <Section title="Fundo da Caixa">
-        <Toggle label="Ativar Fundo" value={block.bgEnabled} onChange={v => onChange({ bgEnabled: v, bgStyle: v ? (block.bgStyle || 'rounded') : 'none' })} />
+        <Toggle label="Ativar Fundo" value={block.bgEnabled} onChange={v => onChange({ bgEnabled: v, bgStyle: v ? (block.bgStyle === 'glass' ? 'glass' : 'solid') : 'none' })} />
         {block.bgEnabled && (
           <>
             <Field label="Estilo">
-              <Select value={block.bgStyle || 'rounded'} onChange={v => onChange({ bgStyle: v })} options={[
-                { value: 'rounded', label: 'Arredondado' },
-                { value: 'square', label: 'Quadrado' },
+              <Select value={block.bgStyle === 'glass' ? 'glass' : 'solid'} onChange={v => onChange({ bgStyle: v })} options={[
+                { value: 'solid', label: 'Sólido (Cor)' },
                 { value: 'glass', label: 'Ofuscado (Glass)' },
               ]} />
             </Field>
