@@ -1314,8 +1314,23 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         );
       }
 
+      // Action handler
+      const handleAction = () => {
+        if (!compact) {
+          if (block.buttonAction === 'next_step') {
+            if (onNavigate) onNavigate(block.nextStep || null, block.buttonText || 'Resultado');
+          } else if (block.buttonUrl) {
+            const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
+            window.location.href = url;
+          }
+        }
+      };
+
       return (
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 8 : 16, alignItems: 'center', animation: 'fadeIn 0.5s ease-out' }}>
+        <div
+          style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 8 : 16, alignItems: 'center', animation: 'fadeIn 0.5s ease-out', cursor: (block.clickAnywhere && block.buttonAction === 'next_step' && !compact) ? 'pointer' : 'default' }}
+          onClick={block.clickAnywhere && block.buttonAction === 'next_step' && !compact ? handleAction : undefined}
+        >
           <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
           
           {(block.emojiUnified || (block.emoji ?? '🎉')) ? (
@@ -1331,14 +1346,10 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           {(block.text || '') ? (
             <p style={{ color: defaultText, opacity: .7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{block.text}</p>
           ) : null}
+
           {block.buttonText && (
-            <button 
-              onClick={() => {
-                if (block.buttonUrl) {
-                  const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
-                  window.location.href = url;
-                }
-              }}
+            <button
+              onClick={e => { e.stopPropagation(); handleAction(); }}
               style={{
                 background: block.buttonBg || accent,
                 color: '#fff',
@@ -1348,9 +1359,15 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                 fontSize: compact ? 10 : 14,
                 fontWeight: 600,
                 cursor: 'pointer',
+                boxShadow: `0 4px 20px ${block.buttonBg || accent}50`,
+                transition: 'transform 0.15s, box-shadow 0.15s',
               }}>
               {block.buttonText}
             </button>
+          )}
+
+          {block.clickAnywhere && block.buttonAction === 'next_step' && !compact && (
+            <p style={{ color: defaultText, opacity: 0.35, fontSize: compact ? 7 : 10, marginTop: 0 }}>Toque em qualquer lugar para continuar</p>
           )}
         </div>
       );

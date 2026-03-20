@@ -1013,8 +1013,27 @@ function ResultEditor({ block, onChange, theme }) {
       </Section>
       <Section title="Botão CTA">
         <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
-        <Field label="URL do Botão"><Input value={block.buttonUrl} onChange={v => onChange({ buttonUrl: v })} placeholder="https://..." /></Field>
+        <Field label="Ação ao Clicar">
+          <Select value={block.buttonAction || 'url'} onChange={v => onChange({ buttonAction: v })} options={[
+            { value: 'url', label: 'Abrir URL externa' },
+            { value: 'next_step', label: 'Ir para próxima etapa' },
+          ]} />
+        </Field>
+        {(block.buttonAction || 'url') === 'url' && (
+          <Field label="URL do Botão"><Input value={block.buttonUrl} onChange={v => onChange({ buttonUrl: v })} placeholder="https://..." /></Field>
+        )}
+        {block.buttonAction === 'next_step' && (
+          <Field label="Etapa Destino">
+            <Select value={block.nextStep || ''} onChange={v => onChange({ nextStep: v })} options={[
+              { value: '', label: 'Próxima etapa automaticamente' },
+              ...(steps || []).filter((_, i) => i !== currentStepIdx).map(s => ({ value: s.id, label: s.title || `Etapa ${s.id}` }))
+            ]} />
+          </Field>
+        )}
         <Field label="Cor do Botão"><ColorPicker value={block.buttonBg} onChange={v => onChange({ buttonBg: v })} /></Field>
+        {block.buttonAction === 'next_step' && (
+          <Toggle label="Clicar em qualquer lugar avança" value={block.clickAnywhere} onChange={v => onChange({ clickAnywhere: v })} />
+        )}
       </Section>
     </>
   );
