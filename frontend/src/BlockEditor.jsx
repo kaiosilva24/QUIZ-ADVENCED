@@ -530,7 +530,6 @@ function TextEditor({ block, onChange }) {
         <Field label="Efeito">
           <Select value={block.textEffect || 'none'} onChange={v => onChange({ textEffect: v })} options={[
             { value: 'none', label: 'Nenhum' },
-            { value: 'highlight', label: '🎭 Marcador (Highlight)' },
             { value: 'bg_box', label: '🟥 Caixa de Fundo' },
             { value: 'underline_color', label: '📍 Sublinhado Colorido' },
             { value: 'border_bottom', label: '— Linha Embaixo' },
@@ -547,7 +546,7 @@ function TextEditor({ block, onChange }) {
                   className="w-full accent-indigo-500 cursor-pointer" />
               </Field>
             )}
-            {(block.textEffect === 'highlight' || block.textEffect === 'bg_box') && (
+            {block.textEffect === 'bg_box' && (
               <Field label={`Opacidade: ${Math.round((block.effectOpacity ?? 0.4) * 100)}%`}>
                 <input type="range" min={0.05} max={1} step={0.05} value={block.effectOpacity ?? 0.4}
                   onChange={e => onChange({ effectOpacity: Number(e.target.value) })}
