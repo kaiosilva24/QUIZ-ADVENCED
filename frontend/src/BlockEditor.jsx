@@ -294,7 +294,8 @@ function TiptapColorPopover({ icon, title, isActive, onSelectColor, onRemoveColo
   return (
     <div className="relative" ref={ref}>
       <button 
-        onClick={() => setOpen(!open)}
+        type="button"
+        onMouseDown={(e) => { e.preventDefault(); setOpen(!open); }}
         className={`w-8 h-8 flex items-center justify-center rounded text-slate-300 cursor-pointer transition-all ${isActive ? 'bg-indigo-500/30 ring-1 ring-indigo-400' : 'hover:bg-slate-700'}`} 
         title={title}
       >
@@ -306,7 +307,7 @@ function TiptapColorPopover({ icon, title, isActive, onSelectColor, onRemoveColo
           <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2 block">Cores Rápidas</span>
           <div className="grid grid-cols-8 gap-1.5 mb-3">
             {PRESET_COLORS.map(c => (
-              <button key={c} onClick={() => { onSelectColor(c); setOpen(false); }}
+              <button key={c} type="button" onMouseDown={(e) => { e.preventDefault(); onSelectColor(c); setOpen(false); }}
                 className="w-6 h-6 rounded-md border border-slate-600 hover:scale-110 transition-transform cursor-pointer hover:ring-2 hover:ring-indigo-400"
                 style={{ background: c }} title={c} />
             ))}
@@ -317,7 +318,8 @@ function TiptapColorPopover({ icon, title, isActive, onSelectColor, onRemoveColo
             <span className="text-xs text-slate-300">Cor Personalizada</span>
           </div>
           <button 
-            onClick={() => { onRemoveColor(); setOpen(false); }}
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); onRemoveColor(); setOpen(false); }}
             className="w-full px-3 py-2 text-xs font-semibold text-red-400 hover:text-white hover:bg-red-500 rounded-lg text-center transition-colors cursor-pointer border border-red-500/30 hover:border-red-500"
           >
             🚫 Nenhuma Cor
@@ -373,7 +375,8 @@ function TiptapEditor({ value, onChange, placeholder, minHeight = 60 }) {
 
   const ToolBtn = ({ active, onClick, title, children }) => (
     <button
-      onClick={onClick}
+      type="button"
+      onMouseDown={(e) => { e.preventDefault(); onClick(e); }}
       className={`w-8 h-8 flex items-center justify-center rounded text-sm cursor-pointer transition-all ${
         active 
           ? 'bg-indigo-500/30 text-indigo-300 ring-1 ring-indigo-400/50' 
@@ -387,7 +390,6 @@ function TiptapEditor({ value, onChange, placeholder, minHeight = 60 }) {
 
   return (
     <div className="flex flex-col gap-0 relative">
-      {/* ── Toolbar ── */}
       <div className="flex flex-wrap bg-slate-800 border border-slate-700 rounded-t-xl p-1.5 gap-0.5 sticky top-0 z-10 shadow-md items-center">
         <ToolBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Negrito (Ctrl+B)">
           <span className="font-bold font-serif">B</span>
@@ -404,7 +406,6 @@ function TiptapEditor({ value, onChange, placeholder, minHeight = 60 }) {
 
         <div className="w-px h-5 bg-slate-600 mx-1" />
 
-        {/* Text Color */}
         <TiptapColorPopover
           icon={<span className="w-5 h-5 rounded-full border border-slate-600" style={{background: editor.getAttributes('textStyle').color || 'linear-gradient(to right, #ef4444, #3b82f6)'}} />}
           title="Cor do Texto"
@@ -413,7 +414,6 @@ function TiptapEditor({ value, onChange, placeholder, minHeight = 60 }) {
           onRemoveColor={() => editor.chain().focus().unsetColor().run()}
         />
 
-        {/* Highlight */}
         <TiptapColorPopover
           icon={<span className="w-5 h-5 rounded border border-slate-600 flex items-center justify-center text-[11px] font-bold" style={{background: editor.getAttributes('highlight').color || '#eab308', color: '#000'}}>A</span>}
           title="Cor de Destaque (Highlight)"
@@ -424,7 +424,6 @@ function TiptapEditor({ value, onChange, placeholder, minHeight = 60 }) {
 
         <div className="w-px h-5 bg-slate-600 mx-1" />
 
-        {/* Align */}
         <ToolBtn active={editor.isActive({ textAlign: 'left' })} onClick={() => editor.chain().focus().setTextAlign('left').run()} title="Alinhar Esquerda">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
         </ToolBtn>
@@ -437,7 +436,6 @@ function TiptapEditor({ value, onChange, placeholder, minHeight = 60 }) {
 
         <div className="w-px h-5 bg-slate-600 mx-1" />
 
-        {/* Clear */}
         <ToolBtn active={false} onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Limpar Formatação">
           <Trash2 size={14} />
         </ToolBtn>
