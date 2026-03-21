@@ -750,7 +750,7 @@ function VideoEditor({ block, onChange }) {
   );
 }
 
-function ButtonEditor({ block, onChange, steps }) {
+function ButtonEditor({ block, onChange, steps, theme }) {
   return (
     <>
       <Section title="Botão">
@@ -846,7 +846,7 @@ function ButtonEditor({ block, onChange, steps }) {
                 { value: 'dots', label: 'Três Pontinhos' },
               ]} />
             </Field>
-            <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || theme?.accent || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
+            <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || (theme && theme.accent) || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
             <Field label="Texto de Carregamento"><Input value={block.loadingText || ''} onChange={v => onChange({ loadingText: v })} placeholder="Analisando suas respostas..." /></Field>
             <Field label="Texto Secundário (opcional)"><Input value={block.progressText || ''} onChange={v => onChange({ progressText: v })} placeholder="Aguarde um momento..." /></Field>
             <Field label={`Duração: ${block.loadingDuration || 3}s`}>
@@ -861,7 +861,7 @@ function ButtonEditor({ block, onChange, steps }) {
   );
 }
 
-function ArrowButtonEditor({ block, onChange, steps }) {
+function ArrowButtonEditor({ block, onChange, steps, theme }) {
   return (
     <>
       <Section title="Botão Seta">
@@ -901,7 +901,7 @@ function ArrowButtonEditor({ block, onChange, steps }) {
                 { value: 'dots', label: 'Três Pontinhos' },
               ]} />
             </Field>
-            <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || theme?.accent || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
+            <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || (theme && theme.accent) || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
             <Field label="Texto de Carregamento"><Input value={block.loadingText || ''} onChange={v => onChange({ loadingText: v })} placeholder="Analisando suas respostas..." /></Field>
             <Field label="Texto Secundário (opcional)"><Input value={block.progressText || ''} onChange={v => onChange({ progressText: v })} placeholder="Aguarde um momento..." /></Field>
             <Field label={`Duração: ${block.loadingDuration || 3}s`}>
