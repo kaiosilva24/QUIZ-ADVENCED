@@ -1104,7 +1104,6 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
             ]} />
           </Field>
         )}
-        <Field label="Cor do Botão"><ColorPicker value={block.buttonBg} onChange={v => onChange({ buttonBg: v })} /></Field>
         {block.buttonAction === 'next_step' && (
           <Toggle label="Clicar em qualquer lugar avança" value={block.clickAnywhere} onChange={v => onChange({ clickAnywhere: v })} />
         )}
