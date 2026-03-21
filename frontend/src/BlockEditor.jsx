@@ -1054,10 +1054,12 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
       <Section title="Resultado">
         <Field label="Emoji Gigante"><EmojiSelect emoji={block.emoji} unified={block.emojiUnified} onChange={(e, u) => onChange({ emoji: e, emojiUnified: u })} /></Field>
         <Field label="Título"><Input value={block.heading} onChange={v => onChange({ heading: v })} /></Field>
+        <Field label="Cor do Título"><ColorPicker value={block.headingColor || '#ffffff'} onChange={v => onChange({ headingColor: v })} /></Field>
         <Field label="Texto">
           <textarea value={block.text || ''} onChange={e => onChange({ text: e.target.value })} rows={3}
             className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none" />
         </Field>
+        <Field label="Cor do Texto"><ColorPicker value={block.textColor || '#cbd5e1'} onChange={v => onChange({ textColor: v })} /></Field>
       </Section>
       <Section title="Carregamento (Opcional)">
         <Toggle label="Ativar Tela de Carregamento" value={block.enableLoading} onChange={v => onChange({ enableLoading: v })} />
@@ -1083,6 +1085,8 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
       </Section>
       <Section title="Botão CTA">
         <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
+        <Field label="Cor do Fundo do Botão"><ColorPicker value={block.buttonBg || theme?.accent || '#6366f1'} onChange={v => onChange({ buttonBg: v })} /></Field>
+        <Field label="Cor do Texto do Botão"><ColorPicker value={block.buttonTextColor || '#ffffff'} onChange={v => onChange({ buttonTextColor: v })} /></Field>
         <Field label="Ação ao Clicar">
           <Select value={block.buttonAction || 'url'} onChange={v => onChange({ buttonAction: v })} options={[
             { value: 'url', label: 'Abrir URL externa' },

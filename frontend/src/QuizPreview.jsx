@@ -1577,11 +1577,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           ) : null}
           
           {(block.heading ?? 'Parabéns!') ? (
-            <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{block.heading ?? 'Parabéns!'}</p>
+            <p style={{ color: block.headingColor || defaultText, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{block.heading ?? 'Parabéns!'}</p>
           ) : null}
 
           {(block.text || '') ? (
-            <p style={{ color: defaultText, opacity: .7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{block.text}</p>
+            <p style={{ color: block.textColor || defaultText, opacity: block.textColor ? 1 : 0.7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{block.text}</p>
           ) : null}
 
           {block.buttonText && (
@@ -1589,7 +1589,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
               onClick={e => { e.stopPropagation(); handleAction(); }}
               style={{
                 background: block.buttonBg || accent,
-                color: '#fff',
+                color: block.buttonTextColor || '#fff',
                 padding: compact ? '8px 16px' : '14px 28px',
                 borderRadius: 12,
                 border: 'none',
