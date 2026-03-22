@@ -3,8 +3,7 @@ const { getDB } = require('../db');
 async function getQuizzes(req, res) {
     try {
         const db = await getDB();
-        // MVP: Retorna todos os quizzes, sem a coluna massiva config_json
-        const quizzes = await db.all('SELECT id, title, slug, is_active, created_at FROM quizzes ORDER BY id DESC');
+        const quizzes = await db.all('SELECT id, title, slug, is_active, created_at, config_json FROM quizzes ORDER BY id DESC');
         res.json(quizzes);
     } catch (error) {
         res.status(500).json({ error: error.message });
