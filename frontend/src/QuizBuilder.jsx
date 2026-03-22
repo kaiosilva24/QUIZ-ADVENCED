@@ -135,11 +135,12 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
       const parsed = JSON.parse(quiz.config_json || '{}');
       return {
         theme: parsed.theme || { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '' },
+        settings: parsed.settings || { saveProgress: false },
         steps: parsed.steps || [
           { id: 'step_1', label: 'Etapa 1', blocks: [] }
         ],
       };
-    } catch { return { theme: { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '' }, steps: [{ id: 'step_1', label: 'Etapa 1', blocks: [] }] }; }
+    } catch { return { theme: { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '' }, settings: { saveProgress: false }, steps: [{ id: 'step_1', label: 'Etapa 1', blocks: [] }] }; }
   });
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
   const [selectedBlockId, setSelectedBlockId] = useState(null);
@@ -596,6 +597,21 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
                     className="w-10 h-10 rounded-xl border border-slate-700 cursor-pointer bg-transparent" />
                 </div>
               ))}
+            </div>
+
+            {/* ── Comportamento (Progresso) ── */}
+            <div className="space-y-3 border-t border-slate-700/40 pt-4 pb-4">
+              <p className="text-slate-500 font-semibold uppercase tracking-wider">Comportamento</p>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col mr-2">
+                  <label className="text-slate-400">Salvar Progresso do Lead</label>
+                  <span className="text-[10px] text-slate-500 mt-0.5 leading-tight">Se ativo, ao recarregar a página mantém a última etapa e trava o botão de voltar.</span>
+                </div>
+                <button onClick={() => setConfig(c => ({ ...c, settings: { ...c.settings, saveProgress: !(c.settings?.saveProgress ?? false) } }))}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${(config.settings?.saveProgress ?? false) ? 'bg-indigo-500' : 'bg-slate-700'}`}>
+                  <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${(config.settings?.saveProgress ?? false) ? 'translate-x-4' : 'translate-x-0'}`} />
+                </button>
+              </div>
             </div>
 
           </div>

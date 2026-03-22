@@ -113,9 +113,14 @@ function QuizRouter() {
         .then(data => {
           if (data) {
             setQuizData(data);
-            // Restaura passo salvo
+            const shouldSaveProgress = data.config?.settings?.saveProgress === true;
+            // Restaura passo salvo apenas se a opção estiver ativada
             const savedStep = localStorage.getItem(STEP_KEY_PREFIX + savedQuizId);
-            if (savedStep) setCurrentStep(parseInt(savedStep));
+            if (shouldSaveProgress && savedStep) {
+              setCurrentStep(parseInt(savedStep));
+            } else {
+              setCurrentStep(0);
+            }
           } else {
             // Quiz removido, limpa localStorage e busca novo
             localStorage.removeItem(QUIZ_ID_KEY);
@@ -170,20 +175,29 @@ function QuizRouter() {
       .catch(() => {}); // erros já tratados acima
   };
 
-  // Trava do botão voltar
+  // Trava do botão voltar (agora dependendo da configuração)
   useEffect(() => {
     if (!quizData) return;
-    window.history.pushState(null, '', window.location.href);
-    const handlePopState = () => window.history.pushState(null, '', window.location.href);
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    const shouldSaveProgress = quizData.config?.settings?.saveProgress === true;
+    
+    if (shouldSaveProgress) {
+      window.history.pushState(null, '', window.location.href);
+      const handlePopState = () => window.history.pushState(null, '', window.location.href);
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
   }, [quizData]);
 
-  // Persistir passo atual a cada mudança
+  // Persistir passo atual a cada mudança (mas apenas se a config permitir)
   useEffect(() => {
     if (quizData) {
       const quizId = quizData.quiz_id || quizData.id;
-      localStorage.setItem(STEP_KEY_PREFIX + quizId, currentStep.toString());
+      const shouldSaveProgress = quizData.config?.settings?.saveProgress === true;
+      if (shouldSaveProgress) {
+        localStorage.setItem(STEP_KEY_PREFIX + quizId, currentStep.toString());
+      } else {
+        localStorage.removeItem(STEP_KEY_PREFIX + quizId);
+      }
     }
   }, [currentStep, quizData]);
 
