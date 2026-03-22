@@ -346,6 +346,33 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
     navigator.clipboard.writeText(url).then(() => alert('Link copiado! ✔'));
   };
 
+  const handleToggleSaveProgress = async (quiz) => {
+    try {
+      const cfg = JSON.parse(quiz.config_json || '{}');
+      const currentSaveProgress = cfg.settings?.saveProgress ?? false;
+      const newCfg = { ...cfg, settings: { ...cfg.settings, saveProgress: !currentSaveProgress } };
+      
+      const res = await fetch(`/api/quizzes/${quiz.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: quiz.title,
+          slug: quiz.slug,
+          is_active: quiz.is_active,
+          config_json: JSON.stringify(newCfg)
+        })
+      });
+      if (res.ok) {
+        fetchQuizzes();
+      } else {
+        alert('Erro ao atualizar o quiz');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao atualizar configuração.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -363,6 +390,7 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {quizzes.map((q, i) => {
           const cfg = (() => { try { return JSON.parse(q.config_json || '{}'); } catch { return {}; } })();
+          const saveProgressEnabled = cfg.settings?.saveProgress ?? false;
           const stepCount = cfg.steps?.length || 0;
           const slug = q.slug || ('quiz-' + q.id);
           const quizUrl = `${protocol}//${host}/${slug}`;
@@ -370,6 +398,10 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
             <div key={q.id} className="group relative bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 hover:border-indigo-500/40 transition-all overflow-hidden">
               <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-indigo-500/5 group-hover:bg-indigo-500/15 blur-xl transition-all"/>
               <div className="absolute top-3 right-3 flex gap-2">
+                <button onClick={() => handleToggleSaveProgress(q)} title={`Reter Lead na Etapa: ${saveProgressEnabled ? 'Ligado' : 'Desligado'}`} className="flex items-center justify-center h-7 px-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg cursor-pointer transition-colors" aria-label="Toggle Reter Lead">
+                  {saveProgressEnabled ? <ToggleRight size={18} className="text-emerald-400"/> : <ToggleLeft size={18} className="text-slate-500"/>}
+                </button>
+                <div className="w-[1px] h-7 bg-slate-700/50 mx-0.5"></div>
                 <button onClick={() => handleEdit(q)} aria-label="Editar" className="w-7 h-7 bg-slate-700 hover:bg-indigo-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Edit3 size={13}/></button>
                 <button onClick={() => handleDuplicate(q)} aria-label="Duplicar" className="w-7 h-7 bg-slate-700 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Copy size={13}/></button>
                 <button onClick={() => handleDelete(q.id)} aria-label="Deletar" className="w-7 h-7 bg-slate-700 hover:bg-red-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Trash2 size={13}/></button>
