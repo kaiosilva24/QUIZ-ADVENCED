@@ -418,13 +418,22 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   };
 
   // Simula o progresso do tempo para embeds já que não temos onTimeUpdate direto
+  // Usa o useEffect para disparar trackTime e alimentar o backend de analytics
   useEffect(() => {
     if (!isEmbed || !playing) return;
+    // O activeDuration só é derivado depois, então pegamos direto daqui.
+    const dur = block.fakeDuration || 120;
+    
     const interval = setInterval(() => {
-      setCurrentTime(prev => prev + 1);
+      setCurrentTime(prev => {
+        const next = prev + 1;
+        // Envia o pixel de retenção a cada segundo para gráficos Panda/Vimeo
+        trackTime(next, dur);
+        return next;
+      });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isEmbed, playing]);
+  }, [isEmbed, playing, block.fakeDuration, trackTime]);
 
   // Se for embed, usamos fakeDuration ou 120s como fallback para não quebrar a barra
   const activeDuration = isEmbed ? (block.fakeDuration || 120) : duration;
