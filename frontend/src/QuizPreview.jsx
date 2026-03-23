@@ -1044,12 +1044,97 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     }
 
     case 'arrow_button': {
-      const { text, bg, textColor, style, showIcon, fullWidth } = block;
+      const isIconMode = block.displayMode === 'icon';
       const isUrl = block.actionType === 'url';
+      
+      const handleClick = () => {
+        if (isUrl && block.buttonUrl) {
+          const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
+          window.open(url, '_blank');
+        } else if (block.nextStep && onNavigate) {
+          onNavigate(block.nextStep, block.text || 'Avançar', block.showLoading ? block : false);
+        }
+      };
+
+      if (isIconMode) {
+        const arrowStyle = block.arrowStyle || 'chevron_down';
+        const color = block.iconColor || theme?.accent || '#f97316';
+        const animation = block.animation || 'bounce';
+        const align = block.align || 'center';
+        const sizeMap = { sm: compact ? 18 : 28, md: compact ? 24 : 40, lg: compact ? 30 : 52, xl: compact ? 38 : 68 };
+        const sz = sizeMap[block.size || 'lg'];
+
+        // Keyframes
+        const keyframes = {
+          bounce: `@keyframes arr_bounce_${block.id}{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}`,
+          pulse:  `@keyframes arr_pulse_${block.id}{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}`,
+          blink:  `@keyframes arr_blink_${block.id}{0%,49%{opacity:1}50%,100%{opacity:0}}`,
+          none:   '',
+        };
+        const animCSS = {
+          bounce: `arr_bounce_${block.id} 1s ease-in-out infinite`,
+          pulse:  `arr_pulse_${block.id} 1.2s ease-in-out infinite`,
+          blink:  `arr_blink_${block.id} 1s step-end infinite`,
+          none:   'none',
+        };
+
+        const svgIcons = {
+          chevron_right: <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
+          arrow_right: <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
+          double_down: <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 5 12 11 18 5"/><polyline points="6 13 12 19 18 13"/></svg>,
+          bold_down: <svg width={sz} height={sz} viewBox="0 0 24 24" fill={color}><path d="M4 12l1.41-1.41L11 16.17V4h2v12.17l5.58-5.59L20 12l-8 8-8-8z"/></svg>,
+          arrow_down: <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>,
+          chevron_down: <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+          circle_down: <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 12 16 16 12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>,
+          triangle_down: <svg width={sz} height={sz} viewBox="0 0 24 24" fill={color}><polygon points="3,5 12,19 21,5"/></svg>,
+        };
+
+        const icon = svgIcons[arrowStyle] || svgIcons.chevron_down;
+        const bgEnabled = block.iconBg && block.iconBg !== 'transparent';
+
+        return (
+          <>
+            {animation !== 'none' && <style>{keyframes[animation]}</style>}
+            <div style={{ display: 'flex', justifyContent: align, width: '100%' }}>
+              <button
+                style={{
+                  background: bgEnabled ? block.iconBg : 'none',
+                  border: 'none',
+                  padding: compact ? (bgEnabled ? 6 : 4) : (bgEnabled ? 12 : 8),
+                  borderRadius: bgEnabled ? 999 : 0,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  animation: animCSS[animation],
+                  filter: `drop-shadow(0 0 ${compact ? 6 : 12}px ${color}60)`,
+                }}
+                onClick={handleClick}
+              >
+                {icon}
+              </button>
+            </div>
+          </>
+        );
+      }
+
+      // FULL BUTTON MODE
+      const { text, bg, textColor, style, showIcon, fullWidth, animation } = block;
       const isPill = style === 'pill' || !style;
       const pad = compact ? '10px 16px' : '16px 28px';
       const fSize = compact ? 13 : 18;
       
+      const keyframes = {
+        bounce: `@keyframes btn_bounce_${block.id}{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}`,
+        pulse:  `@keyframes btn_pulse_${block.id}{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.85;transform:scale(.95)}}`,
+        none:   '',
+      };
+      const animCSS = {
+        bounce: `btn_bounce_${block.id} 1s ease-in-out infinite`,
+        pulse:  `btn_pulse_${block.id} 1.2s ease-in-out infinite`,
+        none:   'none',
+      };
+
       const icon = (
         <svg width={compact ? 18 : 22} height={compact ? 18 : 22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -1058,38 +1143,35 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       );
 
       return (
-        <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
-          <button
-            className="hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: compact ? 6 : 10,
-              width: fullWidth !== false ? '100%' : 'auto',
-              background: bg || accent || '#0f172a',
-              color: textColor || '#ffffff',
-              padding: pad,
-              fontSize: fSize,
-              fontWeight: 700,
-              borderRadius: isPill ? 9999 : (compact ? 8 : 12),
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
-            }}
-            onClick={() => {
-              if (isUrl && block.buttonUrl) {
-                const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
-                window.open(url, '_blank');
-              } else if (block.nextStep && onNavigate) {
-                onNavigate(block.nextStep, text || 'Avançar', block.showLoading ? block : false);
-              }
-            }}
-          >
-            {text || 'Avançar'}
-            {showIcon !== false && icon}
-          </button>
-        </div>
+        <>
+          {animation && animation !== 'none' && <style>{keyframes[animation]}</style>}
+          <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+            <button
+              className="hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: compact ? 6 : 10,
+                width: fullWidth !== false ? '100%' : 'auto',
+                background: bg || accent || '#0f172a',
+                color: textColor || '#ffffff',
+                padding: pad,
+                fontSize: fSize,
+                fontWeight: 700,
+                borderRadius: isPill ? 9999 : (compact ? 8 : 12),
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+                animation: animation && animation !== 'none' ? animCSS[animation] : 'none',
+              }}
+              onClick={handleClick}
+            >
+              {text || 'Avançar'}
+              {showIcon !== false && icon}
+            </button>
+          </div>
+        </>
       );
     }
 

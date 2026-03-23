@@ -862,17 +862,79 @@ function ButtonEditor({ block, onChange, steps, theme }) {
 }
 
 function ArrowButtonEditor({ block, onChange, steps, theme }) {
+  const isIcon = block.displayMode === 'icon';
+
   return (
     <>
       <Section title="Botão Seta">
-        <Field label="Texto"><Input value={block.text} onChange={v => onChange({ text: v })} /></Field>
-        <Field label="Cor de Fundo"><ColorPicker value={block.bg} onChange={v => onChange({ bg: v })} /></Field>
-        <Field label="Cor do Texto"><ColorPicker value={block.textColor} onChange={v => onChange({ textColor: v })} /></Field>
-        <Field label="Estilo">
-          <Select value={block.style || 'pill'} onChange={v => onChange({ style: v })} options={[
-            { value: 'pill', label: 'Pílula' }, { value: 'square', label: 'Quadrado' }
+        <Field label="Modo de Exibição">
+          <Select value={block.displayMode || 'button'} onChange={v => onChange({ displayMode: v })} options={[
+            { value: 'button', label: 'Botão Completo (Com Texto)' },
+            { value: 'icon', label: 'Apenas Seta (Apontamento)' }
           ]} />
         </Field>
+
+        {isIcon ? (
+          <>
+            <Field label="Modelo da Seta">
+              <Select value={block.arrowStyle || 'chevron_down'} onChange={v => onChange({ arrowStyle: v })} options={[
+                { value: 'chevron_down', label: 'Chevron Baixo' },
+                { value: 'arrow_down', label: 'Seta Baixo' },
+                { value: 'double_down', label: 'Duplo Baixo' },
+                { value: 'bold_down', label: 'Seta Cheia Baixo' },
+                { value: 'triangle_down', label: 'Triângulo Baixo' },
+                { value: 'circle_down', label: 'Círculo Baixo' },
+                { value: 'chevron_right', label: 'Chevron Direita' },
+                { value: 'arrow_right', label: 'Seta Direita' },
+              ]} />
+            </Field>
+            <Field label="Animação">
+              <Select value={block.animation || 'bounce'} onChange={v => onChange({ animation: v })} options={[
+                { value: 'none', label: 'Nenhuma' },
+                { value: 'bounce', label: 'Pulo (Bounce)' },
+                { value: 'pulse', label: 'Pulsar (Pulse)' },
+                { value: 'blink', label: 'Piscando (Blink)' },
+              ]} />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Tamanho">
+                <Select value={block.size || 'lg'} onChange={v => onChange({ size: v })} options={[
+                  { value: 'sm', label: 'Pequeno' }, { value: 'md', label: 'Médio' },
+                  { value: 'lg', label: 'Grande' }, { value: 'xl', label: 'Gigante' }
+                ]} />
+              </Field>
+              <Field label="Alinhamento">
+                <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
+                  { value: 'flex-start', label: 'Esquerda' }, { value: 'center', label: 'Centro' }, { value: 'flex-end', label: 'Direita' }
+                ]} />
+              </Field>
+            </div>
+            <Field label="Cor do Ícone"><ColorPicker value={block.iconColor || theme?.accent || '#f97316'} onChange={v => onChange({ iconColor: v })} /></Field>
+            <Field label="Cor de Fundo (opcional)"><ColorPicker value={block.iconBg || 'transparent'} onChange={v => onChange({ iconBg: v })} /></Field>
+          </>
+        ) : (
+          <>
+            <Field label="Texto"><Input value={block.text} onChange={v => onChange({ text: v })} /></Field>
+            <Field label="Cor de Fundo"><ColorPicker value={block.bg} onChange={v => onChange({ bg: v })} /></Field>
+            <Field label="Cor do Texto"><ColorPicker value={block.textColor} onChange={v => onChange({ textColor: v })} /></Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Estilo">
+                <Select value={block.style || 'pill'} onChange={v => onChange({ style: v })} options={[
+                  { value: 'pill', label: 'Pílula' }, { value: 'square', label: 'Quadrado' }
+                ]} />
+              </Field>
+              <Field label="Animação">
+                <Select value={block.animation || 'none'} onChange={v => onChange({ animation: v })} options={[
+                  { value: 'none', label: 'Nenhuma' },
+                  { value: 'bounce', label: 'Pulo (Bounce)' },
+                  { value: 'pulse', label: 'Pulsar (Pulse)' },
+                ]} />
+              </Field>
+            </div>
+            <Toggle label="Mostrar ícone de seta" value={block.showIcon !== false} onChange={v => onChange({ showIcon: v })} />
+            <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
+          </>
+        )}
       </Section>
       <Section title="Ação">
         <Field label="Ao clicar">
@@ -911,8 +973,6 @@ function ArrowButtonEditor({ block, onChange, steps, theme }) {
             </Field>
           </>
         )}
-        <Toggle label="Mostrar ícone de seta" value={block.showIcon !== false} onChange={v => onChange({ showIcon: v })} />
-        <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
       </Section>
     </>
   );
