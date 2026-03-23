@@ -1185,19 +1185,38 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
 }
 
 function AnimatedProgressEditor({ block, onChange }) {
+  const currentSuffix = block.textSuffix !== undefined 
+    ? block.textSuffix 
+    : (block.text ? block.text.replace('{pct}%', '').replace('{pct}', '') : ' das vagas preenchidas...');
+
   return (
     <>
       <Section title="Barra Animada">
-        <Field label="Padrão de Texto (use {pct} para o número)">
-          <Input value={block.text} onChange={v => onChange({ text: v })} placeholder="Ex: {pct}% das vagas preenchidas..." />
+        <Field label="Texto Padrão (aparecerá após a %)">
+          <div className="flex items-center">
+            <span className="bg-slate-700/50 border border-slate-700 border-r-0 rounded-l-xl px-3 py-2 text-sm text-slate-400 select-none">
+              {block.startVal === '' ? 0 : (block.startVal ?? 0)}%
+            </span>
+            <input 
+              type="text"
+              value={currentSuffix}
+              onChange={e => onChange({ textSuffix: e.target.value, text: `{pct}%${e.target.value}` })}
+              placeholder=" das vagas preenchidas..."
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-r-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
+            />
+          </div>
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Início (%)">
-            <input type="number" value={block.startVal ?? 0} onChange={e => onChange({ startVal: Number(e.target.value) })}
+            <input type="number" 
+              value={block.startVal !== undefined ? block.startVal : 0} 
+              onChange={e => onChange({ startVal: e.target.value === '' ? '' : Number(e.target.value) })}
               className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
           </Field>
           <Field label="Fim (%)">
-            <input type="number" value={block.endVal ?? 84} onChange={e => onChange({ endVal: Number(e.target.value) })}
+            <input type="number" 
+              value={block.endVal !== undefined ? block.endVal : 84} 
+              onChange={e => onChange({ endVal: e.target.value === '' ? '' : Number(e.target.value) })}
               className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
           </Field>
         </div>
