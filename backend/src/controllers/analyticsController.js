@@ -53,7 +53,8 @@ function detectSource(utmSource, referrer) {
 // POST /api/analytics/track — Registra evento de lead
 async function trackEvent(req, res) {
     const { quiz_id, visitor_id, event_type, step_id, answer_value, time_spent_seconds,
-            device_type, browser, os, utm_source, utm_medium, utm_campaign, referrer } = req.body;
+            device_type, browser, os, utm_source, utm_medium, utm_campaign, referrer,
+            city: clientCity, state: clientState, country: clientCountry } = req.body;
     try {
         const db = await getDB();
         await db.run(
@@ -64,9 +65,8 @@ async function trackEvent(req, res) {
         // Captura intelligence somente no evento 'start'
         if (event_type === 'start') {
             const source = detectSource(utm_source, referrer);
-            const ip = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
-            // Geo lookup async, não bloqueia a resposta
-            geoLookup(ip).then(geo => {
+
+            const saveIntel = (geo) => {
                 db.run(`
                     INSERT INTO lead_metadata (visitor_id, quiz_id, device_type, browser, os, city, state, country, source, utm_source, utm_medium, utm_campaign, referrer)
                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
@@ -81,7 +81,16 @@ async function trackEvent(req, res) {
                     geo.city, geo.state, geo.country,
                     source, utm_source || null, utm_medium || null, utm_campaign || null, referrer || null
                 ]).catch(e => console.error('[Intel] Erro ao salvar metadata:', e));
-            });
+            };
+
+            // Prefere geo enviado pelo cliente (IP real do lead)
+            if (clientCity) {
+                saveIntel({ city: clientCity, state: clientState || '', country: clientCountry || '' });
+            } else {
+                // Fallback: lookup pelo IP da requisição (menos preciso em produção)
+                const ip = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
+                geoLookup(ip).then(geo => saveIntel(geo));
+            }
         }
 
         res.status(201).json({ ok: true });
@@ -229,13 +238,15 @@ async function getLeadIntelStats(req, res) {
     const { quizId } = req.params;
     try {
         const db = await getDB();
-        const [devices, sources, cities] = await Promise.all([
+        const [deviceTypes, osList, sources, cities] = await Promise.all([
             db.all(`SELECT device_type, COUNT(*) as count FROM lead_metadata WHERE quiz_id=$1 GROUP BY device_type ORDER BY count DESC`, [quizId]),
+            db.all(`SELECT os, COUNT(*) as count FROM lead_metadata WHERE quiz_id=$1 AND os IS NOT NULL AND os != '' AND os != 'unknown' GROUP BY os ORDER BY count DESC LIMIT 8`, [quizId]),
             db.all(`SELECT source, COUNT(*) as count FROM lead_metadata WHERE quiz_id=$1 GROUP BY source ORDER BY count DESC LIMIT 8`, [quizId]),
             db.all(`SELECT city, state, COUNT(*) as count FROM lead_metadata WHERE quiz_id=$1 AND city IS NOT NULL AND city != '' GROUP BY city, state ORDER BY count DESC LIMIT 8`, [quizId]),
         ]);
         res.json({
-            devices: devices.map(d => ({ label: d.device_type || 'unknown', count: parseInt(d.count) })),
+            devices: deviceTypes.map(d => ({ label: d.device_type || 'unknown', count: parseInt(d.count) })),
+            os: osList.map(o => ({ label: o.os || 'unknown', count: parseInt(o.count) })),
             sources: sources.map(s => ({ label: s.source || 'direct', count: parseInt(s.count) })),
             cities: cities.map(c => ({ label: c.city + (c.state ? `, ${c.state}` : ''), count: parseInt(c.count) })),
         });

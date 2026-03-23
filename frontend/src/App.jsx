@@ -22,8 +22,8 @@ function stripHtml(html) {
   return (tmp.textContent || tmp.innerText || '').trim() || null;
 }
 
-// ─── Lead Intelligence: Coleta dispositivo, browser, OS e origem ──────────────
-function collectLeadIntel() {
+// ─── Lead Intelligence: Coleta dispositivo, browser, OS, origem e geo ────────
+async function collectLeadIntel() {
   const cached = localStorage.getItem('quiz_saas_lead_intel');
   if (cached) { try { return JSON.parse(cached); } catch {} }
 
@@ -54,18 +54,31 @@ function collectLeadIntel() {
   const utm_campaign = params.get('utm_campaign') || null;
   const referrer = document.referrer || null;
 
-  const intel = { device_type, browser, os, utm_source, utm_medium, utm_campaign, referrer };
+  // ─── Geolocalização do lado do cliente (IP do lead, não do servidor) ────────
+  let city = null, state = null, country = null;
+  try {
+    const geoRes = await fetch('https://ip-api.com/json/?lang=pt-BR&fields=status,city,regionName,countryCode', { signal: AbortSignal.timeout(4000) });
+    const geoJson = await geoRes.json();
+    if (geoJson.status === 'success') {
+      city = geoJson.city || null;
+      state = geoJson.regionName || null;
+      country = geoJson.countryCode || null;
+    }
+  } catch (e) { /* geo é opcional, falha silenciosa */ }
+
+  const intel = { device_type, browser, os, utm_source, utm_medium, utm_campaign, referrer, city, state, country };
   localStorage.setItem('quiz_saas_lead_intel', JSON.stringify(intel));
   return intel;
 }
 
-function trackEvent(quizId, eventType, stepId = null, answerValue = null, timeSpent = 0) {
+async function trackEvent(quizId, eventType, stepId = null, answerValue = null, timeSpent = 0) {
   const visitorId = getVisitorId();
   const cleanAnswer = stripHtml(answerValue);
   const body = { quiz_id: quizId, visitor_id: visitorId, event_type: eventType, step_id: stepId, answer_value: cleanAnswer, time_spent_seconds: timeSpent };
-  // Include intel data on 'start' event
+  // Include intel data on 'start' event (awaits geo)
   if (eventType === 'start') {
-    Object.assign(body, collectLeadIntel());
+    const intel = await collectLeadIntel();
+    Object.assign(body, intel);
   }
   fetch('/api/analytics/track', {
     method: 'POST',
