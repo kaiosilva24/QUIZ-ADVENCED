@@ -25,7 +25,13 @@ function stripHtml(html) {
 // ─── Lead Intelligence: Coleta dispositivo, browser, OS, origem e geo ────────
 async function collectLeadIntel() {
   const cached = localStorage.getItem('quiz_saas_lead_intel');
-  if (cached) { try { return JSON.parse(cached); } catch {} }
+  if (cached) { 
+    try { 
+      const parsed = JSON.parse(cached); 
+      // Se já tiver cache e tiver cidade, retorna. Senão busca de novo.
+      if (parsed.city) return parsed;
+    } catch {} 
+  }
 
   const ua = navigator.userAgent || '';
   // Device type
@@ -57,12 +63,13 @@ async function collectLeadIntel() {
   // ─── Geolocalização do lado do cliente (IP do lead, não do servidor) ────────
   let city = null, state = null, country = null;
   try {
-    const geoRes = await fetch('https://ip-api.com/json/?lang=pt-BR&fields=status,city,regionName,countryCode', { signal: AbortSignal.timeout(4000) });
+    // Usando geojs.io pois ip-api.com bloqueia HTTPS no plano grátis
+    const geoRes = await fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(5000) });
     const geoJson = await geoRes.json();
-    if (geoJson.status === 'success') {
+    if (geoJson.city) {
       city = geoJson.city || null;
-      state = geoJson.regionName || null;
-      country = geoJson.countryCode || null;
+      state = geoJson.region || null;
+      country = geoJson.country_code || null;
     }
   } catch (e) { /* geo é opcional, falha silenciosa */ }
 
