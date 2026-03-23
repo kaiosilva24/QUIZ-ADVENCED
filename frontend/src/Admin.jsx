@@ -911,7 +911,7 @@ function AnalyticsView({ quizzes }) {
             {activeTab === 'midia' ? (
               <div className="space-y-6 animate-fadeIn">
                 <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/5 border border-indigo-500/20 rounded-xl p-5 mb-6">
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2"><PlayCircle size={18} className="text-indigo-400"/> Central de Retenção (Estilo Panda/Vimeo)</h3>
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2"><PlayCircle size={18} className="text-indigo-400"/> Central de Retenção</h3>
                   <p className="text-xs text-slate-400 mt-1">Acompanhe segundo a segundo onde os leads estão engajando ou abandonando seus Áudios e VSLs.</p>
                 </div>
                 
@@ -938,6 +938,9 @@ function AnalyticsView({ quizzes }) {
                     }
                     
                     const maxViews = curve.length > 0 ? Math.max(...curve.map(c => c.views)) : 0;
+                    const totalSecondsWatched = curve.reduce((acc, c) => acc + c.views, 0);
+                    const avgWatched = stats.totalPlays > 0 ? totalSecondsWatched / stats.totalPlays : 0;
+                    
                     const cData = curve.map(c => ({
                       timeFmt: fmt(c.time),
                       timeRaw: c.time,
@@ -956,8 +959,8 @@ function AnalyticsView({ quizzes }) {
                             </div>
                             <div className="w-px bg-slate-800"></div>
                             <div className="text-right">
-                              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Tempo Assistido</p>
-                              <p className="text-xl font-mono text-cyan-400 font-bold">{fmt(stats.duration)}</p>
+                              <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold" title="Tempo médio que os leads assistem">Tempo Médio</p>
+                              <p className="text-xl font-mono text-cyan-400 font-bold">{fmt(avgWatched)}</p>
                             </div>
                           </div>
                         </div>
