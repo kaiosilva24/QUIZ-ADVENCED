@@ -910,7 +910,16 @@ function ArrowButtonEditor({ block, onChange, steps, theme }) {
               </Field>
             </div>
             <Field label="Cor do Ícone"><ColorPicker value={block.iconColor || theme?.accent || '#f97316'} onChange={v => onChange({ iconColor: v })} /></Field>
-            <Field label="Cor de Fundo (opcional)"><ColorPicker value={block.iconBg || 'transparent'} onChange={v => onChange({ iconBg: v })} /></Field>
+            <Field label="Cor de Fundo (opcional)">
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <ColorPicker value={block.iconBg || 'transparent'} onChange={v => onChange({ iconBg: v })} />
+                </div>
+                {block.iconBg && block.iconBg !== 'transparent' && (
+                  <button onClick={() => onChange({ iconBg: 'transparent' })} className="text-xs text-red-500 hover:text-red-400 px-2 py-1 bg-red-500/10 hover:bg-red-500/20 rounded transition-colors whitespace-nowrap">Remover</button>
+                )}
+              </div>
+            </Field>
           </>
         ) : (
           <>
