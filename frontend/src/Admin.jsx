@@ -1030,31 +1030,7 @@ function AnalyticsView({ quizzes }) {
 
             {/* ── Lead Intelligence Cards ── */}
             {intelData && (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-                {/* Dispositivos */}
-                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">📱 Dispositivos</h3>
-                  <div className="space-y-2.5">
-                    {(intelData.devices || []).map(d => {
-                      const icon = d.label === 'mobile' ? '📱' : d.label === 'tablet' ? '💻' : '💻';
-                      const total = (intelData.devices || []).reduce((s,x) => s + x.count, 0);
-                      const pct = total > 0 ? Math.round(d.count / total * 100) : 0;
-                      return (
-                        <div key={d.label}>
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-slate-300 capitalize">{icon} {d.label}</span>
-                            <span className="text-slate-500 font-mono">{d.count} <span className="text-indigo-400">({pct}%)</span></span>
-                          </div>
-                          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-indigo-500 to-blue-400 rounded-full" style={{width:`${pct}%`}} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {(!intelData.devices || intelData.devices.length === 0) && <p className="text-slate-600 text-xs italic">Aguardando dados...</p>}
-                  </div>
-                </div>
-
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {/* Sistema Operacional */}
                 <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5">
                   <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">🖥️ Sistema Operacional</h3>
