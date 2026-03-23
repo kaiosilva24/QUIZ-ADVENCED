@@ -1403,11 +1403,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
             const fieldStyle = {
               padding: compact ? '6px 10px' : '10px 14px',
-              background: block.fieldBg || 'rgba(255,255,255,0.07)',
-              border: `1px solid ${block.fieldBorderColor || 'rgba(255,255,255,0.12)'}`,
+              background: block.fieldBg || '#f1f5f9',
+              border: `1px solid ${block.fieldBorderColor || '#cbd5e1'}`,
               borderRadius: 10,
               fontSize: compact ? 10 : 14,
-              color: block.fieldTextColor || defaultText,
+              color: block.fieldTextColor || '#0f172a',
               width: '100%',
               outline: 'none',
               fontFamily: 'inherit',
@@ -1415,14 +1415,14 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             };
 
             const inputWrapperStyle = {
-               opacity: block.fieldTextColor ? 1 : 0.6,
+               opacity: 1,
                display: 'flex',
                flexDirection: 'column',
                gap: compact ? 4 : 6,
             };
 
             const labelElem = (
-               <label style={{ fontSize: compact ? 10 : 13, fontWeight: 700, color: block.fieldTextColor || defaultText, margin: 0 }}>
+               <label style={{ fontSize: compact ? 10 : 13, fontWeight: 700, color: block.labelColor || theme?.textColor || defaultText, margin: 0 }}>
                   {fieldTitle}
                </label>
             );

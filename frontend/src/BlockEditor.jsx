@@ -1048,14 +1048,17 @@ function LeadCaptureEditor({ block, onChange, steps, theme }) {
           </div>
         ))}
         <div className="pt-3 border-t border-white/5 mt-3 space-y-3">
+          <Field label="Cor do Título Externo (Rótulos)">
+            <ColorPicker value={block.labelColor || theme?.textColor || '#ffffff'} onChange={v => onChange({ labelColor: v })} />
+          </Field>
           <Field label="Cor de Fundo do Campo">
-            <ColorPicker value={block.fieldBg || 'rgba(255,255,255,0.07)'} onChange={v => onChange({ fieldBg: v })} />
+            <ColorPicker value={block.fieldBg || '#f1f5f9'} onChange={v => onChange({ fieldBg: v })} />
           </Field>
           <Field label="Cor do Texto do Campo">
-            <ColorPicker value={block.fieldTextColor || '#ffffff'} onChange={v => onChange({ fieldTextColor: v })} />
+            <ColorPicker value={block.fieldTextColor || '#0f172a'} onChange={v => onChange({ fieldTextColor: v })} />
           </Field>
           <Field label="Cor da Borda do Campo">
-            <ColorPicker value={block.fieldBorderColor || 'rgba(255,255,255,0.12)'} onChange={v => onChange({ fieldBorderColor: v })} />
+            <ColorPicker value={block.fieldBorderColor || '#cbd5e1'} onChange={v => onChange({ fieldBorderColor: v })} />
           </Field>
         </div>
       </Section>
