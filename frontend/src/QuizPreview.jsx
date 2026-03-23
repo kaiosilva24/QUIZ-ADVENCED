@@ -267,6 +267,7 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
 // ─── VIDEO PLAYER COMPONENT (totalmente funcional) ────────────────────────────
 function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) {
   const videoRef   = useRef(null);
+  const iframeRef  = useRef(null);
   const startedRef = useRef(false);
   const { handleTimeUpdate: trackTime, triggerFinalPing } = useMediaTelemetry('video', block.id, quizId, visitorId, stepId, compact);
   const [playing, setPlaying]             = useState(false);
@@ -337,14 +338,15 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
 
   // The overlay is shown when: video is configured as autoplay+muted AND user hasn't unmuted yet
   const [userUnmuted, setUserUnmuted] = useState(false);
-  const showUnmuteOverlay = !!(block.autoplay && block.muted && src && !isEmbed && !userUnmuted);
+  // Removido o !isEmbed para permitir overlay de mute também no YouTube
+  const showUnmuteOverlay = !!(block.autoplay && block.muted && src && !userUnmuted);
 
   // Reset userUnmuted when src or block config changes (so overlay comes back)
   useEffect(() => {
     setUserUnmuted(false);
   }, [src, block.autoplay, block.muted]);
 
-  // onCanPlay fires once video data is loaded — safest place to autoplay
+  // onCanPlay fires once video data is loaded — safest place to autoplay (Native only)
   const handleCanPlay = () => {
     const v = videoRef.current;
     if (!v || startedRef.current || !block.autoplay || isEmbed) return;
@@ -356,35 +358,79 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
     }).catch(() => {});
   };
 
+  // Se for embed e tiver autoplay, marca como tocando desde o início
+  useEffect(() => {
+    if (isEmbed && src && block.autoplay && !startedRef.current) {
+      startedRef.current = true;
+      setPlaying(true);
+    }
+  }, [isEmbed, src, block.autoplay]);
+
   const handleUnmute = (e) => {
     if (e) { e.stopPropagation(); e.preventDefault(); }
-    const v = videoRef.current;
-    if (!v) return;
-    v.muted = false;
-    v.currentTime = 0;
-    v.play().then(() => {
-      setPlaying(true);
-      setHasStarted(true);
-      setUserUnmuted(true);   // hides overlay
-      setShowThumb(false);
-    }).catch(console.error);
+    if (isEmbed) {
+      if (isYT) {
+        iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+        iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+      }
+      if (isVimeo) {
+        iframeRef.current?.contentWindow?.postMessage('{"method":"setVolume","value":1}', '*');
+        iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
+      }
+      setCurrentTime(0);
+    } else {
+      const v = videoRef.current;
+      if (!v) return;
+      v.muted = false;
+      v.currentTime = 0;
+      v.play().catch(console.error);
+    }
+    
+    setPlaying(true);
+    setHasStarted(true);
+    setUserUnmuted(true);   // hides overlay
+    setShowThumb(false);
   };
 
   const togglePlay = () => {
-    const v = videoRef.current;
-    if (!v) return;
     if (showUnmuteOverlay) { handleUnmute(); return; }
     if (playing) {
       if (block.disablePause) return; // Impede pausar
-      v.pause(); setPlaying(false);
-    }
-    else {
-      v.play().then(() => { setPlaying(true); setHasStarted(true); setShowThumb(false); setEnded(false); }).catch(console.error);
+      if (isEmbed) {
+        if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"pause"}', '*');
+      } else {
+        videoRef.current?.pause();
+      }
+      setPlaying(false);
+    } else {
+      if (isEmbed) {
+        if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
+      } else {
+        videoRef.current?.play().catch(console.error);
+      }
+      setPlaying(true);
+      setHasStarted(true);
+      setShowThumb(false);
+      setEnded(false);
     }
   };
 
-  const progress = duration > 0 ? currentTime / duration : 0;
-  const displayDuration = block.useFakeDuration ? (block.fakeDuration || 120) : duration;
+  // Simula o progresso do tempo para embeds já que não temos onTimeUpdate direto
+  useEffect(() => {
+    if (!isEmbed || !playing) return;
+    const interval = setInterval(() => {
+      setCurrentTime(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isEmbed, playing]);
+
+  // Se for embed, usamos fakeDuration ou 120s como fallback para não quebrar a barra
+  const activeDuration = isEmbed ? (block.fakeDuration || 120) : duration;
+
+  const progress = activeDuration > 0 ? currentTime / activeDuration : 0;
+  const displayDuration = block.useFakeDuration ? (block.fakeDuration || 120) : activeDuration;
   const displayCurrentTime = block.useFakeDuration ? (progress * displayDuration) : currentTime;
 
   return (
@@ -397,8 +443,8 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
         @keyframes vslRipple    { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(2.6);opacity:0} }
       `}</style>
       {/* Vídeo com aspect ratio */}
-      <div style={{ width:'100%', aspectRatio:ar, position:'relative', background:'#0a0a0a', overflow:'hidden', cursor: src && !isEmbed ? 'pointer' : 'default' }}
-           onClick={!isEmbed ? togglePlay : undefined}>
+      <div style={{ width:'100%', aspectRatio:ar, position:'relative', background:'#0a0a0a', overflow:'hidden', cursor: src ? 'pointer' : 'default' }}
+           onClick={togglePlay}>
 
         {/* Placeholder */}
         {!src && (
@@ -412,8 +458,10 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
 
         {/* Embed YouTube/Vimeo */}
         {src && isEmbed && (
-          <iframe src={embedUrl}
-            style={{ position:'absolute', inset:0, width:'100%', height:'100%', border:'none' }}
+          <iframe 
+            ref={iframeRef}
+            src={embedUrl}
+            style={{ position:'absolute', inset:0, width:'100%', height:'100%', border:'none', pointerEvents: isControlsHidden ? 'none' : 'auto' }}
             allow="autoplay; fullscreen" allowFullScreen />
         )}
 
@@ -436,13 +484,13 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
           />
         )}
 
-        {/* Thumbnail overlay */}
-        {src && !isEmbed && block.thumbnailSrc && showThumb && (
-          <div style={{ position:'absolute', inset:0, background:`url(${block.thumbnailSrc}) center/cover`, pointerEvents:'none' }} />
+        {/* Thumbnail overlay (agora funciona também em embed!) */}
+        {src && block.thumbnailSrc && showThumb && (
+          <div style={{ position:'absolute', inset:0, background:`url(${block.thumbnailSrc}) center/cover`, pointerEvents:'none', zIndex:4 }} />
         )}
 
         {/* ═══ ÍCONE MUDO CENTRALIZADO — PANDA VSL STYLE ═══ */}
-        {src && !isEmbed && showUnmuteOverlay && (
+        {src && showUnmuteOverlay && (
           <div
             onClick={handleUnmute}
             style={{
@@ -516,8 +564,8 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
         )}
 
         {/* Botão Play Overlay (parado, sem overlay mudo) */}
-        {block.showPlayBtn !== false && src && !isEmbed && !playing && !showUnmuteOverlay && (
-          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>
+        {block.showPlayBtn !== false && src && !playing && !showUnmuteOverlay && (
+          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none', zIndex:5 }}>
             <div style={{ width:compact?40:68, height:compact?40:68, borderRadius:'50%', background:'rgba(0,0,0,0.65)', backdropFilter:'blur(8px)', border:'2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 30px rgba(255,255,255,0.15)' }}>
               <svg width={compact?16:28} height={compact?16:28} viewBox="0 0 24 24" fill="white">
                 <polygon points="5,3 19,12 5,21"/>
@@ -528,14 +576,14 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
 
         {/* Timer VSL (fake duration se ativado)
             Mostra mesmo sem o vídeo tocar, usando fakeDuration como fallback */}
-        {block.showTimer !== false && src && (duration > 0 || block.useFakeDuration) && (
+        {block.showTimer !== false && src && (activeDuration > 0 || block.useFakeDuration) && (
           <div style={{ position:'absolute', bottom:compact?6:10, right:compact?6:10, background:'rgba(0,0,0,0.75)', borderRadius:4, padding:compact?'2px 5px':'3px 8px', fontSize:compact?8:11, color:'#fff', fontFamily:'monospace', zIndex:6 }}>
             {fmt(displayCurrentTime)} / {fmt(displayDuration)}
           </div>
         )}
 
         {/* Barra de progresso VSL customizada — mostra mesmo antes do vídeo tocar */}
-        {src && !isEmbed && isControlsHidden && (duration > 0 || block.useFakeDuration) && (
+        {src && isControlsHidden && (activeDuration > 0 || block.useFakeDuration) && (
           <div style={{ position:'absolute', bottom:0, left:0, right:0, height:compact?2:3, background:'rgba(255,255,255,0.15)', zIndex:6 }}>
             <div style={{ height:'100%', width:`${progress*100}%`, background: block.fakeProgressColor || '#e63946', transition:'width 0.5s linear' }} />
           </div>
