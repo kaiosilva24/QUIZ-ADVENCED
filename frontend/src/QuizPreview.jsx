@@ -1044,111 +1044,52 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     }
 
     case 'arrow_button': {
-      const arrowStyle = block.arrowStyle || 'chevron_down';
-      const color = block.color || '#f97316';
-      const animation = block.animation || 'bounce';
-      const align = block.align || 'center';
-      const sizeMap = { sm: compact ? 18 : 28, md: compact ? 24 : 40, lg: compact ? 30 : 52, xl: compact ? 38 : 68 };
-      const sz = sizeMap[block.size || 'lg'];
-
-      // Keyframes CSS inline por animação
-      const keyframes = {
-        bounce: `@keyframes arr_bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}`,
-        pulse:  `@keyframes arr_pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}`,
-        blink:  `@keyframes arr_blink{0%,49%{opacity:1}50%,100%{opacity:0}}`,
-        none:   '',
-      };
-      const animCSS = {
-        bounce: 'arr_bounce 1s ease-in-out infinite',
-        pulse:  'arr_pulse 1.2s ease-in-out infinite',
-        blink:  'arr_blink 1s step-end infinite',
-        none:   'none',
-      };
-
-      // 8 ícones SVG profissionais
-      const svgIcons = {
-        chevron_right: (
-          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        ),
-        arrow_right: (
-          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12"/>
-            <polyline points="12 5 19 12 12 19"/>
-          </svg>
-        ),
-        double_right: (
-          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="5 18 11 12 5 6"/>
-            <polyline points="13 18 19 12 13 6"/>
-          </svg>
-        ),
-        bold_right: (
-          <svg width={sz} height={sz} viewBox="0 0 24 24" fill={color}>
-            <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z"/>
-          </svg>
-        ),
-        arrow_down: (
-          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <polyline points="19 12 12 19 5 12"/>
-          </svg>
-        ),
-        chevron_down: (
-          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        ),
-        circle_right: (
-          <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <polyline points="12 8 16 12 12 16"/>
-            <line x1="8" y1="12" x2="16" y2="12"/>
-          </svg>
-        ),
-        triangle_right: (
-          <svg width={sz} height={sz} viewBox="0 0 24 24" fill={color}>
-            <polygon points="5,3 19,12 5,21"/>
-          </svg>
-        ),
-      };
-
-      const icon = svgIcons[arrowStyle] || svgIcons.chevron_down;
+      const { text, bg, textColor, style, showIcon, fullWidth } = block;
+      const isUrl = block.actionType === 'url';
+      const isPill = style === 'pill' || !style;
+      const pad = compact ? '10px 16px' : '16px 28px';
+      const fSize = compact ? 13 : 18;
+      
+      const icon = (
+        <svg width={compact ? 18 : 22} height={compact ? 18 : 22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      );
 
       return (
-        <>
-          {animation !== 'none' && (
-            <style>{keyframes[animation]}</style>
-          )}
-          <div style={{ display: 'flex', justifyContent: align, width: '100%' }}>
-            <button
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: compact ? 4 : 8,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                animation: animCSS[animation],
-                filter: `drop-shadow(0 0 ${compact ? 6 : 12}px ${color}80)`,
-              }}
-              aria-label="Navegar para próxima etapa"
-              onClick={() => {
-                const isUrl = block.actionType === 'url';
-                if (isUrl && block.buttonUrl) {
-                  const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
-                  window.open(url, '_blank');
-                } else if (block.nextStep && onNavigate) {
-                  onNavigate(block.nextStep, block.text || 'Avançar', block.showLoading ? block : false);
-                }
-              }}
-            >
-              {icon}
-            </button>
-          </div>
-        </>
+        <div style={{ display: 'flex', width: '100%', justifyContent: 'center' }}>
+          <button
+            className="hover:brightness-110 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: compact ? 6 : 10,
+              width: fullWidth !== false ? '100%' : 'auto',
+              background: bg || accent || '#0f172a',
+              color: textColor || '#ffffff',
+              padding: pad,
+              fontSize: fSize,
+              fontWeight: 700,
+              borderRadius: isPill ? 9999 : (compact ? 8 : 12),
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+            }}
+            onClick={() => {
+              if (isUrl && block.buttonUrl) {
+                const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
+                window.open(url, '_blank');
+              } else if (block.nextStep && onNavigate) {
+                onNavigate(block.nextStep, text || 'Avançar', block.showLoading ? block : false);
+              }
+            }}
+          >
+            {text || 'Avançar'}
+            {showIcon !== false && icon}
+          </button>
+        </div>
       );
     }
 
