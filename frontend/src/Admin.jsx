@@ -348,8 +348,13 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
 
   const handleToggleSaveProgress = async (quiz) => {
     try {
-      const cfg = JSON.parse(quiz.config_json || '{}');
-      const currentSaveProgress = cfg.settings?.saveProgress ?? false;
+      // OBRIGATÓRIO: buscar os dados antes para não perder a configuração (blocos, tema)!!
+      const resFull = await fetch(`/api/quizzes/${quiz.id}`);
+      if (!resFull.ok) throw new Error('Falha ao buscar quiz completo');
+      const dataFull = await resFull.json();
+      
+      const cfg = dataFull.config || {};
+      const currentSaveProgress = cfg.settings?.saveProgress || false;
       const newCfg = { ...cfg, settings: { ...cfg.settings, saveProgress: !currentSaveProgress } };
       
       const res = await fetch(`/api/quizzes/${quiz.id}`, {
@@ -389,11 +394,12 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         {quizzes.map((q, i) => {
-          const cfg = (() => { try { return JSON.parse(q.config_json || '{}'); } catch { return {}; } })();
-          const saveProgressEnabled = cfg.settings?.saveProgress ?? false;
-          const stepCount = cfg.steps?.length || 0;
+          const saveProgressEnabled = q.save_progress_enabled === true;
           const slug = q.slug || ('quiz-' + q.id);
           const quizUrl = `${protocol}//${host}/${slug}`;
+          const accentInfo = q.accent_color ? q.accent_color + '20' : '#6366f120';
+          const accentBorder = q.accent_color ? q.accent_color + '30' : '#6366f130';
+          
           return (
             <div key={q.id} className="group relative bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 hover:border-indigo-500/40 transition-all overflow-hidden">
               <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-indigo-500/5 group-hover:bg-indigo-500/15 blur-xl transition-all"/>
@@ -406,7 +412,7 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
                 <button onClick={() => handleDuplicate(q)} aria-label="Duplicar" className="w-7 h-7 bg-slate-700 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Copy size={13}/></button>
                 <button onClick={() => handleDelete(q.id)} aria-label="Deletar" className="w-7 h-7 bg-slate-700 hover:bg-red-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Trash2 size={13}/></button>
               </div>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-lg" style={{background: (cfg.theme?.accent||'#6366f1')+'20', border: `1px solid ${cfg.theme?.accent||'#6366f1'}30`}}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-lg" style={{background: accentInfo, border: `1px solid ${accentBorder}`}}>
                 {['🧠','🎯','🔥','💡','⚡'][i % 5]}
               </div>
               <h4 className="font-semibold text-slate-100 mb-1">{q.title}</h4>

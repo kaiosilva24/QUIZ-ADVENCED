@@ -3,7 +3,15 @@ const { getDB } = require('../db');
 async function getQuizzes(req, res) {
     try {
         const db = await getDB();
-        const quizzes = await db.all('SELECT id, title, slug, is_active, created_at, config_json FROM quizzes ORDER BY id DESC');
+        // Otimização: Não traz config_json inteiro, filtra só os dados necessários
+        const quizzes = await db.all(`
+            SELECT 
+                id, title, slug, is_active, created_at,
+                CASE WHEN config_json LIKE '%"saveProgress":true%' THEN true ELSE false END AS save_progress_enabled,
+                CASE WHEN config_json LIKE '%"accent":"%' THEN substring(config_json from '"accent":"([^"]+)"') ELSE null END AS accent_color
+            FROM quizzes 
+            ORDER BY id DESC
+        `);
         res.json(quizzes);
     } catch (error) {
         res.status(500).json({ error: error.message });
