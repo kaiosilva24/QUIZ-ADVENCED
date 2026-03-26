@@ -104,7 +104,17 @@ function AdminPanel({ token, onLogout }) {
   const [tab, setTab] = useState('quizzes');
   const [quizzes, setQuizzes] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [editingQuiz, setEditingQuiz] = useState(null);
+  
+  const [editingQuiz, setEditingQuizRaw] = useState(null);
+
+  const setEditingQuiz = (quiz) => {
+    if (quiz) {
+      localStorage.setItem('admin_editing_quiz_id', quiz.id || 'new');
+    } else {
+      localStorage.removeItem('admin_editing_quiz_id');
+    }
+    setEditingQuizRaw(quiz);
+  };
 
   const fetchQuizzes = async () => {
     const r = await fetch(`${API}/quizzes`);
@@ -115,7 +125,38 @@ function AdminPanel({ token, onLogout }) {
     const r = await fetch(`${API}/tasks`); setTasks(await r.json());
   };
 
-  useEffect(() => { fetchQuizzes(); fetchAllTasks(); }, []);
+  useEffect(() => { 
+    fetchQuizzes(); 
+    fetchAllTasks(); 
+
+    // Restore edit session on reload
+    const savedId = localStorage.getItem('admin_editing_quiz_id');
+    if (savedId === 'new') {
+      setEditingQuizRaw({
+        id: null,
+        title: 'Novo Quiz',
+        slug: '',
+        config_json: JSON.stringify({
+          theme: { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '', overlay: true },
+          steps: [{ id: 'step_1', label: 'Etapa 1', blocks: [] }]
+        })
+      });
+    } else if (savedId) {
+      fetch(`${API}/quizzes/${savedId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) {
+            setEditingQuizRaw({
+              ...data,
+              config_json: JSON.stringify(data.config || {})
+            });
+          } else {
+            localStorage.removeItem('admin_editing_quiz_id');
+          }
+        })
+        .catch(() => localStorage.removeItem('admin_editing_quiz_id'));
+    }
+  }, []);
 
   if (editingQuiz !== null) {
     return (
