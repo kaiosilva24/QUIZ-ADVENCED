@@ -1228,6 +1228,19 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         };
       }
       
+      const animName = block.animation || 'none';
+      const speed = block.animationSpeed ?? 1.5;
+      const keyframes = {
+        pulse: `@keyframes btn_pulse_${block.id}{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}`,
+        neon: `@keyframes btn_neon_${block.id}{0%,100%{box-shadow:0 0 5px ${block.bg || accent},0 0 10px ${block.bg || accent}}50%{box-shadow:0 0 15px ${block.bg || accent},0 0 25px ${block.bg || accent}}}`,
+        blink: `@keyframes btn_blink_${block.id}{0%,49%{opacity:1}50%,100%{opacity:0.4}}`,
+        shake: `@keyframes btn_shake_${block.id}{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}`,
+        heartbeat: `@keyframes btn_heartbeat_${block.id}{0%,100%{transform:scale(1)}14%{transform:scale(1.08)}28%{transform:scale(1)}42%{transform:scale(1.08)}70%{transform:scale(1)}}`,
+        none: '',
+      };
+      const animCSS = animName !== 'none' ? `btn_${animName}_${block.id} ${speed}s infinite` : 'none';
+
+      
       const BaseButton = (
         <button style={{
           width: block.fullWidth ? `${block.boxWidth || 100}%` : 'auto',
@@ -1248,6 +1261,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           alignItems: 'center',
           justifyContent: 'center',
           gap: pos === 'top_large' ? (compact ? 6 : 10) : (compact ? 6 : 8),
+          animation: animCSS,
           ...glassStyle,
         }}
         onClick={() => {
@@ -1271,9 +1285,9 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           {pos === 'right_inside' && (block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 16 : 20} /> : block.emoji && <span>{block.emoji}</span>)}
         </button>
       );
-      
+      let content = BaseButton;
       if (pos === 'left_outside' && (block.emojiUnified || block.emoji)) {
-        return (
+        content = (
           <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 8 : 12, width: block.fullWidth ? '100%' : 'auto' }}>
             <div style={{ fontSize: compact ? 20 : 28, flexShrink: 0, display: 'flex' }}>
               {block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 20 : 28} /> : block.emoji}
@@ -1283,7 +1297,12 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         );
       }
       
-      return BaseButton;
+      return (
+        <>
+          {animName !== 'none' && <style>{keyframes[animName]}</style>}
+          {content}
+        </>
+      );
     }
 
     case 'divider': {

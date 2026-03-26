@@ -864,6 +864,27 @@ function ButtonEditor({ block, onChange, steps, theme }) {
         )}
       </Section>
 
+      <Section title="Efeitos & Animação">
+        <Field label="Animação">
+          <Select value={block.animation || 'none'} onChange={v => onChange({ animation: v })} options={[
+            { value: 'none', label: 'Nenhuma' },
+            { value: 'pulse', label: 'Pulso (Aumenta e Volta)' },
+            { value: 'neon', label: 'Neon (Brilho Externo)' },
+            { value: 'blink', label: 'Piscar (Opacidade)' },
+            { value: 'shake', label: 'Tremer (Lateral)' },
+            { value: 'heartbeat', label: 'Coração Pulsando' },
+          ]} />
+        </Field>
+        {block.animation && block.animation !== 'none' && (
+          <Field label={`Velocidade (${block.animationSpeed ?? 1.5}s)`}>
+            <input type="range" min={0.2} max={4.0} step={0.1} value={block.animationSpeed ?? 1.5}
+              onChange={e => onChange({ animationSpeed: Number(e.target.value) })}
+              className="w-full accent-indigo-500 cursor-pointer" />
+            <span className="text-xs text-slate-500 mt-1 block">Menor = Mais Rápido, Maior = Mais Lento</span>
+          </Field>
+        )}
+      </Section>
+
       <Section title="Ação">
         <Field label="Ao clicar">
           <Select value={block.actionType || 'step'} onChange={v => onChange({ actionType: v })} options={[
