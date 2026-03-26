@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import EmojiPicker, { Emoji } from 'emoji-picker-react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, CheckCircle2 } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
 import { Underline } from '@tiptap/extension-underline';
