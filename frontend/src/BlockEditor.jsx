@@ -1,8 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import EmojiPicker, { Emoji } from 'emoji-picker-react';
-import Picker from '@emoji-mart/react';
-import data from '@emoji-mart/data';
-import i18n from '@emoji-mart/data/i18n/pt.json';
 import { Trash2 } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
@@ -100,11 +97,7 @@ function EmojiSelect({ emoji, unified, onChange }) {
   const ref = useRef(null);
   
   // local text state for the input
-  const [textVal, setTextVal] = useState(emoji || '');
-
-  useEffect(() => {
-    setTextVal(emoji || '');
-  }, [emoji]);
+  const [textVal, setTextVal] = useState('');
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -124,19 +117,21 @@ function EmojiSelect({ emoji, unified, onChange }) {
               className="flex items-center justify-center w-7 h-7 cursor-pointer hover:opacity-80 transition-opacity"
               title="Abrir painel de emojis"
             >
-              {unified ? <Emoji unified={unified} size={18} /> : (emoji || '🙂')}
+              {unified ? <Emoji unified={unified} emojiStyle="apple" size={20} /> : (emoji || '🙂')}
             </span>
             <input 
               type="text"
               value={textVal}
               onChange={(e) => {
                 const val = e.target.value;
-                setTextVal(val);
-                onChange(val, ''); // We don't have unified if user pastes directly, so we pass empty unified
+                if (val) {
+                  onChange(val, ''); 
+                }
+                setTextVal(''); // Sempre limpa para não duplicar visualmente
               }}
               onFocus={() => setOpen(true)}
-              placeholder="Pesquisar ou colar emoji..."
-              className="bg-transparent border-none text-sm text-white outline-none w-full py-1.5"
+              placeholder="Cole o emoji aqui..."
+              className="bg-transparent border-none text-sm text-white outline-none w-full py-1.5 placeholder-slate-500"
             />
           </div>
           <button type="button" onClick={() => setOpen(!open)} className="text-xs text-slate-500 px-2 cursor-pointer hover:text-white transition-colors">
@@ -154,18 +149,28 @@ function EmojiSelect({ emoji, unified, onChange }) {
 
       {open && (
         <div className="absolute top-full left-0 z-50 mt-1 shadow-2xl rounded-lg overflow-hidden border border-slate-700">
-          <Picker
-            data={data}
-            i18n={i18n}
-            locale="pt"
+          <EmojiPicker
             theme="dark"
-            onEmojiSelect={(e) => {
-               // When picking an emoji from emoji-mart, it gives us e.native and e.unified.
-               // We pass both to support the legacy <Emoji /> component properly.
-               onChange(e.native, e.unified);
-               setTextVal(e.native);
-               setOpen(false);
+            emojiStyle="apple"
+            locale="pt"
+            onEmojiClick={(e) => {
+              onChange(e.emoji, e.unified);
+              setOpen(false);
             }}
+            searchPlaceHolder="Buscar emoji..."
+            width={320}
+            height={400}
+            categories={[
+              { category: 'suggested',      name: 'Recentes' },
+              { category: 'smileys_people', name: 'Rostos & Pessoas' },
+              { category: 'animals_nature', name: 'Animais & Natureza' },
+              { category: 'food_drink',     name: 'Comida & Bebidas' },
+              { category: 'travel_places',  name: 'Viagens & Lugares' },
+              { category: 'activities',     name: 'Atividades' },
+              { category: 'objects',        name: 'Objetos' },
+              { category: 'symbols',        name: 'Símbolos' },
+              { category: 'flags',          name: 'Bandeiras' },
+            ]}
           />
         </div>
       )}
