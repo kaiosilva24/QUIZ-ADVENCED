@@ -1536,6 +1536,73 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       );
     }
 
+    case 'live_counter': {
+      const minAmount = block.minAmount ?? 40;
+      const maxAmount = block.maxAmount ?? 60;
+      const [count, setCount] = React.useState(Math.floor((minAmount + maxAmount) / 2));
+
+      React.useEffect(() => {
+        // Change number randomly every 2.5 to 4.5 seconds
+        const timer = setInterval(() => {
+          setCount(Math.floor(Math.random() * (maxAmount - minAmount + 1)) + minAmount);
+        }, Math.random() * 2000 + 2500);
+        return () => clearInterval(timer);
+      }, [minAmount, maxAmount]);
+
+      const alignProps = 
+        block.align === 'left' ? { justifyContent: 'flex-start' } :
+        block.align === 'right' ? { justifyContent: 'flex-end' } :
+        { justifyContent: 'center' };
+
+      const bgStyle = block.bg && block.bg !== 'transparent' 
+        ? { background: block.bg, padding: '6px 14px', borderRadius: 9999, border: '1px solid rgba(255,255,255,0.05)' } 
+        : {};
+
+      return (
+        <div style={{ display: 'flex', width: '100%', ...alignProps }}>
+          <style>{`
+            @keyframes pulse-live {
+              0%, 100% { opacity: 1; }
+              50% { opacity: .5; }
+            }
+          `}</style>
+          
+          <div style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: 6,
+            ...bgStyle
+          }}>
+            {/* Blinking dot */}
+            <div style={{ 
+              width: compact ? 6 : 8, 
+              height: compact ? 6 : 8, 
+              borderRadius: '50%', 
+              backgroundColor: block.color || '#ef4444',
+              boxShadow: `0 0 8px ${block.color || '#ef4444'}a0`,
+              animation: 'pulse-live 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            }} />
+
+            <span style={{ 
+              color: block.color || '#ef4444', 
+              fontWeight: 700, 
+              fontSize: compact ? 11 : 14 
+            }}>
+              {count}
+            </span>
+
+            <span style={{ 
+              color: block.textColor || '#94a3b8', 
+              fontSize: compact ? 10 : 13,
+              fontWeight: 500
+            }}>
+              {block.text || 'pessoas assistindo'}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
     case 'result': {
       const headingSizes = { sm: compact ? 12 : 16, base: compact ? 13 : 18, lg: compact ? 14 : 20, xl: compact ? 16 : 24, '2xl': compact ? 18 : 28, '4xl': compact ? 22 : 40 };
       const textSizes = { xs: compact ? 8 : 10, sm: compact ? 9 : 12, base: compact ? 10 : 14, lg: compact ? 11 : 16 };

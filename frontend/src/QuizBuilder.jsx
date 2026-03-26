@@ -10,7 +10,7 @@ import {
   GripVertical, Plus, Trash2, ChevronLeft, Save, Eye, EyeOff,
   Type, Image, MousePointerClick, AlignLeft, ToggleLeft, Minus,
   CheckCircle2, Users, Layers, Palette, Settings, ArrowRight, Music, Video, Copy, MoveVertical, Timer,
-  Undo2, Redo2
+  Undo2, Redo2, Radio
 } from 'lucide-react';
 import QuizPreview from './QuizPreview';
 import BlockEditor from './BlockEditor';
@@ -28,6 +28,7 @@ const BLOCK_TYPES = [
   { type: 'spacer',       label: 'Espaçamento',       icon: MoveVertical,    color: '#94a3b8' },
   { type: 'lead_capture', label: 'Captura de Lead',   icon: Users,           color: '#ef4444' },
   { type: 'animated_progress', label: 'Barra Animada', icon: Timer,          color: '#f43f5e' },
+  { type: 'live_counter', label: 'Ao Vivo (Oscilante)', icon: Radio,         color: '#ef4444' },
   { type: 'result',       label: 'Tela de Resultado', icon: CheckCircle2,    color: '#22c55e' },
 ];
 
@@ -44,6 +45,7 @@ function createBlock(type) {
     case 'divider':     return { ...base, color: '#334155', thickness: 1 };
     case 'progress':    return { ...base, current: 1, total: 5, color: '#6366f1', bg: '#1e293b', showLabel: true };
     case 'animated_progress': return { ...base, startVal: 0, endVal: 84, duration: 5, text: '{pct}% das vagas preenchidas...', bg: '#e2e8f0', color: '#ff0000', textColor: '#ffffff', rounded: 'full', border: '#cbd5e1', delay: 0 };
+    case 'live_counter':return { ...base, text: 'pessoas assistindo', minAmount: 40, maxAmount: 60, color: '#ef4444', textColor: '#94a3b8', align: 'center', bg: 'transparent' };
     case 'spacer':      return { ...base, height: 40 };
     case 'lead_capture':return { ...base, fields: ['name', 'email', 'phone'], buttonText: 'Quero meu resultado →', buttonBg: '#6366f1' };
     case 'result':      return { ...base, heading: '🎉 Parabéns!', text: 'Você está pronto para dar o próximo passo.', buttonText: 'Acessar agora →', buttonUrl: '#', buttonBg: '#10b981', enableLoading: false, loadingText: 'Analisando suas respostas...', loadingDuration: 3 };

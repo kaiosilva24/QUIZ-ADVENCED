@@ -1609,6 +1609,52 @@ function SpacerEditor({ block, onChange }) {
   );
 }
 
+function LiveCounterEditor({ block, onChange }) {
+  return (
+    <Section title="Marcador Ao Vivo (Oscilante)">
+      <Field label="Texto ao lado do número">
+        <Input 
+          value={block.text || 'pessoas assistindo'} 
+          onChange={v => onChange({ text: v })} 
+          placeholder="ex: pessoas assistindo agora" 
+        />
+      </Field>
+      
+      <div className="grid grid-cols-2 gap-3 mb-2">
+        <Field label="Mínimo">
+          <input type="number" value={block.minAmount ?? 40} onChange={e => onChange({ minAmount: Number(e.target.value) })}
+            className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
+        </Field>
+        <Field label="Máximo">
+          <input type="number" value={block.maxAmount ?? 60} onChange={e => onChange({ maxAmount: Number(e.target.value) })}
+            className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
+        </Field>
+      </div>
+
+      <Field label="Alinhamento">
+        <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
+          { value: 'left', label: 'Esquerda' },
+          { value: 'center', label: 'Centro' },
+          { value: 'right', label: 'Direita' }
+        ]} />
+      </Field>
+
+      <Field label="Cor Principal (Bolinha e Número)">
+        <ColorPicker value={block.color || '#ef4444'} onChange={v => onChange({ color: v })} />
+      </Field>
+
+      <Field label="Cor do Texto Secundário">
+        <ColorPicker value={block.textColor || '#94a3b8'} onChange={v => onChange({ textColor: v })} />
+      </Field>
+
+      <Field label="Cor de Fundo da Caixa">
+        <ColorPicker value={block.bg || 'transparent'} onChange={v => onChange({ bg: v })} />
+        <p className="text-xs text-slate-500 mt-1 pb-1">Use "transparent" para não ter caixa.</p>
+      </Field>
+    </Section>
+  );
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Main component
 // ────────────────────────────────────────────────────────────────────────────
@@ -1626,6 +1672,7 @@ export default function BlockEditor({ block, theme, steps, currentStepIdx, onCha
     divider: DividerEditor,
     progress: ProgressEditor,
     animated_progress: AnimatedProgressEditor,
+    live_counter: LiveCounterEditor,
     lead_capture: LeadCaptureEditor,
     result: ResultEditor,
     spacer: SpacerEditor,
