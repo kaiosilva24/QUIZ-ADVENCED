@@ -1556,10 +1556,16 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     }
 
     case 'live_counter': {
-      const minAmount = block.minAmount ?? 40;
-      const maxAmount = block.maxAmount ?? 60;
-      const countMode = block.countMode || 'random';
-      const storageKey = `live_counter_${quizId || 'preview'}_${minAmount}_${maxAmount}_${countMode}`;
+      let masterBlock = null;
+      if (steps && stepId) {
+        masterBlock = steps.flatMap(s => s.blocks || []).find(b => b.type === 'live_counter' && b.syncSteps && b.syncSteps.includes(stepId) && b.id !== block.id);
+      }
+      const cfg = masterBlock || block;
+
+      const minAmount = cfg.minAmount ?? 40;
+      const maxAmount = cfg.maxAmount ?? 60;
+      const countMode = cfg.countMode || 'random';
+      const storageKey = `live_counter_${quizId || 'preview'}_${cfg.id}`;
       
       const [count, setCount] = React.useState(() => {
         const saved = sessionStorage.getItem(storageKey);
@@ -1567,7 +1573,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         return countMode === 'increasing' ? minAmount : Math.floor((minAmount + maxAmount) / 2);
       });
       
-      const baseSize = block.textSize || 14;
+      const baseSize = cfg.textSize || 14;
       const dotSz = compact ? Math.max(5, baseSize * 0.45) : Math.max(6, baseSize * 0.55);
       const numSz = compact ? Math.max(10, baseSize * 0.8) : baseSize;
       const textSz = compact ? Math.max(9, (baseSize - 1) * 0.8) : (baseSize - 1);
@@ -1591,12 +1597,12 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       }, [minAmount, maxAmount, countMode, storageKey]);
 
       const alignProps = 
-        block.align === 'left' ? { justifyContent: 'flex-start' } :
-        block.align === 'right' ? { justifyContent: 'flex-end' } :
+        cfg.align === 'left' ? { justifyContent: 'flex-start' } :
+        cfg.align === 'right' ? { justifyContent: 'flex-end' } :
         { justifyContent: 'center' };
 
-      const bgStyle = block.bg && block.bg !== 'transparent' 
-        ? { background: block.bg, padding: `${Math.round(baseSize*0.4)}px ${Math.round(baseSize)}px`, borderRadius: 9999, border: '1px solid rgba(255,255,255,0.05)' } 
+      const bgStyle = cfg.bg && cfg.bg !== 'transparent' 
+        ? { background: cfg.bg, padding: `${Math.round(baseSize*0.4)}px ${Math.round(baseSize)}px`, borderRadius: 9999, border: '1px solid rgba(255,255,255,0.05)' } 
         : {};
 
       return (
@@ -1619,13 +1625,13 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
               width: dotSz, 
               height: dotSz, 
               borderRadius: '50%', 
-              backgroundColor: block.color || '#ef4444',
-              boxShadow: `0 0 ${Math.round(dotSz*1.2)}px ${block.color || '#ef4444'}a0`,
+              backgroundColor: cfg.color || '#ef4444',
+              boxShadow: `0 0 ${Math.round(dotSz*1.2)}px ${cfg.color || '#ef4444'}a0`,
               animation: 'pulse-live 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
             }} />
 
             <span style={{ 
-              color: block.color || '#ef4444', 
+              color: cfg.color || '#ef4444', 
               fontWeight: 700, 
               fontSize: numSz 
             }}>
@@ -1633,11 +1639,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             </span>
 
             <span style={{ 
-              color: block.textColor || '#94a3b8', 
+              color: cfg.textColor || '#94a3b8', 
               fontSize: textSz,
               fontWeight: 500
             }}>
-              {block.text || 'pessoas assistindo'}
+              {cfg.text || 'pessoas assistindo'}
             </span>
           </div>
         </div>

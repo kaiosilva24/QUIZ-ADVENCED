@@ -1630,7 +1630,29 @@ function SpacerEditor({ block, onChange }) {
   );
 }
 
-function LiveCounterEditor({ block, onChange }) {
+function LiveCounterEditor({ block, onChange, steps, currentStepIdx }) {
+  const currentStep = steps?.[currentStepIdx];
+  const currentStepId = currentStep?.id;
+  
+  const masterBlock = steps?.flatMap(s => s.blocks).find(b => b.type === 'live_counter' && b.syncSteps && b.syncSteps.includes(currentStepId) && b.id !== block.id);
+
+  if (masterBlock) {
+    const masterStep = steps.find(s => s.blocks.some(b => b.id === masterBlock.id));
+    return (
+      <Section title="Marcador Ao Vivo (Oscilante)">
+        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4 text-center">
+          <p className="text-sm text-indigo-300 font-medium mb-1">Integração Contínua Ativa</p>
+          <p className="text-xs text-indigo-400/80">
+            Este marcador está configurado para continuar exatamente a progressão da <strong>{masterStep?.label || 'Etapa Mestre'}</strong>.
+            Para editar texto, cor, variação ou valores, vá até a {masterStep?.label || 'etapa mestre'} e edite lá.
+          </p>
+        </div>
+      </Section>
+    );
+  }
+
+  const syncOptions = (steps || []).filter(s => s.id !== currentStepId);
+
   return (
     <Section title="Marcador Ao Vivo (Oscilante)">
       <Field label="Texto ao lado do número">
@@ -1686,6 +1708,41 @@ function LiveCounterEditor({ block, onChange }) {
         <ColorPicker value={block.bg || 'transparent'} onChange={v => onChange({ bg: v })} />
         <p className="text-xs text-slate-500 mt-1 pb-1">Use "transparent" para não ter caixa.</p>
       </Field>
+
+      {syncOptions.length > 0 && (
+        <div className="mt-4 p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/5">
+          <label className="block text-xs font-bold text-indigo-400 mb-2 uppercase tracking-wide">
+            Progresso Contínuo
+          </label>
+          <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+            Marque as etapas abaixo onde esta exata mesma contagem deve continuar. (O marcador ficará bloqueado para edição nessas etapas e usará sempre estes números).
+          </p>
+          <div className="flex flex-col gap-3">
+            {syncOptions.map(s => {
+              const isChecked = block.syncSteps?.includes(s.id);
+              return (
+                <label key={s.id} className="flex items-center gap-3 cursor-pointer group">
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isChecked ? 'bg-indigo-500 border-indigo-500' : 'border-slate-600 group-hover:border-indigo-400'}`}>
+                    {isChecked && <CheckCircle2 size={12} className="text-white" />}
+                  </div>
+                  <span className={`text-sm ${isChecked ? 'text-indigo-200' : 'text-slate-400 md:group-hover:text-slate-300'}`}>{s.label || 'Sem Nome'}</span>
+                  <input type="checkbox" className="hidden" 
+                    checked={isChecked || false}
+                    onChange={(e) => {
+                      const currentSync = block.syncSteps || [];
+                      if (e.target.checked) {
+                        onChange({ syncSteps: [...currentSync, s.id] });
+                      } else {
+                        onChange({ syncSteps: currentSync.filter(id => id !== s.id) });
+                      }
+                    }} 
+                  />
+                </label>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </Section>
   );
 }
