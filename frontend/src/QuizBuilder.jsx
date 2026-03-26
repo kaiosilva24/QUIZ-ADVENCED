@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors
 } from '@dnd-kit/core';
@@ -9,7 +9,8 @@ import { CSS } from '@dnd-kit/utilities';
 import {
   GripVertical, Plus, Trash2, ChevronLeft, Save, Eye, EyeOff,
   Type, Image, MousePointerClick, AlignLeft, ToggleLeft, Minus,
-  CheckCircle2, Users, Layers, Palette, Settings, ArrowRight, Music, Video, Copy, MoveVertical, Timer
+  CheckCircle2, Users, Layers, Palette, Settings, ArrowRight, Music, Video, Copy, MoveVertical, Timer,
+  Undo2, Redo2
 } from 'lucide-react';
 import QuizPreview from './QuizPreview';
 import BlockEditor from './BlockEditor';
@@ -128,24 +129,141 @@ function SortableStep({ step, idx, currentStepIdx, onClick, updateLabel, onClone
 }
 
 export default function QuizBuilder({ quiz, domain, onBack }) {
+  const DRAFT_KEY = `quiz_draft_${quiz.id || 'new'}`;
+  const EDIT_STATE_KEY = `quiz_edit_state_${quiz.id || 'new'}`;
+
+  // ── Undo/Redo ─────────────────────────────────────────────────────────────
+  const historyStack = useRef([]);
+  const historyIdx = useRef(-1);
+  const skipPush = useRef(false);
+
+  // ── Draft banner state ────────────────────────────────────────────────────
+  const [draftBanner, setDraftBanner] = useState(null); // null | { config, title, slug }
+  const debounceRef = useRef(null);
+
   const [title, setTitle] = useState(quiz.title || 'Novo Quiz');
   const [slug, setSlug] = useState(quiz.slug || '');
-  const [config, setConfig] = useState(() => {
+
+  const [config, setConfigRaw] = useState(() => {
     try {
       const parsed = JSON.parse(quiz.config_json || '{}');
-      return {
+      const cfg = {
         theme: parsed.theme || { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '' },
         settings: parsed.settings || { saveProgress: false },
-        steps: parsed.steps || [
-          { id: 'step_1', label: 'Etapa 1', blocks: [] }
-        ],
+        steps: parsed.steps || [{ id: 'step_1', label: 'Etapa 1', blocks: [] }],
       };
-    } catch { return { theme: { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '' }, settings: { saveProgress: false }, steps: [{ id: 'step_1', label: 'Etapa 1', blocks: [] }] }; }
+      historyStack.current = [cfg];
+      historyIdx.current = 0;
+      return cfg;
+    } catch {
+      const cfg = { theme: { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '' }, settings: { saveProgress: false }, steps: [{ id: 'step_1', label: 'Etapa 1', blocks: [] }] };
+      historyStack.current = [cfg];
+      historyIdx.current = 0;
+      return cfg;
+    }
   });
-  const [currentStepIdx, setCurrentStepIdx] = useState(0);
-  const [selectedBlockId, setSelectedBlockId] = useState(null);
+
+  // Detect draft on first render
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      const saved = JSON.parse(quiz.config_json || '{}');
+      if (JSON.stringify(draft.config) !== JSON.stringify(saved)) {
+        setDraftBanner(draft);
+      }
+    } catch {}
+  }, []);
+
+  const restoreDraft = () => {
+    if (!draftBanner) return;
+    skipPush.current = true;
+    setConfigRaw(draftBanner.config);
+    skipPush.current = false;
+    if (draftBanner.title) setTitle(draftBanner.title);
+    if (draftBanner.slug) setSlug(draftBanner.slug);
+    historyStack.current = [draftBanner.config];
+    historyIdx.current = 0;
+    setDraftBanner(null);
+  };
+
+  const discardDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setDraftBanner(null);
+  };
+
+  // ── setConfig wrapper that records history ─────────────────────────────────
+  const setConfig = useCallback((updater) => {
+    setConfigRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (!skipPush.current) {
+        historyStack.current = historyStack.current.slice(0, historyIdx.current + 1);
+        historyStack.current.push(next);
+        if (historyStack.current.length > 50) historyStack.current.shift();
+        historyIdx.current = historyStack.current.length - 1;
+      }
+      return next;
+    });
+  }, []);
+
+  const [historyVersion, setHistoryVersion] = useState(0); // triggers re-render for button states
+  const canUndo = historyIdx.current > 0;
+  const canRedo = historyIdx.current < historyStack.current.length - 1;
+
+  const undo = useCallback(() => {
+    if (historyIdx.current <= 0) return;
+    historyIdx.current -= 1;
+    skipPush.current = true;
+    setConfigRaw(historyStack.current[historyIdx.current]);
+    skipPush.current = false;
+    setHistoryVersion(v => v + 1);
+  }, []);
+
+  const redo = useCallback(() => {
+    if (historyIdx.current >= historyStack.current.length - 1) return;
+    historyIdx.current += 1;
+    skipPush.current = true;
+    setConfigRaw(historyStack.current[historyIdx.current]);
+    skipPush.current = false;
+    setHistoryVersion(v => v + 1);
+  }, []);
+
+  // ── Keyboard shortcuts Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z ────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+      if (e.ctrlKey && !e.shiftKey && e.key === 'z') { e.preventDefault(); undo(); }
+      if (e.ctrlKey && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); redo(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, redo]);
+
+  // ── Auto-save draft (debounced 600ms) ─────────────────────────────────────
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ config, title, slug }));
+    }, 600);
+    return () => clearTimeout(debounceRef.current);
+  }, [config, title, slug]);
+
+  // ── Persist editing position ───────────────────────────────────────────────
+  const [currentStepIdx, setCurrentStepIdx] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(EDIT_STATE_KEY) || '{}').stepIdx || 0; } catch { return 0; }
+  });
+  const [selectedBlockId, setSelectedBlockId] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(EDIT_STATE_KEY) || '{}').blockId || null; } catch { return null; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(EDIT_STATE_KEY, JSON.stringify({ stepIdx: currentStepIdx, blockId: selectedBlockId }));
+  }, [currentStepIdx, selectedBlockId]);
+
   const [showPreview, setShowPreview] = useState(false);
-  const [activeTab, setActiveTab] = useState('blocks'); // 'blocks' | 'theme'
+  const [activeTab, setActiveTab] = useState('blocks');
   const [saving, setSaving] = useState(false);
 
   const currentStep = config.steps[currentStepIdx];
@@ -155,6 +273,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
 
   // ── Step helpers ─────────────────────────────────────────────────────────
   const addStep = () => {
@@ -303,6 +422,9 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
       await fetch(`${API}/quizzes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: finalTitle, slug: finalSlug, config_json }) });
     }
     setSaving(false);
+    // Clear draft after saving
+    localStorage.removeItem(DRAFT_KEY);
+    setDraftBanner(null);
     onBack();
   };
 
@@ -321,7 +443,23 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
   }
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="flex flex-col h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+
+      {/* ── Draft Restore Banner ──────────────────────────────────────────── */}
+      {draftBanner && (
+        <div className="shrink-0 flex items-center justify-between gap-3 px-5 py-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-xs">
+          <div className="flex items-center gap-2">
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+            <span>Você tem um <strong>rascunho não salvo</strong> desta última sessão.</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={restoreDraft} className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/40 text-amber-200 transition-all cursor-pointer font-medium">Restaurar</button>
+            <button onClick={discardDraft} className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer">Descartar</button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-1 overflow-hidden">
 
       {/* ── LEFT PANEL: Steps + Blocks ───────────────────────────────── */}
       <div className="w-64 shrink-0 border-r border-white/5 bg-slate-900/70 flex flex-col backdrop-blur-xl">
@@ -629,6 +767,20 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
             <span className="text-xs text-slate-600">• {currentStep?.blocks.length || 0} blocos</span>
           </div>
           <div className="flex items-center gap-2">
+            {/* Undo / Redo */}
+            <button onClick={undo} disabled={!canUndo} title="Desfazer (Ctrl+Z)"
+              className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all cursor-pointer focus:outline-none ${
+                canUndo ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300 hover:text-white' : 'bg-slate-900 border-slate-800 text-slate-700 cursor-not-allowed'
+              }`}>
+              <Undo2 size={14} />
+            </button>
+            <button onClick={redo} disabled={!canRedo} title="Refazer (Ctrl+Y)"
+              className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all cursor-pointer focus:outline-none ${
+                canRedo ? 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-300 hover:text-white' : 'bg-slate-900 border-slate-800 text-slate-700 cursor-not-allowed'
+              }`}>
+              <Redo2 size={14} />
+            </button>
+            <div className="w-px h-5 bg-slate-700 mx-1" />
             <button onClick={() => setShowPreview(true)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm text-slate-300 hover:text-white transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-500">
               <Eye size={14} /> Preview
@@ -694,6 +846,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
         <p className="text-xs text-slate-700">Etapa {currentStepIdx + 1} de {config.steps.length}</p>
       </div>
 
+      </div>{/* end inner flex */}
     </div>
   );
 }
