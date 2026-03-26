@@ -1538,16 +1538,26 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
     case 'result': {
       let finalHeading = block.heading;
+      let finalHeadingColor = block.headingColor || defaultText;
       let finalText = block.text;
+      let finalTextColor = block.textColor || defaultText;
       let finalButtonText = block.buttonText || 'Resultado';
       let finalButtonUrl = block.buttonUrl;
       let finalButtonAction = block.buttonAction || 'url';
       let finalNextStep = block.nextStep;
       let finalEmoji = block.emoji ?? '🎉';
       let finalEmojiUnified = block.emojiUnified;
+      let finalButtonBg = block.buttonBg || accent;
+      let finalButtonTextColor = block.buttonTextColor || '#ffffff';
+      let finalResDelay = block.resDelay || 'none';
+      let finalResDelaySeconds = block.resDelaySeconds || 0;
 
-      const [chosenVariant] = React.useState(() => {
+      const chosenVariant = React.useMemo(() => {
         if (!block.dynamicResults || !block.variants || block.variants.length === 0) return null;
+        if (compact && block._previewVariantId) {
+           const pv = block.variants.find(v => v.id === block._previewVariantId);
+           if (pv) return pv;
+        }
         let maxScore = -1;
         let tied = [];
         block.variants.forEach(v => {
@@ -1561,15 +1571,21 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         const str = visitorId || 'guest';
         for (let i = 0; i < str.length; i++) hash = Math.imul(31, hash) + str.charCodeAt(i) | 0;
         return tied[Math.abs(hash) % tied.length];
-      });
+      }, [block.dynamicResults, block.variants, block._previewVariantId, compact, scores, visitorId]);
 
       if (chosenVariant) {
         if (chosenVariant.heading) finalHeading = chosenVariant.heading;
+        if (chosenVariant.headingColor) finalHeadingColor = chosenVariant.headingColor;
         if (chosenVariant.text) finalText = chosenVariant.text;
+        if (chosenVariant.textColor) finalTextColor = chosenVariant.textColor;
         if (chosenVariant.buttonText) finalButtonText = chosenVariant.buttonText;
         if (chosenVariant.buttonUrl) finalButtonUrl = chosenVariant.buttonUrl;
         if (chosenVariant.buttonAction) finalButtonAction = chosenVariant.buttonAction;
         if (chosenVariant.nextStep) finalNextStep = chosenVariant.nextStep;
+        if (chosenVariant.buttonBg) finalButtonBg = chosenVariant.buttonBg;
+        if (chosenVariant.buttonTextColor) finalButtonTextColor = chosenVariant.buttonTextColor;
+        if (chosenVariant.resDelay) finalResDelay = chosenVariant.resDelay;
+        if (chosenVariant.resDelaySeconds !== undefined) finalResDelaySeconds = chosenVariant.resDelaySeconds;
         if (chosenVariant.hasEmoji) {
            finalEmoji = chosenVariant.emoji;
            finalEmojiUnified = chosenVariant.emojiUnified;
@@ -1579,7 +1595,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const [resVisible, setResVisible] = React.useState(false);
 
       React.useEffect(() => {
-        const delay = block.resDelay || 'none';
+        const delay = finalResDelay;
         if (compact) { setResVisible(true); return; } // Editor preview
         if (delay === 'none') { setResVisible(true); return; }
         
@@ -1594,14 +1610,14 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         }
 
         if (delay === 'custom') {
-          const secs = block.resDelaySeconds || 0;
+          const secs = finalResDelaySeconds || 0;
           if (mediaState.currentTime >= secs) {
             setResVisible(true);
           } else {
             setResVisible(false);
           }
         }
-      }, [block.resDelay, block.resDelaySeconds, mediaState, compact]);
+      }, [finalResDelay, finalResDelaySeconds, mediaState, compact]);
 
       // Usar refs para manter estado de carregamento sem re-renderizar todo o quiz
       const [isLoading, setIsLoading] = React.useState(false);
@@ -1720,26 +1736,26 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           ) : null}
           
           {(finalHeading) ? (
-            <p style={{ color: block.headingColor || defaultText, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{finalHeading}</p>
+            <p style={{ color: finalHeadingColor, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{finalHeading}</p>
           ) : null}
 
           {(finalText || '') ? (
-            <p style={{ color: block.textColor || defaultText, opacity: block.textColor ? 1 : 0.7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{finalText}</p>
+            <p style={{ color: finalTextColor, opacity: finalTextColor ? 1 : 0.7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{finalText}</p>
           ) : null}
 
           {finalButtonText && (
             <button
               onClick={e => { e.stopPropagation(); handleAction(); }}
               style={{
-                background: block.buttonBg || accent,
-                color: block.buttonTextColor || '#fff',
+                background: finalButtonBg,
+                color: finalButtonTextColor,
                 padding: compact ? '8px 16px' : '14px 28px',
                 borderRadius: 12,
                 border: 'none',
                 fontSize: compact ? 10 : 14,
                 fontWeight: 600,
                 cursor: 'pointer',
-                boxShadow: `0 4px 20px ${block.buttonBg || accent}50`,
+                boxShadow: `0 4px 20px ${finalButtonBg}50`,
                 transition: 'transform 0.15s, box-shadow 0.15s',
               }}>
               {finalButtonText}

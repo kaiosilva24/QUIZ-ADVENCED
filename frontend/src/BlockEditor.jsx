@@ -1157,38 +1157,42 @@ function LeadCaptureEditor({ block, onChange, steps, theme }) {
 }
 
 function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
+  const disabledClass = block.dynamicResults ? 'opacity-40 pointer-events-none transition-opacity duration-300' : '';
+
   return (
     <>
-      <Section title="⏰ Aparecimento (Delay)">
-        <Field label="Quando mostrar este bloco">
-          <Select value={block.resDelay || 'none'} onChange={v => onChange({ resDelay: v })} options={[
-            { value: 'none',   label: 'Imediatamente' },
-            { value: 'on_end', label: 'Ao terminar o VSL (vídeo da página)' },
-            { value: 'custom', label: 'Após X segundos do VSL' },
-          ]} />
-        </Field>
-        {block.resDelay === 'custom' && (
-          <Field label={`Aparecer após: ${block.resDelaySeconds || 0}s`}>
-            <input type="range" min={0} max={600} step={1}
-              value={block.resDelaySeconds || 0}
-              onChange={e => onChange({ resDelaySeconds: Number(e.target.value) })}
-              className="w-full accent-indigo-500 cursor-pointer" />
+      <div className={disabledClass}>
+        <Section title="⏰ Aparecimento (Delay)">
+          <Field label="Quando mostrar este bloco">
+            <Select value={block.resDelay || 'none'} onChange={v => onChange({ resDelay: v })} options={[
+              { value: 'none',   label: 'Imediatamente' },
+              { value: 'on_end', label: 'Ao terminar o VSL (vídeo da página)' },
+              { value: 'custom', label: 'Após X segundos do VSL' },
+            ]} />
           </Field>
-        )}
-        {block.resDelay !== 'none' && (
-          <p className="text-xs text-slate-500">⚠️ Réferencia o primeiro bloco de vídeo (VSL) da página.</p>
-        )}
-      </Section>
-      <Section title="Resultado">
-        <Field label="Emoji Gigante"><EmojiSelect emoji={block.emoji} unified={block.emojiUnified} onChange={(e, u) => onChange({ emoji: e, emojiUnified: u })} /></Field>
-        <Field label="Título"><Input value={block.heading} onChange={v => onChange({ heading: v })} /></Field>
-        <Field label="Cor do Título"><ColorPicker value={block.headingColor || '#ffffff'} onChange={v => onChange({ headingColor: v })} /></Field>
-        <Field label="Texto">
-          <textarea value={block.text || ''} onChange={e => onChange({ text: e.target.value })} rows={3}
-            className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none" />
-        </Field>
-        <Field label="Cor do Texto"><ColorPicker value={block.textColor || '#cbd5e1'} onChange={v => onChange({ textColor: v })} /></Field>
-      </Section>
+          {block.resDelay === 'custom' && (
+            <Field label={`Aparecer após: ${block.resDelaySeconds || 0}s`}>
+              <input type="range" min={0} max={600} step={1}
+                value={block.resDelaySeconds || 0}
+                onChange={e => onChange({ resDelaySeconds: Number(e.target.value) })}
+                className="w-full accent-indigo-500 cursor-pointer" />
+            </Field>
+          )}
+          {block.resDelay !== 'none' && (
+            <p className="text-xs text-slate-500">⚠️ Réferencia o primeiro bloco de vídeo (VSL) da página.</p>
+          )}
+        </Section>
+        <Section title="Resultado">
+          <Field label="Emoji Gigante"><EmojiSelect emoji={block.emoji} unified={block.emojiUnified} onChange={(e, u) => onChange({ emoji: e, emojiUnified: u })} /></Field>
+          <Field label="Título"><Input value={block.heading} onChange={v => onChange({ heading: v })} /></Field>
+          <Field label="Cor do Título"><ColorPicker value={block.headingColor || '#ffffff'} onChange={v => onChange({ headingColor: v })} /></Field>
+          <Field label="Texto">
+            <textarea value={block.text || ''} onChange={e => onChange({ text: e.target.value })} rows={3}
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none" />
+          </Field>
+          <Field label="Cor do Texto"><ColorPicker value={block.textColor || '#cbd5e1'} onChange={v => onChange({ textColor: v })} /></Field>
+        </Section>
+      </div>
       <Section title="Resultados Dinâmicos">
         <div className="flex flex-col gap-1">
           <Toggle label="Ativar Resultados Dinâmicos (Soma de pontos)" value={block.dynamicResults} onChange={v => onChange({ dynamicResults: v })} />
@@ -1198,11 +1202,15 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
         {block.dynamicResults && (
           <div className="space-y-4 mt-4">
             {(block.variants || []).map((variant, vIdx) => (
-              <div key={variant.id} className="p-3 bg-slate-800/40 border border-slate-700/50 rounded-xl space-y-3 relative group">
+              <div 
+                key={variant.id} 
+                className={`p-3 bg-slate-800/40 border ${block._previewVariantId === variant.id ? 'border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'border-slate-700/50'} rounded-xl space-y-3 relative group transition-all cursor-pointer`}
+                onClickCapture={() => { if (block._previewVariantId !== variant.id) onChange({ _previewVariantId: variant.id }); }}
+              >
                 <button
                   type="button"
-                  onClick={() => onChange({ variants: block.variants.filter((_, i) => i !== vIdx) })}
-                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-600/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => { e.stopPropagation(); onChange({ variants: block.variants.filter((_, i) => i !== vIdx), _previewVariantId: null }); }}
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-600/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
                   title="Remover Variante"
                 >×</button>
                 
@@ -1210,15 +1218,39 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
                   <Input value={variant.name || ''} onChange={val => {
                     const newVars = [...block.variants];
                     newVars[vIdx] = { ...variant, name: val };
-                    onChange({ variants: newVars });
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
                   }} placeholder="Emagrecimento" />
                 </Field>
+
+                <Field label="⏰ Delay Desta Variante">
+                  <Select value={variant.resDelay || 'none'} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, resDelay: val };
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
+                  }} options={[
+                    { value: 'none',   label: 'Imediatamente' },
+                    { value: 'on_end', label: 'Ao terminar o VSL (vídeo da página)' },
+                    { value: 'custom', label: 'Após X segundos do VSL' },
+                  ]} />
+                </Field>
+                {variant.resDelay === 'custom' && (
+                  <Field label={`Aparecer após: ${variant.resDelaySeconds || 0}s`}>
+                    <input type="range" min={0} max={600} step={1}
+                      value={variant.resDelaySeconds || 0}
+                      onChange={e => {
+                        const newVars = [...block.variants];
+                        newVars[vIdx] = { ...variant, resDelaySeconds: Number(e.target.value) };
+                        onChange({ variants: newVars, _previewVariantId: variant.id });
+                      }}
+                      className="w-full accent-indigo-500 cursor-pointer" />
+                  </Field>
+                )}
 
                 <Field label="Emoji">
                   <EmojiSelect emoji={variant.emoji} unified={variant.emojiUnified} onChange={(e, u) => {
                     const newVars = [...block.variants];
                     newVars[vIdx] = { ...variant, emoji: e, emojiUnified: u, hasEmoji: true };
-                    onChange({ variants: newVars });
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
                   }} />
                 </Field>
 
@@ -1226,23 +1258,39 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
                   <Input value={variant.heading || ''} onChange={val => {
                     const newVars = [...block.variants];
                     newVars[vIdx] = { ...variant, heading: val };
-                    onChange({ variants: newVars });
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
                   }} placeholder="Parabéns!" />
+                </Field>
+
+                <Field label="Cor do Título">
+                  <ColorPicker value={variant.headingColor || '#000000'} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, headingColor: val };
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
+                  }} />
                 </Field>
 
                 <Field label="Texto">
                   <textarea value={variant.text || ''} onChange={e => {
                     const newVars = [...block.variants];
                     newVars[vIdx] = { ...variant, text: e.target.value };
-                    onChange({ variants: newVars });
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
                   }} rows={2} className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none" />
+                </Field>
+
+                <Field label="Cor do Texto">
+                  <ColorPicker value={variant.textColor || '#000000'} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, textColor: val };
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
+                  }} />
                 </Field>
                 
                 <Field label="Texto do Botão (opcional)">
                   <Input value={variant.buttonText || ''} onChange={val => {
                     const newVars = [...block.variants];
                     newVars[vIdx] = { ...variant, buttonText: val };
-                    onChange({ variants: newVars });
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
                   }} placeholder="Acessar agora" />
                 </Field>
 
@@ -1250,9 +1298,47 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
                   <Input value={variant.buttonUrl || ''} onChange={val => {
                     const newVars = [...block.variants];
                     newVars[vIdx] = { ...variant, buttonUrl: val };
-                    onChange({ variants: newVars });
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
                   }} placeholder="https://..." />
                 </Field>
+
+                <Field label="Cor do Fundo do Botão">
+                  <ColorPicker value={variant.buttonBg || theme?.accent || '#6366f1'} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, buttonBg: val };
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
+                  }} />
+                </Field>
+                <Field label="Cor do Texto do Botão">
+                  <ColorPicker value={variant.buttonTextColor || '#ffffff'} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, buttonTextColor: val };
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
+                  }} />
+                </Field>
+
+                <Field label="Ação ao Clicar no Botão">
+                  <Select value={variant.buttonAction || 'url'} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, buttonAction: val };
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
+                  }} options={[
+                    { value: 'url', label: 'Abrir URL externa' },
+                    { value: 'next_step', label: 'Ir para próxima etapa' },
+                  ]} />
+                </Field>
+                {(variant.buttonAction === 'next_step') && (
+                  <Field label="Etapa Destino">
+                    <Select value={variant.nextStep || ''} onChange={val => {
+                      const newVars = [...block.variants];
+                      newVars[vIdx] = { ...variant, nextStep: val };
+                      onChange({ variants: newVars, _previewVariantId: variant.id });
+                    }} options={[
+                      { value: '', label: 'Próxima etapa automaticamente' },
+                      ...(steps || []).filter((_, i) => i !== currentStepIdx).map((s, i) => ({ value: s.id, label: s.label || `Etapa ${i + 1}` }))
+                    ]} />
+                  </Field>
+                )}
               </div>
             ))}
             
@@ -1270,53 +1356,55 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
           </div>
         )}
       </Section>
-      <Section title="Carregamento (Opcional)">
-        <Toggle label="Ativar Tela de Carregamento" value={block.enableLoading} onChange={v => onChange({ enableLoading: v })} />
-        {block.enableLoading && (
-          <>
-            <Field label="Estilo da Animação">
-              <Select value={block.loadingStyle || 'spinner'} onChange={v => onChange({ loadingStyle: v })} options={[
-                { value: 'spinner', label: 'Círculo Girando' },
-                { value: 'pulse', label: 'Círculo Pulsando' },
-                { value: 'dots', label: 'Três Pontinhos' },
-              ]} />
-            </Field>
-            <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || theme.accent || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
-            <Field label="Texto de Carregamento"><Input value={block.loadingText} onChange={v => onChange({ loadingText: v })} placeholder="Analisando perfil..." /></Field>
-            <Field label="Texto de Progresso (opcional)"><Input value={block.progressText} onChange={v => onChange({ progressText: v })} placeholder="Gerando plano personalizado..." /></Field>
-            <Field label={`Tempo de Carregamento: ${block.loadingDuration || 3}s`}>
-              <input type="range" min={1} max={15} step={1} value={block.loadingDuration || 3}
-                onChange={e => onChange({ loadingDuration: Number(e.target.value) })}
-                className="w-full accent-indigo-500 cursor-pointer" />
-            </Field>
-          </>
-        )}
-      </Section>
-      <Section title="Botão CTA">
-        <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
-        <Field label="Cor do Fundo do Botão"><ColorPicker value={block.buttonBg || theme?.accent || '#6366f1'} onChange={v => onChange({ buttonBg: v })} /></Field>
-        <Field label="Cor do Texto do Botão"><ColorPicker value={block.buttonTextColor || '#ffffff'} onChange={v => onChange({ buttonTextColor: v })} /></Field>
-        <Field label="Ação ao Clicar">
-          <Select value={block.buttonAction || 'url'} onChange={v => onChange({ buttonAction: v })} options={[
-            { value: 'url', label: 'Abrir URL externa' },
-            { value: 'next_step', label: 'Ir para próxima etapa' },
-          ]} />
-        </Field>
-        {(block.buttonAction || 'url') === 'url' && (
-          <Field label="URL do Botão"><Input value={block.buttonUrl} onChange={v => onChange({ buttonUrl: v })} placeholder="https://..." /></Field>
-        )}
-        {block.buttonAction === 'next_step' && (
-          <Field label="Etapa Destino">
-            <Select value={block.nextStep || ''} onChange={v => onChange({ nextStep: v })} options={[
-              { value: '', label: 'Próxima etapa automaticamente' },
-              ...(steps || []).filter((_, i) => i !== currentStepIdx).map((s, i) => ({ value: s.id, label: s.label || `Etapa ${i + 1}` }))
+      <div className={disabledClass}>
+        <Section title="Carregamento (Opcional)">
+          <Toggle label="Ativar Tela de Carregamento" value={block.enableLoading} onChange={v => onChange({ enableLoading: v })} />
+          {block.enableLoading && (
+            <>
+              <Field label="Estilo da Animação">
+                <Select value={block.loadingStyle || 'spinner'} onChange={v => onChange({ loadingStyle: v })} options={[
+                  { value: 'spinner', label: 'Círculo Girando' },
+                  { value: 'pulse', label: 'Círculo Pulsando' },
+                  { value: 'dots', label: 'Três Pontinhos' },
+                ]} />
+              </Field>
+              <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || theme.accent || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
+              <Field label="Texto de Carregamento"><Input value={block.loadingText} onChange={v => onChange({ loadingText: v })} placeholder="Analisando perfil..." /></Field>
+              <Field label="Texto de Progresso (opcional)"><Input value={block.progressText} onChange={v => onChange({ progressText: v })} placeholder="Gerando plano personalizado..." /></Field>
+              <Field label={`Tempo de Carregamento: ${block.loadingDuration || 3}s`}>
+                <input type="range" min={1} max={15} step={1} value={block.loadingDuration || 3}
+                  onChange={e => onChange({ loadingDuration: Number(e.target.value) })}
+                  className="w-full accent-indigo-500 cursor-pointer" />
+              </Field>
+            </>
+          )}
+        </Section>
+        <Section title="Botão CTA">
+          <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
+          <Field label="Cor do Fundo do Botão"><ColorPicker value={block.buttonBg || theme?.accent || '#6366f1'} onChange={v => onChange({ buttonBg: v })} /></Field>
+          <Field label="Cor do Texto do Botão"><ColorPicker value={block.buttonTextColor || '#ffffff'} onChange={v => onChange({ buttonTextColor: v })} /></Field>
+          <Field label="Ação ao Clicar">
+            <Select value={block.buttonAction || 'url'} onChange={v => onChange({ buttonAction: v })} options={[
+              { value: 'url', label: 'Abrir URL externa' },
+              { value: 'next_step', label: 'Ir para próxima etapa' },
             ]} />
           </Field>
-        )}
-        {block.buttonAction === 'next_step' && (
-          <Toggle label="Clicar em qualquer lugar avança" value={block.clickAnywhere} onChange={v => onChange({ clickAnywhere: v })} />
-        )}
-      </Section>
+          {(block.buttonAction || 'url') === 'url' && (
+            <Field label="URL do Botão"><Input value={block.buttonUrl} onChange={v => onChange({ buttonUrl: v })} placeholder="https://..." /></Field>
+          )}
+          {block.buttonAction === 'next_step' && (
+            <Field label="Etapa Destino">
+              <Select value={block.nextStep || ''} onChange={v => onChange({ nextStep: v })} options={[
+                { value: '', label: 'Próxima etapa automaticamente' },
+                ...(steps || []).filter((_, i) => i !== currentStepIdx).map((s, i) => ({ value: s.id, label: s.label || `Etapa ${i + 1}` }))
+              ]} />
+            </Field>
+          )}
+          {block.buttonAction === 'next_step' && (
+            <Toggle label="Clicar em qualquer lugar avança" value={block.clickAnywhere} onChange={v => onChange({ clickAnywhere: v })} />
+          )}
+        </Section>
+      </div>
     </>
   );
 }
