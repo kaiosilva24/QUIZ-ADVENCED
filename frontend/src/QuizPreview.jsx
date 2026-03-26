@@ -1607,10 +1607,16 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
            finalEmoji = chosenVariant.emoji;
            finalEmojiUnified = chosenVariant.emojiUnified;
         }
+        if (chosenVariant.topImage !== undefined) finalTopImage = chosenVariant.topImage;
       }
 
       if (finalHeadingFontFamily) injectFont(finalHeadingFontFamily);
       if (finalTextFontFamily) injectFont(finalTextFontFamily);
+
+      let finalTopImage = block.topImage || '';
+      const topImageWidthMap = { full: '100%', lg: '80%', md: '60%', sm: '40%' };
+      const finalTopImageWidth = topImageWidthMap[block.topImageWidth || 'full'];
+      const finalTopImageRadius = block.topImageRadius ?? 12;
 
       const [resVisible, setResVisible] = React.useState(false);
 
@@ -1749,6 +1755,21 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         >
           <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
           
+          {finalTopImage ? (
+            <img
+              src={finalTopImage}
+              alt="Resultado"
+              style={{
+                width: finalTopImageWidth,
+                maxWidth: '100%',
+                borderRadius: compact ? Math.round(finalTopImageRadius * 0.6) : finalTopImageRadius,
+                objectFit: 'cover',
+                display: 'block',
+                margin: '0 auto',
+              }}
+            />
+          ) : null}
+
           {(finalEmojiUnified || finalEmoji) ? (
             <div style={{ display: 'flex', fontSize: compact ? 24 : 48 }}>
               {finalEmojiUnified ? <Emoji unified={finalEmojiUnified} size={compact ? 36 : 72} /> : finalEmoji}

@@ -492,7 +492,7 @@ function TiptapEditor({ value, onChange, placeholder, minHeight = 60 }) {
       </div>
 
       {/* ── Editor Area ── */}
-      <div className="bg-slate-800/60 border border-t-0 border-slate-700 rounded-b-xl overflow-hidden">
+      <div className="bg-white border border-t-0 border-slate-700 rounded-b-xl overflow-hidden">
         <EditorContent editor={editor} />
       </div>
     </div>
@@ -1183,6 +1183,44 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
           )}
         </Section>
         <Section title="Resultado">
+          <Field label="Imagem do Topo (opcional)">
+            <div className="flex flex-col gap-2">
+              {block.topImage && (
+                <div className="relative">
+                  <img src={block.topImage} alt="Topo" className="w-full rounded-lg object-cover" style={{ maxHeight: 120 }} />
+                  <button type="button" onClick={() => onChange({ topImage: '' })} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600/90 text-white flex items-center justify-center text-xs">×</button>
+                </div>
+              )}
+              <label className="flex items-center gap-2 cursor-pointer bg-slate-800/60 border border-dashed border-slate-600 hover:border-indigo-500 rounded-xl px-3 py-2 text-sm text-slate-400 hover:text-indigo-300 transition-colors">
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                {block.topImage ? 'Trocar imagem' : 'Upload de imagem'}
+                <input type="file" accept="image/*" className="hidden" onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = ev => onChange({ topImage: ev.target.result });
+                  reader.readAsDataURL(file);
+                }} />
+              </label>
+              {block.topImage && (
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Largura">
+                    <Select value={block.topImageWidth || 'full'} onChange={v => onChange({ topImageWidth: v })} options={[
+                      { value: 'full', label: '100% (Cheio)' },
+                      { value: 'lg', label: 'Grande (80%)' },
+                      { value: 'md', label: 'Médio (60%)' },
+                      { value: 'sm', label: 'Pequeno (40%)' },
+                    ]} />
+                  </Field>
+                  <Field label={`Borda: ${block.topImageRadius ?? 12}px`}>
+                    <input type="range" min={0} max={60} step={2} value={block.topImageRadius ?? 12}
+                      onChange={e => onChange({ topImageRadius: Number(e.target.value) })}
+                      className="w-full accent-indigo-500 cursor-pointer" />
+                  </Field>
+                </div>
+              )}
+            </div>
+          </Field>
           <Field label="Emoji Gigante"><EmojiSelect emoji={block.emoji} unified={block.emojiUnified} onChange={(e, u) => onChange({ emoji: e, emojiUnified: u })} /></Field>
           <Field label="Título">
             <InlineRichText value={block.heading} onChange={v => onChange({ heading: v })} minHeight={60} />
@@ -1263,6 +1301,27 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
                       className="w-full accent-indigo-500 cursor-pointer" />
                   </Field>
                 )}
+
+                <Field label="Imagem do Topo da Variante (opcional)">
+                  <div className="flex flex-col gap-2">
+                    {variant.topImage && (
+                      <div className="relative">
+                        <img src={variant.topImage} alt="Topo" className="w-full rounded-lg object-cover" style={{ maxHeight: 100 }} />
+                        <button type="button" onClick={() => { const nv=[...block.variants]; nv[vIdx]={...variant,topImage:''}; onChange({variants:nv,_previewVariantId:variant.id}); }} className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600/90 text-white flex items-center justify-center text-xs">×</button>
+                      </div>
+                    )}
+                    <label className="flex items-center gap-2 cursor-pointer bg-slate-800/60 border border-dashed border-slate-600 hover:border-indigo-500 rounded-xl px-3 py-2 text-sm text-slate-400 hover:text-indigo-300 transition-colors">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                      {variant.topImage ? 'Trocar imagem' : 'Upload de imagem'}
+                      <input type="file" accept="image/*" className="hidden" onChange={e => {
+                        const file = e.target.files?.[0]; if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = ev => { const nv=[...block.variants]; nv[vIdx]={...variant,topImage:ev.target.result}; onChange({variants:nv,_previewVariantId:variant.id}); };
+                        reader.readAsDataURL(file);
+                      }} />
+                    </label>
+                  </div>
+                </Field>
 
                 <Field label="Emoji">
                   <EmojiSelect emoji={variant.emoji} unified={variant.emojiUnified} onChange={(e, u) => {
