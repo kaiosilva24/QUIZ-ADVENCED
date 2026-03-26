@@ -672,7 +672,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
 }
 
 // Renderizador fiel ao InLead: converte o config JSON em tela visual
-export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate, selectedBlockId, quizId, visitorId }) {
+export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate, selectedBlockId, quizId, visitorId, scores = {} }) {
   const step = config?.steps?.[stepIdx];
   const theme = config?.theme || {};
   const accent = theme.accent || '#6366f1';
@@ -744,7 +744,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
               id={`preview-block-${block.id}`} 
               className={`shrink-0 w-full ${compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300' : ''}`}
             >
-              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} />
+              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} scores={scores} />
             </div>
           ))}
           {(!step?.blocks || step.blocks.length === 0) && (
@@ -891,7 +891,7 @@ function CountrySelectDropdown({ dialCountry, setDialCountry, setDialCode, compa
   );
 }
 
-function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId, mediaState, setMediaState, steps, stepIdx }) {
+function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId, mediaState, setMediaState, steps, stepIdx, scores }) {
   const scale = compact ? 0.6 : 1;
   const { accent, textColor: defaultText } = theme;
 
@@ -1054,7 +1054,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
              onClick={() => {
                if (onNavigate) {
                  const target = resolveNextStep(block.nextStep);
-                 if (target) onNavigate(target, 'Imagem VSL');
+                 if (target) onNavigate(target, 'Imagem VSL', false, block.scoreTarget);
                }
              }} />
       );
@@ -1071,7 +1071,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         } else if (onNavigate) {
           const target = resolveNextStep(block.nextStep);
           if (target) {
-            onNavigate(target, block.text || 'Avançar', block.showLoading ? block : false);
+            onNavigate(target, block.text || 'Avançar', block.showLoading ? block : false, block.scoreTarget);
           }
         }
       };
@@ -1258,7 +1258,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             } else if (onNavigate) {
               const target = resolveNextStep(block.nextStep);
               if (target) {
-                onNavigate(target, block.text || 'Avançar', block.showLoading ? block : false);
+                onNavigate(target, block.text || 'Avançar', block.showLoading ? block : false, block.scoreTarget);
               }
             }
           }}
@@ -1320,7 +1320,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         }
         if (onNavigate) {
            const target = resolveNextStep(block.nextStep);
-           if (target) onNavigate(target, Object.keys(finalObj).length > 0 ? JSON.stringify(finalObj) : (block.buttonText || 'Quero meu resultado'));
+           if (target) onNavigate(target, Object.keys(finalObj).length > 0 ? JSON.stringify(finalObj) : (block.buttonText || 'Quero meu resultado'), false, block.scoreTarget);
         } else if (block.redirectUrl) {
           const url = block.redirectUrl.startsWith('http') ? block.redirectUrl : `https://${block.redirectUrl}`;
           window.location.href = url;
@@ -1537,6 +1537,45 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     }
 
     case 'result': {
+      let finalHeading = block.heading;
+      let finalText = block.text;
+      let finalButtonText = block.buttonText || 'Resultado';
+      let finalButtonUrl = block.buttonUrl;
+      let finalButtonAction = block.buttonAction || 'url';
+      let finalNextStep = block.nextStep;
+      let finalEmoji = block.emoji ?? '🎉';
+      let finalEmojiUnified = block.emojiUnified;
+
+      const [chosenVariant] = React.useState(() => {
+        if (!block.dynamicResults || !block.variants || block.variants.length === 0) return null;
+        let maxScore = -1;
+        let tied = [];
+        block.variants.forEach(v => {
+          const s = (scores && scores[v.id]) ? scores[v.id] : 0;
+          if (s > maxScore) { maxScore = s; tied = [v]; }
+          else if (s === maxScore && s > -1) { tied.push(v); }
+        });
+        if (tied.length === 0) return null;
+        if (maxScore === 0) return tied[0];
+        let hash = 0;
+        const str = visitorId || 'guest';
+        for (let i = 0; i < str.length; i++) hash = Math.imul(31, hash) + str.charCodeAt(i) | 0;
+        return tied[Math.abs(hash) % tied.length];
+      });
+
+      if (chosenVariant) {
+        if (chosenVariant.heading) finalHeading = chosenVariant.heading;
+        if (chosenVariant.text) finalText = chosenVariant.text;
+        if (chosenVariant.buttonText) finalButtonText = chosenVariant.buttonText;
+        if (chosenVariant.buttonUrl) finalButtonUrl = chosenVariant.buttonUrl;
+        if (chosenVariant.buttonAction) finalButtonAction = chosenVariant.buttonAction;
+        if (chosenVariant.nextStep) finalNextStep = chosenVariant.nextStep;
+        if (chosenVariant.hasEmoji) {
+           finalEmoji = chosenVariant.emoji;
+           finalEmojiUnified = chosenVariant.emojiUnified;
+        }
+      }
+
       const [resVisible, setResVisible] = React.useState(false);
 
       React.useEffect(() => {
@@ -1657,11 +1696,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       // Action handler
       const handleAction = () => {
         if (!compact) {
-          if (block.buttonAction === 'next_step') {
-            const targetId = resolveNextStep(block.nextStep);
-            if (onNavigate && targetId) onNavigate(targetId, block.buttonText || 'Resultado');
-          } else if (block.buttonUrl) {
-            const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
+          if (finalButtonAction === 'next_step') {
+            const targetId = resolveNextStep(finalNextStep);
+            if (onNavigate && targetId) onNavigate(targetId, finalButtonText);
+          } else if (finalButtonUrl) {
+            const url = finalButtonUrl.startsWith('http') ? finalButtonUrl : `https://${finalButtonUrl}`;
             window.location.href = url;
           }
         }
@@ -1669,26 +1708,26 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
       return (
         <div
-          style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 8 : 16, alignItems: 'center', animation: 'fadeIn 0.5s ease-out', cursor: (block.clickAnywhere && block.buttonAction === 'next_step' && !compact) ? 'pointer' : 'default' }}
-          onClick={block.clickAnywhere && block.buttonAction === 'next_step' && !compact ? handleAction : undefined}
+          style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 8 : 16, alignItems: 'center', animation: 'fadeIn 0.5s ease-out', cursor: (block.clickAnywhere && finalButtonAction === 'next_step' && !compact) ? 'pointer' : 'default' }}
+          onClick={block.clickAnywhere && finalButtonAction === 'next_step' && !compact ? handleAction : undefined}
         >
           <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
           
-          {(block.emojiUnified || (block.emoji ?? '🎉')) ? (
+          {(finalEmojiUnified || finalEmoji) ? (
             <div style={{ display: 'flex', fontSize: compact ? 24 : 48 }}>
-              {block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 36 : 72} /> : (block.emoji ?? '🎉')}
+              {finalEmojiUnified ? <Emoji unified={finalEmojiUnified} size={compact ? 36 : 72} /> : finalEmoji}
             </div>
           ) : null}
           
-          {(block.heading ?? 'Parabéns!') ? (
-            <p style={{ color: block.headingColor || defaultText, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{block.heading ?? 'Parabéns!'}</p>
+          {(finalHeading) ? (
+            <p style={{ color: block.headingColor || defaultText, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{finalHeading}</p>
           ) : null}
 
-          {(block.text || '') ? (
-            <p style={{ color: block.textColor || defaultText, opacity: block.textColor ? 1 : 0.7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{block.text}</p>
+          {(finalText || '') ? (
+            <p style={{ color: block.textColor || defaultText, opacity: block.textColor ? 1 : 0.7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{finalText}</p>
           ) : null}
 
-          {block.buttonText && (
+          {finalButtonText && (
             <button
               onClick={e => { e.stopPropagation(); handleAction(); }}
               style={{
@@ -1703,11 +1742,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                 boxShadow: `0 4px 20px ${block.buttonBg || accent}50`,
                 transition: 'transform 0.15s, box-shadow 0.15s',
               }}>
-              {block.buttonText}
+              {finalButtonText}
             </button>
           )}
 
-          {block.clickAnywhere && block.buttonAction === 'next_step' && !compact && (
+          {block.clickAnywhere && finalButtonAction === 'next_step' && !compact && (
             <p style={{ color: defaultText, opacity: 0.35, fontSize: compact ? 7 : 10, marginTop: 0 }}>Toque em qualquer lugar para continuar</p>
           )}
         </div>

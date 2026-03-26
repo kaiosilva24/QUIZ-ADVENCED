@@ -200,6 +200,28 @@ function StepSelect({ steps, value, onChange, placeholder }) {
   );
 }
 
+function ScoreTargetSelect({ steps, value, onChange }) {
+  const allVariants = (steps || []).reduce((acc, s) => {
+    (s.blocks || []).forEach(b => {
+      if (b.type === 'result' && b.dynamicResults && b.variants?.length > 0) {
+        acc.push(...b.variants);
+      }
+    });
+    return acc;
+  }, []);
+
+  if (allVariants.length === 0) return null;
+
+  return (
+    <Field label="Pontuar para Resultado (Resultados Dinâmicos)">
+      <Select value={value || ''} onChange={onChange} options={[
+        { value: '', label: '-- Não Pontuar --' },
+        ...allVariants.map(v => ({ value: v.id, label: v.name || `Resultado ${v.id}` }))
+      ]} />
+    </Field>
+  );
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Google Fonts Picker
 // ────────────────────────────────────────────────────────────────────────────
@@ -591,7 +613,7 @@ function TextEditor({ block, onChange }) {
   );
 }
 
-function ImageEditor({ block, onChange }) {
+function ImageEditor({ block, onChange, steps }) {
   return (
     <Section title="Imagem">
       {/* Upload do PC */}
@@ -626,6 +648,7 @@ function ImageEditor({ block, onChange }) {
         ]} />
       </Field>
       <Toggle label="Bordas Arredondadas" value={block.rounded} onChange={v => onChange({ rounded: v })} />
+      <ScoreTargetSelect steps={steps} value={block.scoreTarget} onChange={v => onChange({ scoreTarget: v })} />
     </Section>
   );
 }
@@ -858,6 +881,7 @@ function ButtonEditor({ block, onChange, steps, theme }) {
           </Field>
         )}
         <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
+        <ScoreTargetSelect steps={steps} value={block.scoreTarget} onChange={v => onChange({ scoreTarget: v })} />
       </Section>
       <Section title="Tela de Carregamento (Opcional)">
         <Toggle label="⏳ Ativar ao Clicar" value={!!block.showLoading} onChange={v => onChange({ showLoading: v })} />
@@ -986,6 +1010,7 @@ function ArrowButtonEditor({ block, onChange, steps, theme }) {
             <Input value={block.buttonUrl || ''} onChange={v => onChange({ buttonUrl: v })} placeholder="https://meusite.com" />
           </Field>
         )}
+        <ScoreTargetSelect steps={steps} value={block.scoreTarget} onChange={v => onChange({ scoreTarget: v })} />
         <Toggle label="⏳ Ativar Tela de Carregamento ao Clicar" value={!!block.showLoading} onChange={v => onChange({ showLoading: v })} />
         {block.showLoading && (
           <>
@@ -1099,6 +1124,7 @@ function LeadCaptureEditor({ block, onChange, steps, theme }) {
         <Field label="Ou Redirecionar para URL">
           <Input value={block.redirectUrl} onChange={v => onChange({ redirectUrl: v })} placeholder="https://seu-site.com" />
         </Field>
+        <ScoreTargetSelect steps={steps} value={block.scoreTarget} onChange={v => onChange({ scoreTarget: v })} />
       </Section>
       <Section title="Carregamento Pós-Captura (Opcional)">
         <Toggle label="Ativar Tela de Carregamento" value={block.enableLoading} onChange={v => onChange({ enableLoading: v })} />
@@ -1162,6 +1188,87 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
             className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none" />
         </Field>
         <Field label="Cor do Texto"><ColorPicker value={block.textColor || '#cbd5e1'} onChange={v => onChange({ textColor: v })} /></Field>
+      </Section>
+      <Section title="Resultados Dinâmicos">
+        <div className="flex flex-col gap-1">
+          <Toggle label="Ativar Resultados Dinâmicos (Soma de pontos)" value={block.dynamicResults} onChange={v => onChange({ dynamicResults: v })} />
+          <p className="text-[10px] text-slate-500 leading-tight">Múltiplos resultados possíveis. O resultado exibido será aquele com a maior pontuação acumulada.</p>
+        </div>
+        
+        {block.dynamicResults && (
+          <div className="space-y-4 mt-4">
+            {(block.variants || []).map((variant, vIdx) => (
+              <div key={variant.id} className="p-3 bg-slate-800/40 border border-slate-700/50 rounded-xl space-y-3 relative group">
+                <button
+                  type="button"
+                  onClick={() => onChange({ variants: block.variants.filter((_, i) => i !== vIdx) })}
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-600/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Remover Variante"
+                >×</button>
+                
+                <Field label={`Nome Interno (ex: R${vIdx + 1})`}>
+                  <Input value={variant.name || ''} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, name: val };
+                    onChange({ variants: newVars });
+                  }} placeholder="Emagrecimento" />
+                </Field>
+
+                <Field label="Emoji">
+                  <EmojiSelect emoji={variant.emoji} unified={variant.emojiUnified} onChange={(e, u) => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, emoji: e, emojiUnified: u, hasEmoji: true };
+                    onChange({ variants: newVars });
+                  }} />
+                </Field>
+
+                <Field label="Título">
+                  <Input value={variant.heading || ''} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, heading: val };
+                    onChange({ variants: newVars });
+                  }} placeholder="Parabéns!" />
+                </Field>
+
+                <Field label="Texto">
+                  <textarea value={variant.text || ''} onChange={e => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, text: e.target.value };
+                    onChange({ variants: newVars });
+                  }} rows={2} className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none" />
+                </Field>
+                
+                <Field label="Texto do Botão (opcional)">
+                  <Input value={variant.buttonText || ''} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, buttonText: val };
+                    onChange({ variants: newVars });
+                  }} placeholder="Acessar agora" />
+                </Field>
+
+                <Field label="URL do Botão (opcional)">
+                  <Input value={variant.buttonUrl || ''} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, buttonUrl: val };
+                    onChange({ variants: newVars });
+                  }} placeholder="https://..." />
+                </Field>
+              </div>
+            ))}
+            
+            <button
+              type="button"
+              onClick={() => {
+                const newId = `var_${Date.now()}`;
+                const newVar = { id: newId, name: `Variante ${(block.variants?.length || 0) + 1}`, heading: 'Novo Resultado' };
+                onChange({ variants: [...(block.variants || []), newVar] });
+              }}
+              className="w-full py-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 text-xs font-semibold rounded-lg border border-indigo-500/30 transition-colors"
+            >
+              + Adicionar Variante
+            </button>
+          </div>
+        )}
       </Section>
       <Section title="Carregamento (Opcional)">
         <Toggle label="Ativar Tela de Carregamento" value={block.enableLoading} onChange={v => onChange({ enableLoading: v })} />

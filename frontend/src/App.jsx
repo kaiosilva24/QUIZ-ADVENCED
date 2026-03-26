@@ -102,6 +102,7 @@ function QuizRouter() {
   const [currentStep, setCurrentStep] = useState(0);
   const [transitionLoading, setTransitionLoading] = useState(false);
   const [loadingConfig, setLoadingConfig] = useState(null);
+  const [scores, setScores] = useState({});
   const stepStartTime = React.useRef(Date.now());
 
   const QUIZ_ID_KEY = 'quiz_saas_lead_quiz_id';
@@ -245,9 +246,14 @@ function QuizRouter() {
       }).catch(() => {});
   }, [quizData]);
 
-  const handleNavigate = (nextStepId, answerText = null, withLoading = false) => {
+  const handleNavigate = (nextStepId, answerText = null, withLoading = false, scoreTarget = null) => {
     const steps = quizData?.config?.steps || [];
     const idx = steps.findIndex(s => s.id === nextStepId);
+    
+    if (scoreTarget) {
+      setScores(prev => ({ ...prev, [scoreTarget]: (prev[scoreTarget] || 0) + 1 }));
+    }
+
     if (idx >= 0) {
       const timeSpent = Math.round((Date.now() - stepStartTime.current) / 1000);
       const quizId = quizData.quiz_id || quizData.id;
@@ -360,6 +366,7 @@ function QuizRouter() {
           onNavigate={handleNavigate}
           quizId={quizData.quiz_id || quizData.id}
           visitorId={getVisitorId()}
+          scores={scores}
         />
       </div>
     </div>
