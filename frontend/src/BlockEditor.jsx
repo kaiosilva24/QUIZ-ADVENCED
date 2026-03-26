@@ -393,6 +393,7 @@ function TiptapEditor({ value, onChange, placeholder, minHeight = 60 }) {
         orderedList: false,
         listItem: false,
         horizontalRule: false,
+        underline: false,
       }),
       Underline,
       TextStyle,

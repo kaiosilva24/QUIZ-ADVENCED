@@ -1561,6 +1561,10 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       let finalButtonTextColor = block.buttonTextColor || '#ffffff';
       let finalResDelay = block.resDelay || 'none';
       let finalResDelaySeconds = block.resDelaySeconds || 0;
+      let finalTopImage = block.topImage || '';
+      const topImageWidthMap = { full: '100%', lg: '80%', md: '60%', sm: '40%' };
+      const finalTopImageWidth = topImageWidthMap[block.topImageWidth || 'full'];
+      const finalTopImageRadius = block.topImageRadius ?? 12;
 
       const chosenVariant = React.useMemo(() => {
         if (!block.dynamicResults || !block.variants || block.variants.length === 0) return null;
@@ -1612,11 +1616,6 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
       if (finalHeadingFontFamily) injectFont(finalHeadingFontFamily);
       if (finalTextFontFamily) injectFont(finalTextFontFamily);
-
-      let finalTopImage = block.topImage || '';
-      const topImageWidthMap = { full: '100%', lg: '80%', md: '60%', sm: '40%' };
-      const finalTopImageWidth = topImageWidthMap[block.topImageWidth || 'full'];
-      const finalTopImageRadius = block.topImageRadius ?? 12;
 
       const [resVisible, setResVisible] = React.useState(false);
 
