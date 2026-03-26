@@ -314,7 +314,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
           <EyeOff size={15} /> Fechar Preview
         </button>
         <div className="scale-100">
-          <QuizPreview config={config} stepIdx={currentStepIdx} />
+          <QuizPreview config={config} stepIdx={currentStepIdx} selectedBlockId={selectedBlockId} />
         </div>
       </div>
     );

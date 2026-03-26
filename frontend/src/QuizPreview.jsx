@@ -1568,7 +1568,8 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
       const chosenVariant = React.useMemo(() => {
         if (!block.dynamicResults || !block.variants || block.variants.length === 0) return null;
-        if (compact && block._previewVariantId) {
+        // Respeita _previewVariantId tanto no preview compacto quanto no grande
+        if (block._previewVariantId) {
            const pv = block.variants.find(v => v.id === block._previewVariantId);
            if (pv) return pv;
         }
