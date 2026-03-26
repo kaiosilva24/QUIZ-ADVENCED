@@ -45,7 +45,7 @@ function createBlock(type) {
     case 'divider':     return { ...base, color: '#334155', thickness: 1 };
     case 'progress':    return { ...base, current: 1, total: 5, color: '#6366f1', bg: '#1e293b', showLabel: true };
     case 'animated_progress': return { ...base, startVal: 0, endVal: 84, duration: 5, text: '{pct}% das vagas preenchidas...', bg: '#e2e8f0', color: '#ff0000', textColor: '#ffffff', rounded: 'full', border: '#cbd5e1', delay: 0 };
-    case 'live_counter':return { ...base, text: 'pessoas assistindo', minAmount: 40, maxAmount: 60, color: '#ef4444', textColor: '#94a3b8', align: 'center', bg: 'transparent', textSize: 14 };
+    case 'live_counter':return { ...base, text: 'pessoas assistindo', minAmount: 40, maxAmount: 60, color: '#ef4444', textColor: '#94a3b8', align: 'center', bg: 'transparent', textSize: 14, countMode: 'random' };
     case 'spacer':      return { ...base, height: 40 };
     case 'lead_capture':return { ...base, fields: ['name', 'email', 'phone'], buttonText: 'Quero meu resultado →', buttonBg: '#6366f1' };
     case 'result':      return { ...base, heading: '🎉 Parabéns!', text: 'Você está pronto para dar o próximo passo.', buttonText: 'Acessar agora →', buttonUrl: '#', buttonBg: '#10b981', enableLoading: false, loadingText: 'Analisando suas respostas...', loadingDuration: 3 };

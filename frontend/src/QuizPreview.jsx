@@ -1539,7 +1539,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     case 'live_counter': {
       const minAmount = block.minAmount ?? 40;
       const maxAmount = block.maxAmount ?? 60;
-      const [count, setCount] = React.useState(Math.floor((minAmount + maxAmount) / 2));
+      const countMode = block.countMode || 'random';
+      
+      const [count, setCount] = React.useState(
+        countMode === 'increasing' ? minAmount : Math.floor((minAmount + maxAmount) / 2)
+      );
       
       const baseSize = block.textSize || 14;
       const dotSz = compact ? Math.max(5, baseSize * 0.45) : Math.max(6, baseSize * 0.55);
@@ -1548,12 +1552,18 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const gapSz = compact ? Math.max(4, baseSize * 0.35) : Math.max(6, baseSize * 0.45);
 
       React.useEffect(() => {
-        // Change number randomly every 2.5 to 4.5 seconds
         const timer = setInterval(() => {
-          setCount(Math.floor(Math.random() * (maxAmount - minAmount + 1)) + minAmount);
+          setCount(prev => {
+            if (countMode === 'increasing') {
+              const inc = Math.floor(Math.random() * 3) + 1;
+              return prev + inc > maxAmount ? maxAmount : prev + inc;
+            } else {
+              return Math.floor(Math.random() * (maxAmount - minAmount + 1)) + minAmount;
+            }
+          });
         }, Math.random() * 2000 + 2500);
         return () => clearInterval(timer);
-      }, [minAmount, maxAmount]);
+      }, [minAmount, maxAmount, countMode]);
 
       const alignProps = 
         block.align === 'left' ? { justifyContent: 'flex-start' } :

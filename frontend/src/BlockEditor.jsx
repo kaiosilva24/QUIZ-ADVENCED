@@ -1621,15 +1621,22 @@ function LiveCounterEditor({ block, onChange }) {
       </Field>
       
       <div className="grid grid-cols-2 gap-3 mb-2">
-        <Field label="Mínimo">
+        <Field label={block.countMode === 'increasing' ? "Começa no número" : "Mínimo"}>
           <input type="number" value={block.minAmount ?? 40} onChange={e => onChange({ minAmount: Number(e.target.value) })}
             className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
         </Field>
-        <Field label="Máximo">
+        <Field label={block.countMode === 'increasing' ? "Limite máximo" : "Máximo"}>
           <input type="number" value={block.maxAmount ?? 60} onChange={e => onChange({ maxAmount: Number(e.target.value) })}
             className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500" />
         </Field>
       </div>
+
+      <Field label="Comportamento da Contagem">
+        <Select value={block.countMode || 'random'} onChange={v => onChange({ countMode: v })} options={[
+          { value: 'random', label: 'Oscilando (Aleatório)' },
+          { value: 'increasing', label: 'Apenas Crescente (Aumenta aos poucos)' },
+        ]} />
+      </Field>
 
       <Field label="Alinhamento">
         <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
