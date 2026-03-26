@@ -907,15 +907,27 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
     case 'progress': {
       const pct = block.total > 0 ? Math.round((block.current / block.total) * 100) : 0;
+      const h = block.barHeight || (compact ? 4 : 6);
+      const isInside = h >= 14; 
+      
       return (
-        <div className="w-full" style={{ marginBottom: compact ? 2 : 4 }}>
-          {block.showLabel && (
-            <p style={{ color: block.textColor || defaultText, opacity: .6, fontSize: compact ? 8 : 11, marginBottom: 4, textAlign: 'right' }}>
-              {block.current}/{block.total}
+        <div className="w-full relative" style={{ marginBottom: compact ? 2 : 4 }}>
+          {block.showLabel && !isInside && (
+            <p style={{ color: block.textColor || '#1e293b', opacity: 1, fontWeight: 700, fontSize: compact ? 10 : 13, marginBottom: 4, textAlign: 'right', textShadow: '0 1px 2px rgba(255,255,255,0.8)' }}>
+              {block.current} / {block.total}
             </p>
           )}
-          <div style={{ background: block.bg || '#1e293b', borderRadius: 99, height: block.barHeight || (compact ? 4 : 6), overflow: 'hidden' }}>
+          <div style={{ background: block.bg || '#e2e8f0', borderRadius: 99, height: h, position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)' }}>
             <div style={{ width: `${pct}%`, height: '100%', background: block.color || accent, borderRadius: 99, transition: 'width 0.4s ease' }} />
+            {block.showLabel && isInside && (
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: block.textColor || '#ffffff', fontSize: compact ? 10 : 13, fontWeight: 700, zIndex: 10,
+                textShadow: '0 1px 2px rgba(0,0,0,0.3)', pointerEvents: 'none'
+              }}>
+                {block.current} / {block.total}
+              </div>
+            )}
           </div>
         </div>
       );
