@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import EmojiPicker, { Emoji } from 'emoji-picker-react';
+import Picker from '@emoji-mart/react';
+import data from '@emoji-mart/data';
+import i18n from '@emoji-mart/data/i18n/pt.json';
 import { Trash2 } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
@@ -95,6 +98,13 @@ function Toggle({ label, value, onChange }) {
 function EmojiSelect({ emoji, unified, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  
+  // local text state for the input
+  const [textVal, setTextVal] = useState(emoji || '');
+
+  useEffect(() => {
+    setTextVal(emoji || '');
+  }, [emoji]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -107,18 +117,36 @@ function EmojiSelect({ emoji, unified, onChange }) {
   return (
     <div className="relative w-full" ref={ref}>
       <div className="flex gap-2">
-        <button
-          onClick={() => setOpen(!open)}
-          className="flex-1 flex items-center justify-between bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-2">
-            {unified ? <Emoji unified={unified} size={18} /> : emoji || 'Selecionar Emoji...'}
-          </span>
-          <span className="text-xs text-slate-500">▼</span>
-        </button>
-        {(emoji !== '' && unified !== '') && (
+        <label className="flex-1 flex items-center justify-between bg-slate-800/60 border border-slate-700 rounded-xl px-2 py-1 focus-within:border-indigo-500 transition-colors cursor-text">
+          <div className="flex items-center gap-2 flex-1 w-full pl-1">
+            <span 
+              onClick={(e) => { e.preventDefault(); setOpen(true); }} 
+              className="flex items-center justify-center w-7 h-7 cursor-pointer hover:opacity-80 transition-opacity"
+              title="Abrir painel de emojis"
+            >
+              {unified ? <Emoji unified={unified} size={18} /> : (emoji || '🙂')}
+            </span>
+            <input 
+              type="text"
+              value={textVal}
+              onChange={(e) => {
+                const val = e.target.value;
+                setTextVal(val);
+                onChange(val, ''); // We don't have unified if user pastes directly, so we pass empty unified
+              }}
+              onFocus={() => setOpen(true)}
+              placeholder="Pesquisar ou colar emoji..."
+              className="bg-transparent border-none text-sm text-white outline-none w-full py-1.5"
+            />
+          </div>
+          <button type="button" onClick={() => setOpen(!open)} className="text-xs text-slate-500 px-2 cursor-pointer hover:text-white transition-colors">
+            ▼
+          </button>
+        </label>
+
+        {(emoji || unified) && (
           <button onClick={() => onChange('', '')} title="Remover emoji"
-            className="w-9 h-9 flex items-center justify-center bg-red-600/20 hover:bg-red-600/40 border border-red-600/30 hover:border-red-500 rounded-xl text-red-400 text-sm transition-colors cursor-pointer">
+            className="w-9 h-9 flex items-center justify-center bg-red-600/20 hover:bg-red-600/40 border border-red-600/30 hover:border-red-500 rounded-xl text-red-400 text-sm transition-colors cursor-pointer flex-shrink-0">
             ✕
           </button>
         )}
@@ -126,27 +154,18 @@ function EmojiSelect({ emoji, unified, onChange }) {
 
       {open && (
         <div className="absolute top-full left-0 z-50 mt-1 shadow-2xl rounded-lg overflow-hidden border border-slate-700">
-          <EmojiPicker
-            theme="dark"
+          <Picker
+            data={data}
+            i18n={i18n}
             locale="pt"
-            onEmojiClick={(e) => {
-              onChange(e.emoji, e.unified);
-              setOpen(false);
+            theme="dark"
+            onEmojiSelect={(e) => {
+               // When picking an emoji from emoji-mart, it gives us e.native and e.unified.
+               // We pass both to support the legacy <Emoji /> component properly.
+               onChange(e.native, e.unified);
+               setTextVal(e.native);
+               setOpen(false);
             }}
-            searchPlaceHolder="Buscar emoji..."
-            width={320}
-            height={400}
-            categories={[
-              { category: 'suggested',      name: 'Recentes' },
-              { category: 'smileys_people', name: 'Rostos & Pessoas' },
-              { category: 'animals_nature', name: 'Animais & Natureza' },
-              { category: 'food_drink',     name: 'Comida & Bebidas' },
-              { category: 'travel_places',  name: 'Viagens & Lugares' },
-              { category: 'activities',     name: 'Atividades' },
-              { category: 'objects',        name: 'Objetos' },
-              { category: 'symbols',        name: 'Símbolos' },
-              { category: 'flags',          name: 'Bandeiras' },
-            ]}
           />
         </div>
       )}
