@@ -1540,6 +1540,12 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const minAmount = block.minAmount ?? 40;
       const maxAmount = block.maxAmount ?? 60;
       const [count, setCount] = React.useState(Math.floor((minAmount + maxAmount) / 2));
+      
+      const baseSize = block.textSize || 14;
+      const dotSz = compact ? Math.max(5, baseSize * 0.45) : Math.max(6, baseSize * 0.55);
+      const numSz = compact ? Math.max(10, baseSize * 0.8) : baseSize;
+      const textSz = compact ? Math.max(9, (baseSize - 1) * 0.8) : (baseSize - 1);
+      const gapSz = compact ? Math.max(4, baseSize * 0.35) : Math.max(6, baseSize * 0.45);
 
       React.useEffect(() => {
         // Change number randomly every 2.5 to 4.5 seconds
@@ -1555,7 +1561,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         { justifyContent: 'center' };
 
       const bgStyle = block.bg && block.bg !== 'transparent' 
-        ? { background: block.bg, padding: '6px 14px', borderRadius: 9999, border: '1px solid rgba(255,255,255,0.05)' } 
+        ? { background: block.bg, padding: `${Math.round(baseSize*0.4)}px ${Math.round(baseSize)}px`, borderRadius: 9999, border: '1px solid rgba(255,255,255,0.05)' } 
         : {};
 
       return (
@@ -1570,30 +1576,30 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           <div style={{ 
             display: 'inline-flex', 
             alignItems: 'center', 
-            gap: 6,
+            gap: gapSz,
             ...bgStyle
           }}>
             {/* Blinking dot */}
             <div style={{ 
-              width: compact ? 6 : 8, 
-              height: compact ? 6 : 8, 
+              width: dotSz, 
+              height: dotSz, 
               borderRadius: '50%', 
               backgroundColor: block.color || '#ef4444',
-              boxShadow: `0 0 8px ${block.color || '#ef4444'}a0`,
+              boxShadow: `0 0 ${Math.round(dotSz*1.2)}px ${block.color || '#ef4444'}a0`,
               animation: 'pulse-live 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
             }} />
 
             <span style={{ 
               color: block.color || '#ef4444', 
               fontWeight: 700, 
-              fontSize: compact ? 11 : 14 
+              fontSize: numSz 
             }}>
               {count}
             </span>
 
             <span style={{ 
               color: block.textColor || '#94a3b8', 
-              fontSize: compact ? 10 : 13,
+              fontSize: textSz,
               fontWeight: 500
             }}>
               {block.text || 'pessoas assistindo'}

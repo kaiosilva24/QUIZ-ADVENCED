@@ -1639,6 +1639,13 @@ function LiveCounterEditor({ block, onChange }) {
         ]} />
       </Field>
 
+      <Field label="Tamanho da Fonte (px)">
+        <input type="range" min={10} max={60} step={1} value={block.textSize || 14}
+          onChange={e => onChange({ textSize: Number(e.target.value) })}
+          className="w-full accent-indigo-500 cursor-pointer" />
+        <span className="text-xs text-indigo-400">{block.textSize || 14}px</span>
+      </Field>
+
       <Field label="Cor Principal (Bolinha e Número)">
         <ColorPicker value={block.color || '#ef4444'} onChange={v => onChange({ color: v })} />
       </Field>
