@@ -105,29 +105,31 @@ function QuizRouter() {
   const [scores, setScores] = useState({});
   const stepStartTime = React.useRef(Date.now());
 
-  const QUIZ_ID_KEY = 'quiz_saas_lead_quiz_id';
-  const QUIZ_TIME_KEY = 'quiz_saas_lead_quiz_time';
+  // Chaves slug-aware: /novo-quiz e /live não conflitam
+  const pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '') || 'root';
+  const QUIZ_ID_KEY = `quiz_saas_lead_quiz_id_${pathSlug}`;
+  const QUIZ_TIME_KEY = `quiz_saas_lead_quiz_time_${pathSlug}`;
   const STEP_KEY_PREFIX = 'quiz_saas_step_';
   const pixelInjected = React.useRef(false);
 
   useEffect(() => {
     const now = Date.now();
     const params = new URLSearchParams(window.location.search);
-    const forceNew = params.get('novo') === '1'; // ?novo=1 simula novo lead (limpa cache)
+    const forceNew = params.get('novo') === '1'; // ?novo=1 limpa cache
 
     if (forceNew) {
       localStorage.removeItem(QUIZ_ID_KEY);
       localStorage.removeItem(QUIZ_TIME_KEY);
-      // Remove ?novo=1 da URL sem recarregar
-      const cleanUrl = window.location.pathname;
-      window.history.replaceState(null, '', cleanUrl);
+      // Limpa também chaves legadas sem slug
+      localStorage.removeItem('quiz_saas_lead_quiz_id');
+      localStorage.removeItem('quiz_saas_lead_quiz_time');
+      window.history.replaceState(null, '', window.location.pathname);
     }
 
     const savedQuizId = localStorage.getItem(QUIZ_ID_KEY);
     const savedTime = localStorage.getItem(QUIZ_TIME_KEY);
     const isValid = !forceNew && savedQuizId && savedTime && (now - parseInt(savedTime)) < 7 * 24 * 60 * 60 * 1000;
 
-    // Se lead já tem um quiz atribuído nos últimos 7 dias, recarrega ESSE quiz diretamente
     if (isValid) {
       fetch(`/api/quizzes/${savedQuizId}`)
         .then(r => r.ok ? r.json() : null)
@@ -135,7 +137,6 @@ function QuizRouter() {
           if (data) {
             setQuizData(data);
             const shouldSaveProgress = data.config?.settings?.saveProgress === true;
-            // Restaura passo salvo apenas se a opção estiver ativada
             const savedStep = localStorage.getItem(STEP_KEY_PREFIX + savedQuizId);
             if (shouldSaveProgress && savedStep) {
               setCurrentStep(parseInt(savedStep));
@@ -143,7 +144,6 @@ function QuizRouter() {
               setCurrentStep(0);
             }
           } else {
-            // Quiz removido, limpa localStorage e busca novo
             localStorage.removeItem(QUIZ_ID_KEY);
             loadNewQuiz();
           }
@@ -157,14 +157,13 @@ function QuizRouter() {
   }, []);
 
   const loadNewQuiz = () => {
-    const pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
-    const endpoint = pathSlug ? `/api/route/${encodeURIComponent(pathSlug)}` : '/api/roundrobin/next';
+    const slug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
+    const endpoint = slug ? `/api/route/${encodeURIComponent(slug)}` : '/api/roundrobin/next';
     const now = Date.now();
 
     fetch(endpoint)
       .then(r => {
         if (r.status === 404) {
-          // Sem quiz/Round Robin configurado — mostra tela amigável
           setError('NO_QUIZ_CONFIGURED');
           setLoading(false);
           throw new Error('no_quiz');
@@ -179,21 +178,17 @@ function QuizRouter() {
       .then(data => {
         if (!data) return;
         const quizId = data.quiz_id || data.id;
-        // Salva o quiz ID por 7 dias (a chave para persistência)
         localStorage.setItem(QUIZ_ID_KEY, String(quizId));
         localStorage.setItem(QUIZ_TIME_KEY, now.toString());
         setQuizData(data);
         setLoading(false);
-        // Dispara evento de início
         trackEvent(quizId, 'start', null, null, 0);
-        // Dispara step_reached para o primeiro passo IMEDIATAMENTE ao carregar
-        // Isso garante que leads que abandonam na primeira pergunta apareçam no Raio-X e Matriz
         const firstStep = data?.config?.steps?.[0];
         if (firstStep?.id) {
           trackEvent(quizId, 'step_reached', firstStep.id, null, 0);
         }
       })
-      .catch(() => {}); // erros já tratados acima
+      .catch(() => {});
   };
 
   // Trava do botão voltar (agora dependendo da configuração)
