@@ -815,7 +815,7 @@ function AnimatedProgressBar({ block, compact }) {
       background: block.bg || '#e2e8f0',
       border: `1px solid ${block.border || '#cbd5e1'}`,
       borderRadius: radius,
-      height: compact ? 24 : 36,
+      height: block.barHeight || (compact ? 24 : 36),
       padding: pad,
       boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)',
     }}>
@@ -910,11 +910,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       return (
         <div className="w-full" style={{ marginBottom: compact ? 2 : 4 }}>
           {block.showLabel && (
-            <p style={{ color: defaultText, opacity: .6, fontSize: compact ? 8 : 11, marginBottom: 4, textAlign: 'right' }}>
+            <p style={{ color: block.textColor || defaultText, opacity: .6, fontSize: compact ? 8 : 11, marginBottom: 4, textAlign: 'right' }}>
               {block.current}/{block.total}
             </p>
           )}
-          <div style={{ background: block.bg || '#1e293b', borderRadius: 99, height: compact ? 4 : 6, overflow: 'hidden' }}>
+          <div style={{ background: block.bg || '#1e293b', borderRadius: 99, height: block.barHeight || (compact ? 4 : 6), overflow: 'hidden' }}>
             <div style={{ width: `${pct}%`, height: '100%', background: block.color || accent, borderRadius: 99, transition: 'width 0.4s ease' }} />
           </div>
         </div>
@@ -1038,8 +1038,13 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         );
       }
       return (
-        <img src={block.src} alt={block.alt || ''} style={{...imageStyle, cursor: block.nextStep ? 'pointer' : 'default'}} 
-             onClick={() => block.nextStep && onNavigate && onNavigate(block.nextStep, 'Imagem VSL')} />
+        <img src={block.src} alt={block.alt || ''} style={{...imageStyle, cursor: 'pointer' }} 
+             onClick={() => {
+               if (onNavigate) {
+                 const target = resolveNextStep(block.nextStep);
+                 if (target) onNavigate(target, 'Imagem VSL');
+               }
+             }} />
       );
     }
 
@@ -1051,8 +1056,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         if (isUrl && block.buttonUrl) {
           const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
           window.open(url, '_blank');
-        } else if (block.nextStep && onNavigate) {
-          onNavigate(block.nextStep, block.text || 'Avançar', block.showLoading ? block : false);
+        } else if (onNavigate) {
+          const target = resolveNextStep(block.nextStep);
+          if (target) {
+            onNavigate(target, block.text || 'Avançar', block.showLoading ? block : false);
+          }
         }
       };
 
@@ -1235,8 +1243,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             if (isUrl && block.buttonUrl) {
               const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
               window.open(url, '_blank');
-            } else if (block.nextStep && onNavigate) {
-              onNavigate(block.nextStep, block.text || 'Avançar', block.showLoading ? block : false);
+            } else if (onNavigate) {
+              const target = resolveNextStep(block.nextStep);
+              if (target) {
+                onNavigate(target, block.text || 'Avançar', block.showLoading ? block : false);
+              }
             }
           }}
         >
@@ -1295,8 +1306,9 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         if (fields.includes('phone') && finalObj.phone) {
            finalObj.phone = `${dialCode} ${finalObj.phone}`;
         }
-        if (block.nextStep && onNavigate) {
-          onNavigate(block.nextStep, Object.keys(finalObj).length > 0 ? JSON.stringify(finalObj) : (block.buttonText || 'Quero meu resultado'));
+        if (onNavigate) {
+           const target = resolveNextStep(block.nextStep);
+           if (target) onNavigate(target, Object.keys(finalObj).length > 0 ? JSON.stringify(finalObj) : (block.buttonText || 'Quero meu resultado'));
         } else if (block.redirectUrl) {
           const url = block.redirectUrl.startsWith('http') ? block.redirectUrl : `https://${block.redirectUrl}`;
           window.location.href = url;

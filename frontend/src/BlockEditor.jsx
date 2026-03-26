@@ -1042,6 +1042,12 @@ function ProgressEditor({ block, onChange }) {
       </Field>
       <Field label="Cor da Barra"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
       <Field label="Cor de Fundo"><ColorPicker value={block.bg} onChange={v => onChange({ bg: v })} /></Field>
+      <Field label="Cor do Texto (Rótulo)"><ColorPicker value={block.textColor} onChange={v => onChange({ textColor: v })} /></Field>
+      <Field label="Altura da Barra (px)">
+        <input type="range" min={4} max={40} step={2} value={block.barHeight || 6}
+          onChange={e => onChange({ barHeight: Number(e.target.value) })}
+          className="w-full accent-indigo-500 cursor-pointer" />
+      </Field>
       <Toggle label="Mostrar Rótulo" value={block.showLabel !== false} onChange={v => onChange({ showLabel: v })} />
     </Section>
   );
@@ -1258,6 +1264,11 @@ function AnimatedProgressEditor({ block, onChange }) {
         <Field label="Cor do Progresso (Preenchimento)"><ColorPicker value={block.color} onChange={v => onChange({ color: v })} /></Field>
         <Field label="Cor da Borda"><ColorPicker value={block.border} onChange={v => onChange({ border: v })} /></Field>
         <Field label="Cor do Texto"><ColorPicker value={block.textColor} onChange={v => onChange({ textColor: v })} /></Field>
+        <Field label="Altura da Barra (px)">
+          <input type="range" min={10} max={60} step={2} value={block.barHeight || 36}
+            onChange={e => onChange({ barHeight: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
         <Field label="Arredondamento">
           <Select value={block.rounded || 'none'} onChange={v => onChange({ rounded: v })} options={[
             { value: 'none', label: 'Quadrado' },
