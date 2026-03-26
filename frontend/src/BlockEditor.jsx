@@ -1184,13 +1184,31 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
         </Section>
         <Section title="Resultado">
           <Field label="Emoji Gigante"><EmojiSelect emoji={block.emoji} unified={block.emojiUnified} onChange={(e, u) => onChange({ emoji: e, emojiUnified: u })} /></Field>
-          <Field label="Título"><Input value={block.heading} onChange={v => onChange({ heading: v })} /></Field>
-          <Field label="Cor do Título"><ColorPicker value={block.headingColor || '#ffffff'} onChange={v => onChange({ headingColor: v })} /></Field>
-          <Field label="Texto">
-            <textarea value={block.text || ''} onChange={e => onChange({ text: e.target.value })} rows={3}
-              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none" />
+          <Field label="Título">
+            <InlineRichText value={block.heading} onChange={v => onChange({ heading: v })} minHeight={60} />
           </Field>
-          <Field label="Cor do Texto"><ColorPicker value={block.textColor || '#cbd5e1'} onChange={v => onChange({ textColor: v })} /></Field>
+          <div className="grid grid-cols-2 gap-3">
+             <Field label="Tamanho do Título">
+               <Select value={block.headingSize || 'xl'} onChange={v => onChange({ headingSize: v })} options={[
+                 { value: 'sm', label: 'Pequeno' }, { value: 'base', label: 'Médio' },
+                 { value: 'xl', label: 'Grande' }, { value: '2xl', label: 'Extra Grande' }, { value: '4xl', label: 'Máximo' }
+               ]} />
+             </Field>
+             <Field label="Fonte do Título"><FontPicker value={block.headingFontFamily} onChange={v => onChange({ headingFontFamily: v })} /></Field>
+          </div>
+          
+          <Field label="Texto">
+            <InlineRichText value={block.text || ''} onChange={v => onChange({ text: v })} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Tamanho do Texto">
+              <Select value={block.textSize || 'base'} onChange={v => onChange({ textSize: v })} options={[
+                { value: 'xs', label: 'Muito Pequeno' }, { value: 'sm', label: 'Pequeno' },
+                { value: 'base', label: 'Médio' }, { value: 'lg', label: 'Grande' }
+              ]} />
+            </Field>
+            <Field label="Fonte do Texto"><FontPicker value={block.textFontFamily} onChange={v => onChange({ textFontFamily: v })} /></Field>
+          </div>
         </Section>
       </div>
       <Section title="Resultados Dinâmicos">
@@ -1255,89 +1273,125 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
                 </Field>
 
                 <Field label="Título">
-                  <Input value={variant.heading || ''} onChange={val => {
+                  <InlineRichText value={variant.heading || ''} onChange={val => {
                     const newVars = [...block.variants];
                     newVars[vIdx] = { ...variant, heading: val };
                     onChange({ variants: newVars, _previewVariantId: variant.id });
-                  }} placeholder="Parabéns!" />
+                  }} minHeight={60} />
                 </Field>
 
-                <Field label="Cor do Título">
-                  <ColorPicker value={variant.headingColor || '#000000'} onChange={val => {
-                    const newVars = [...block.variants];
-                    newVars[vIdx] = { ...variant, headingColor: val };
-                    onChange({ variants: newVars, _previewVariantId: variant.id });
-                  }} />
-                </Field>
-
-                <Field label="Texto">
-                  <textarea value={variant.text || ''} onChange={e => {
-                    const newVars = [...block.variants];
-                    newVars[vIdx] = { ...variant, text: e.target.value };
-                    onChange({ variants: newVars, _previewVariantId: variant.id });
-                  }} rows={2} className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none" />
-                </Field>
-
-                <Field label="Cor do Texto">
-                  <ColorPicker value={variant.textColor || '#000000'} onChange={val => {
-                    const newVars = [...block.variants];
-                    newVars[vIdx] = { ...variant, textColor: val };
-                    onChange({ variants: newVars, _previewVariantId: variant.id });
-                  }} />
-                </Field>
-                
-                <Field label="Texto do Botão (opcional)">
-                  <Input value={variant.buttonText || ''} onChange={val => {
-                    const newVars = [...block.variants];
-                    newVars[vIdx] = { ...variant, buttonText: val };
-                    onChange({ variants: newVars, _previewVariantId: variant.id });
-                  }} placeholder="Acessar agora" />
-                </Field>
-
-                <Field label="URL do Botão (opcional)">
-                  <Input value={variant.buttonUrl || ''} onChange={val => {
-                    const newVars = [...block.variants];
-                    newVars[vIdx] = { ...variant, buttonUrl: val };
-                    onChange({ variants: newVars, _previewVariantId: variant.id });
-                  }} placeholder="https://..." />
-                </Field>
-
-                <Field label="Cor do Fundo do Botão">
-                  <ColorPicker value={variant.buttonBg || theme?.accent || '#6366f1'} onChange={val => {
-                    const newVars = [...block.variants];
-                    newVars[vIdx] = { ...variant, buttonBg: val };
-                    onChange({ variants: newVars, _previewVariantId: variant.id });
-                  }} />
-                </Field>
-                <Field label="Cor do Texto do Botão">
-                  <ColorPicker value={variant.buttonTextColor || '#ffffff'} onChange={val => {
-                    const newVars = [...block.variants];
-                    newVars[vIdx] = { ...variant, buttonTextColor: val };
-                    onChange({ variants: newVars, _previewVariantId: variant.id });
-                  }} />
-                </Field>
-
-                <Field label="Ação ao Clicar no Botão">
-                  <Select value={variant.buttonAction || 'url'} onChange={val => {
-                    const newVars = [...block.variants];
-                    newVars[vIdx] = { ...variant, buttonAction: val };
-                    onChange({ variants: newVars, _previewVariantId: variant.id });
-                  }} options={[
-                    { value: 'url', label: 'Abrir URL externa' },
-                    { value: 'next_step', label: 'Ir para próxima etapa' },
-                  ]} />
-                </Field>
-                {(variant.buttonAction === 'next_step') && (
-                  <Field label="Etapa Destino">
-                    <Select value={variant.nextStep || ''} onChange={val => {
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Tamanho do Título">
+                    <Select value={variant.headingSize || 'xl'} onChange={val => {
                       const newVars = [...block.variants];
-                      newVars[vIdx] = { ...variant, nextStep: val };
+                      newVars[vIdx] = { ...variant, headingSize: val };
                       onChange({ variants: newVars, _previewVariantId: variant.id });
                     }} options={[
-                      { value: '', label: 'Próxima etapa automaticamente' },
-                      ...(steps || []).filter((_, i) => i !== currentStepIdx).map((s, i) => ({ value: s.id, label: s.label || `Etapa ${i + 1}` }))
+                      { value: 'sm', label: 'Pequeno' }, { value: 'base', label: 'Médio' },
+                      { value: 'xl', label: 'Grande' }, { value: '2xl', label: 'Ext Grande' }, { value: '4xl', label: 'Máximo' }
                     ]} />
                   </Field>
+                  <Field label="Fonte do Título">
+                    <FontPicker value={variant.headingFontFamily} onChange={val => {
+                      const newVars = [...block.variants];
+                      newVars[vIdx] = { ...variant, headingFontFamily: val };
+                      onChange({ variants: newVars, _previewVariantId: variant.id });
+                    }} />
+                  </Field>
+                </div>
+
+                <Field label="Texto">
+                  <InlineRichText value={variant.text || ''} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, text: val };
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
+                  }} />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Tamanho do Texto">
+                    <Select value={variant.textSize || 'base'} onChange={val => {
+                      const newVars = [...block.variants];
+                      newVars[vIdx] = { ...variant, textSize: val };
+                      onChange({ variants: newVars, _previewVariantId: variant.id });
+                    }} options={[
+                      { value: 'xs', label: 'Muito Pequeno' }, { value: 'sm', label: 'Pequeno' },
+                      { value: 'base', label: 'Médio' }, { value: 'lg', label: 'Grande' }
+                    ]} />
+                  </Field>
+                  <Field label="Fonte do Texto">
+                    <FontPicker value={variant.textFontFamily} onChange={val => {
+                      const newVars = [...block.variants];
+                      newVars[vIdx] = { ...variant, textFontFamily: val };
+                      onChange({ variants: newVars, _previewVariantId: variant.id });
+                    }} />
+                  </Field>
+                </div>
+                
+                <div className="border-t border-slate-700/50 pt-3 mt-2">
+                  <Toggle label="Mostrar Botão de Ação" value={variant.enableButton !== false} onChange={val => {
+                    const newVars = [...block.variants];
+                    newVars[vIdx] = { ...variant, enableButton: val };
+                    onChange({ variants: newVars, _previewVariantId: variant.id });
+                  }} />
+                </div>
+
+                {variant.enableButton !== false && (
+                  <>
+                    <Field label="Texto do Botão (opcional)">
+                      <Input value={variant.buttonText || ''} onChange={val => {
+                        const newVars = [...block.variants];
+                        newVars[vIdx] = { ...variant, buttonText: val };
+                        onChange({ variants: newVars, _previewVariantId: variant.id });
+                      }} placeholder="Acessar agora" />
+                    </Field>
+
+                    <Field label="URL do Botão (opcional)">
+                      <Input value={variant.buttonUrl || ''} onChange={val => {
+                        const newVars = [...block.variants];
+                        newVars[vIdx] = { ...variant, buttonUrl: val };
+                        onChange({ variants: newVars, _previewVariantId: variant.id });
+                      }} placeholder="https://..." />
+                    </Field>
+
+                    <Field label="Cor do Fundo do Botão">
+                      <ColorPicker value={variant.buttonBg || theme?.accent || '#6366f1'} onChange={val => {
+                        const newVars = [...block.variants];
+                        newVars[vIdx] = { ...variant, buttonBg: val };
+                        onChange({ variants: newVars, _previewVariantId: variant.id });
+                      }} />
+                    </Field>
+                    <Field label="Cor do Texto do Botão">
+                      <ColorPicker value={variant.buttonTextColor || '#ffffff'} onChange={val => {
+                        const newVars = [...block.variants];
+                        newVars[vIdx] = { ...variant, buttonTextColor: val };
+                        onChange({ variants: newVars, _previewVariantId: variant.id });
+                      }} />
+                    </Field>
+
+                    <Field label="Ação ao Clicar no Botão">
+                      <Select value={variant.buttonAction || 'url'} onChange={val => {
+                        const newVars = [...block.variants];
+                        newVars[vIdx] = { ...variant, buttonAction: val };
+                        onChange({ variants: newVars, _previewVariantId: variant.id });
+                      }} options={[
+                        { value: 'url', label: 'Abrir URL externa' },
+                        { value: 'next_step', label: 'Ir para próxima etapa' },
+                      ]} />
+                    </Field>
+                    {(variant.buttonAction === 'next_step') && (
+                      <Field label="Etapa Destino">
+                        <Select value={variant.nextStep || ''} onChange={val => {
+                          const newVars = [...block.variants];
+                          newVars[vIdx] = { ...variant, nextStep: val };
+                          onChange({ variants: newVars, _previewVariantId: variant.id });
+                        }} options={[
+                          { value: '', label: 'Próxima etapa automaticamente' },
+                          ...(steps || []).filter((_, i) => i !== currentStepIdx).map((s, i) => ({ value: s.id, label: s.label || `Etapa ${i + 1}` }))
+                        ]} />
+                      </Field>
+                    )}
+                  </>
                 )}
               </div>
             ))}
@@ -1380,28 +1434,33 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
           )}
         </Section>
         <Section title="Botão CTA">
-          <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
-          <Field label="Cor do Fundo do Botão"><ColorPicker value={block.buttonBg || theme?.accent || '#6366f1'} onChange={v => onChange({ buttonBg: v })} /></Field>
-          <Field label="Cor do Texto do Botão"><ColorPicker value={block.buttonTextColor || '#ffffff'} onChange={v => onChange({ buttonTextColor: v })} /></Field>
-          <Field label="Ação ao Clicar">
-            <Select value={block.buttonAction || 'url'} onChange={v => onChange({ buttonAction: v })} options={[
-              { value: 'url', label: 'Abrir URL externa' },
-              { value: 'next_step', label: 'Ir para próxima etapa' },
-            ]} />
-          </Field>
-          {(block.buttonAction || 'url') === 'url' && (
-            <Field label="URL do Botão"><Input value={block.buttonUrl} onChange={v => onChange({ buttonUrl: v })} placeholder="https://..." /></Field>
-          )}
-          {block.buttonAction === 'next_step' && (
-            <Field label="Etapa Destino">
-              <Select value={block.nextStep || ''} onChange={v => onChange({ nextStep: v })} options={[
-                { value: '', label: 'Próxima etapa automaticamente' },
-                ...(steps || []).filter((_, i) => i !== currentStepIdx).map((s, i) => ({ value: s.id, label: s.label || `Etapa ${i + 1}` }))
-              ]} />
-            </Field>
-          )}
-          {block.buttonAction === 'next_step' && (
-            <Toggle label="Clicar em qualquer lugar avança" value={block.clickAnywhere} onChange={v => onChange({ clickAnywhere: v })} />
+          <Toggle label="Mostrar Botão de Ação" value={block.enableButton !== false} onChange={v => onChange({ enableButton: v })} />
+          {block.enableButton !== false && (
+            <>
+              <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
+              <Field label="Cor do Fundo do Botão"><ColorPicker value={block.buttonBg || theme?.accent || '#6366f1'} onChange={v => onChange({ buttonBg: v })} /></Field>
+              <Field label="Cor do Texto do Botão"><ColorPicker value={block.buttonTextColor || '#ffffff'} onChange={v => onChange({ buttonTextColor: v })} /></Field>
+              <Field label="Ação ao Clicar">
+                <Select value={block.buttonAction || 'url'} onChange={v => onChange({ buttonAction: v })} options={[
+                  { value: 'url', label: 'Abrir URL externa' },
+                  { value: 'next_step', label: 'Ir para próxima etapa' },
+                ]} />
+              </Field>
+              {(block.buttonAction || 'url') === 'url' && (
+                <Field label="URL do Botão"><Input value={block.buttonUrl} onChange={v => onChange({ buttonUrl: v })} placeholder="https://..." /></Field>
+              )}
+              {block.buttonAction === 'next_step' && (
+                <Field label="Etapa Destino">
+                  <Select value={block.nextStep || ''} onChange={v => onChange({ nextStep: v })} options={[
+                    { value: '', label: 'Próxima etapa automaticamente' },
+                    ...(steps || []).filter((_, i) => i !== currentStepIdx).map((s, i) => ({ value: s.id, label: s.label || `Etapa ${i + 1}` }))
+                  ]} />
+                </Field>
+              )}
+              {block.buttonAction === 'next_step' && (
+                <Toggle label="Clicar em qualquer lugar avança" value={block.clickAnywhere} onChange={v => onChange({ clickAnywhere: v })} />
+              )}
+            </>
           )}
         </Section>
       </div>

@@ -1537,10 +1537,20 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     }
 
     case 'result': {
+      const headingSizes = { sm: compact ? 12 : 16, base: compact ? 13 : 18, lg: compact ? 14 : 20, xl: compact ? 16 : 24, '2xl': compact ? 18 : 28, '4xl': compact ? 22 : 40 };
+      const textSizes = { xs: compact ? 8 : 10, sm: compact ? 9 : 12, base: compact ? 10 : 14, lg: compact ? 11 : 16 };
+
       let finalHeading = block.heading;
       let finalHeadingColor = block.headingColor || defaultText;
+      let finalHeadingSize = block.headingSize || 'xl';
+      let finalHeadingFontFamily = block.headingFontFamily;
+
       let finalText = block.text;
       let finalTextColor = block.textColor || defaultText;
+      let finalTextSize = block.textSize || 'base';
+      let finalTextFontFamily = block.textFontFamily;
+
+      let finalEnableButton = block.enableButton !== false;
       let finalButtonText = block.buttonText || 'Resultado';
       let finalButtonUrl = block.buttonUrl;
       let finalButtonAction = block.buttonAction || 'url';
@@ -1574,10 +1584,17 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       }, [block.dynamicResults, block.variants, block._previewVariantId, compact, scores, visitorId]);
 
       if (chosenVariant) {
-        if (chosenVariant.heading) finalHeading = chosenVariant.heading;
+        if (chosenVariant.heading !== undefined) finalHeading = chosenVariant.heading;
         if (chosenVariant.headingColor) finalHeadingColor = chosenVariant.headingColor;
-        if (chosenVariant.text) finalText = chosenVariant.text;
+        if (chosenVariant.headingSize) finalHeadingSize = chosenVariant.headingSize;
+        if (chosenVariant.headingFontFamily) finalHeadingFontFamily = chosenVariant.headingFontFamily;
+
+        if (chosenVariant.text !== undefined) finalText = chosenVariant.text;
         if (chosenVariant.textColor) finalTextColor = chosenVariant.textColor;
+        if (chosenVariant.textSize) finalTextSize = chosenVariant.textSize;
+        if (chosenVariant.textFontFamily) finalTextFontFamily = chosenVariant.textFontFamily;
+
+        if (chosenVariant.enableButton !== undefined) finalEnableButton = chosenVariant.enableButton;
         if (chosenVariant.buttonText) finalButtonText = chosenVariant.buttonText;
         if (chosenVariant.buttonUrl) finalButtonUrl = chosenVariant.buttonUrl;
         if (chosenVariant.buttonAction) finalButtonAction = chosenVariant.buttonAction;
@@ -1591,6 +1608,9 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
            finalEmojiUnified = chosenVariant.emojiUnified;
         }
       }
+
+      if (finalHeadingFontFamily) injectFont(finalHeadingFontFamily);
+      if (finalTextFontFamily) injectFont(finalTextFontFamily);
 
       const [resVisible, setResVisible] = React.useState(false);
 
@@ -1736,14 +1756,27 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           ) : null}
           
           {(finalHeading) ? (
-            <p style={{ color: finalHeadingColor, fontWeight: 700, fontSize: compact ? 13 : 20 }}>{finalHeading}</p>
+            <div style={{
+               color: finalHeadingColor,
+               fontSize: headingSizes[finalHeadingSize] || headingSizes.xl,
+               fontFamily: finalHeadingFontFamily ? `'${finalHeadingFontFamily}', sans-serif` : undefined,
+               fontWeight: 700,
+               margin: 0,
+            }} dangerouslySetInnerHTML={{ __html: finalHeading }} />
           ) : null}
 
           {(finalText || '') ? (
-            <p style={{ color: finalTextColor, opacity: finalTextColor ? 1 : 0.7, fontSize: compact ? 9 : 13, lineHeight: 1.6 }}>{finalText}</p>
+            <div style={{
+               color: finalTextColor,
+               fontSize: textSizes[finalTextSize] || textSizes.base,
+               fontFamily: finalTextFontFamily ? `'${finalTextFontFamily}', sans-serif` : undefined,
+               opacity: finalTextColor ? 1 : 0.7,
+               lineHeight: 1.6,
+               margin: 0,
+            }} dangerouslySetInnerHTML={{ __html: finalText }} />
           ) : null}
 
-          {finalButtonText && (
+          {finalEnableButton && finalButtonText && (
             <button
               onClick={e => { e.stopPropagation(); handleAction(); }}
               style={{
