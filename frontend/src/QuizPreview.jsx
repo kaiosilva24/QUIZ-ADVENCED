@@ -1559,10 +1559,13 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const minAmount = block.minAmount ?? 40;
       const maxAmount = block.maxAmount ?? 60;
       const countMode = block.countMode || 'random';
+      const storageKey = `live_counter_${quizId || 'preview'}_${minAmount}_${maxAmount}_${countMode}`;
       
-      const [count, setCount] = React.useState(
-        countMode === 'increasing' ? minAmount : Math.floor((minAmount + maxAmount) / 2)
-      );
+      const [count, setCount] = React.useState(() => {
+        const saved = sessionStorage.getItem(storageKey);
+        if (saved) return parseInt(saved, 10);
+        return countMode === 'increasing' ? minAmount : Math.floor((minAmount + maxAmount) / 2);
+      });
       
       const baseSize = block.textSize || 14;
       const dotSz = compact ? Math.max(5, baseSize * 0.45) : Math.max(6, baseSize * 0.55);
@@ -1573,16 +1576,19 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       React.useEffect(() => {
         const timer = setInterval(() => {
           setCount(prev => {
+            let nextVal;
             if (countMode === 'increasing') {
               const inc = Math.floor(Math.random() * 3) + 1;
-              return prev + inc > maxAmount ? maxAmount : prev + inc;
+              nextVal = prev + inc > maxAmount ? maxAmount : prev + inc;
             } else {
-              return Math.floor(Math.random() * (maxAmount - minAmount + 1)) + minAmount;
+              nextVal = Math.floor(Math.random() * (maxAmount - minAmount + 1)) + minAmount;
             }
+            sessionStorage.setItem(storageKey, nextVal.toString());
+            return nextVal;
           });
         }, Math.random() * 2000 + 2500);
         return () => clearInterval(timer);
-      }, [minAmount, maxAmount, countMode]);
+      }, [minAmount, maxAmount, countMode, storageKey]);
 
       const alignProps = 
         block.align === 'left' ? { justifyContent: 'flex-start' } :
