@@ -1965,14 +1965,12 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
       // Action handler
       const handleAction = () => {
-        if (!compact) {
-          if (finalButtonAction === 'next_step') {
-            const targetId = resolveNextStep(finalNextStep, block.scoreTarget);
-            if (onNavigate && targetId) onNavigate(targetId, finalButtonText);
-          } else if (finalButtonUrl) {
-            const url = finalButtonUrl.startsWith('http') ? finalButtonUrl : `https://${finalButtonUrl}`;
-            window.location.href = url;
-          }
+        if (finalButtonAction === 'next_step') {
+          const targetId = resolveNextStep(finalNextStep, block.scoreTarget);
+          if (onNavigate && targetId) onNavigate(targetId, finalButtonText);
+        } else if (finalButtonUrl) {
+          const url = finalButtonUrl.startsWith('http') ? finalButtonUrl : `https://${finalButtonUrl}`;
+          if (!compact) window.location.href = url;
         }
       };
 

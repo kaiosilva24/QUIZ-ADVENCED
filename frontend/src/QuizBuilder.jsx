@@ -273,7 +273,21 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
 
   const [showPreview, setShowPreview] = useState(false);
   const [activeTab, setActiveTab] = useState('blocks');
-  const [saving, setSaving] = useState(false);
+  const [previewScores, setPreviewScores] = useState({});
+
+  const handlePreviewNavigate = (targetId, _dummyText, _dummyLoading, scoreTarget) => {
+    if (scoreTarget) {
+      setPreviewScores(prev => ({
+        ...prev,
+        [scoreTarget]: (prev[scoreTarget] || 0) + 1
+      }));
+    }
+    const idx = config.steps.findIndex(s => s.id === targetId);
+    if (idx !== -1) {
+      setCurrentStepIdx(idx);
+      setSelectedBlockId(null);
+    }
+  };
 
   const currentStep = config.steps[currentStepIdx];
   const selectedBlock = currentStep?.blocks.find(b => b.id === selectedBlockId) || null;
@@ -421,7 +435,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
           <EyeOff size={15} /> Fechar Preview
         </button>
         <div className="scale-100">
-          <QuizPreview config={config} stepIdx={currentStepIdx} selectedBlockId={selectedBlockId} />
+          <QuizPreview config={config} stepIdx={currentStepIdx} selectedBlockId={selectedBlockId} onNavigate={handlePreviewNavigate} scores={previewScores} />
         </div>
       </div>
     );
@@ -864,7 +878,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
       {/* ── RIGHT PANEL: Live Preview ────────────────────────────────── */}
       <div className="w-80 shrink-0 flex flex-col items-center justify-center bg-slate-900/20 gap-4 p-6">
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Preview Live</p>
-        <QuizPreview config={config} stepIdx={currentStepIdx} compact selectedBlockId={selectedBlockId} />
+        <QuizPreview config={config} stepIdx={currentStepIdx} compact selectedBlockId={selectedBlockId} onNavigate={handlePreviewNavigate} scores={previewScores} />
         <div className="flex gap-2">
           {config.steps.map((_, idx) => (
             <button key={idx} onClick={() => setCurrentStepIdx(idx)}
