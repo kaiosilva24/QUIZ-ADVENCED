@@ -824,10 +824,63 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
                 onChange={(patch) => updateBlock(selectedBlock.id, patch)}
               />
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-700 gap-3">
-                <Settings size={40} className="opacity-20" />
-                <p className="text-slate-500 font-medium text-sm">Selecione um bloco para editar</p>
-                <p className="text-slate-700 text-xs">Ou clique em "+ Adicionar Bloco" ao lado</p>
+              <div className="flex flex-col gap-5 max-w-lg mx-auto mt-4 px-2">
+                <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-5 mb-4 shadow-sm">
+                  <div className="flex items-center gap-3 border-b border-slate-700/50 pb-4 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                      <Settings size={20} />
+                    </div>
+                    <div>
+                      <h2 className="text-white font-semibold flex items-center gap-2">Configurações da Etapa {currentStepIdx + 1}</h2>
+                      <p className="text-xs text-slate-400">Personalize o comportamento desta etapa</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <label className="text-xs text-slate-400 font-medium tracking-wide uppercase">Caminho no Funil</label>
+                      <select 
+                        value={currentStep?.isVariant ? 'variant' : 'normal'}
+                        onChange={e => {
+                          const isVariant = e.target.value === 'variant';
+                          setConfig(c => ({
+                            ...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, isVariant } : s)
+                          }));
+                        }}
+                        className="w-full bg-slate-800 border border-slate-600 rounded-lg py-3 px-3 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                      >
+                        <option value="normal">Padrão → Continua para a próxima etapa em ordem</option>
+                        <option value="variant">Variante de Resultado → Apenas no final do Quiz</option>
+                      </select>
+                      <p className="text-xs text-slate-500 mt-2">
+                        Se marcada como <strong className="text-slate-400">Variante de Resultado</strong>, esta etapa ficará completamente invisível no "Próximo Passo", sendo destravada somente após o cômputo final dos pontos.
+                      </p>
+                    </div>
+
+                    {currentStep?.isVariant && (
+                      <div className="space-y-2 pt-4 border-t border-slate-700/50">
+                        <label className="text-xs text-indigo-300 font-bold uppercase tracking-wider flex items-center gap-2">
+                          🎯 Qual Resultado Destrava esta Variante?
+                        </label>
+                        <input 
+                          type="text"
+                          value={currentStep?.variantScore || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            setConfig(c => ({
+                              ...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, variantScore: val } : s)
+                            }));
+                          }}
+                          placeholder="Ex: Homem, Mulher, Aprovado..."
+                          className="w-full bg-slate-950 border border-indigo-500/50 rounded-lg py-3 px-3 text-sm text-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 placeholder-slate-600"
+                        />
+                        <p className="text-[11px] text-indigo-400 mt-2">
+                          O texto digitado acima deve ser escrito de forma <strong>idêntica</strong> ao que você colocou na aba "Dar Pontos se Escolhido" (Ação do Botão) nas etapas anteriores.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>

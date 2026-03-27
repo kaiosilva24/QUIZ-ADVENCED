@@ -899,8 +899,34 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
   const resolveNextStep = (explicitId) => {
     if (explicitId) return explicitId;
     const allSteps = steps || [];
-    const nextIdx = (stepIdx ?? 0) + 1;
-    return allSteps[nextIdx]?.id || null;
+    let nextIdx = (stepIdx ?? 0) + 1;
+    
+    // Avança ignorando etapas que são Variantes (elas saem do fluxo sequencial normal)
+    while (nextIdx < allSteps.length && allSteps[nextIdx].isVariant) {
+      nextIdx++;
+    }
+
+    // Se achou uma etapa normal, vai pra ela
+    if (nextIdx < allSteps.length) {
+      return allSteps[nextIdx].id;
+    }
+
+    // Se acabaram as etapas normais, avalia as variantes pelo Score
+    if (scores && Object.keys(scores).length > 0) {
+      const highestScoreConf = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b, '');
+      const lowerHighest = highestScoreConf.toString().trim().toLowerCase();
+      
+      const variantStep = allSteps.find(s => 
+        s.isVariant && s.variantScore && s.variantScore.trim().toLowerCase() === lowerHighest
+      );
+      if (variantStep) return variantStep.id;
+    }
+
+    // Fallback: se não pontuou nada ou não achou exato, pega a primeira Variante que existir
+    const firstVariant = allSteps.find(s => s.isVariant);
+    if (firstVariant) return firstVariant.id;
+
+    return null;
   };
 
   switch (block.type) {
