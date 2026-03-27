@@ -190,37 +190,26 @@ function Section({ title, children }) {
 }
 
 function StepSelect({ steps, value, onChange, placeholder }) {
+  // Filtra etapas variantes: elas só são alcançadas via sistema de pontuação,
+  // nunca por navegação direta de botão (evita bug de ir para Variante errada)
+  const normalSteps = (steps || []).filter(s => !s.isVariant);
   return (
     <Select
       value={value}
       onChange={onChange}
       options={[
-        { value: '', label: placeholder || '-- Nenhum --' },
-        ...steps.map((s, i) => ({ value: s.id, label: `${i + 1}. ${s.label}` }))
+        { value: '', label: placeholder || '-- Próxima Etapa --' },
+        ...normalSteps.map((s, i) => ({ value: s.id, label: `${i + 1}. ${s.label}` }))
       ]}
     />
   );
 }
 
 function ScoreTargetSelect({ steps, value, onChange }) {
-  const stepVariants = (steps || [])
+  // Apenas variantes do novo sistema (isVariant + variantScore)
+  const allVariants = (steps || [])
     .filter(s => s.isVariant && s.variantScore && s.variantScore.trim() !== '')
-    .map(s => ({ value: s.variantScore.trim() }));
-    
-  const legacyVariants = (steps || []).reduce((acc, s) => {
-    (s.blocks || []).forEach(b => {
-      if (b.type === 'result' && b.dynamicResults && b.variants?.length > 0) {
-        acc.push(...b.variants.map(v => ({ value: v.id, label: v.name || v.id })));
-      }
-    });
-    return acc;
-  }, []);
-
-  // Remove duplicates by value
-  const uniqueVariantsMap = new Map();
-  stepVariants.forEach(v => uniqueVariantsMap.set(v.value.toLowerCase(), { value: v.value, label: `👉 Variante: ${v.value}` }));
-  legacyVariants.forEach(v => uniqueVariantsMap.set(v.value.toLowerCase(), { value: v.value, label: `Antigo: ${v.label}` }));
-  const allVariants = Array.from(uniqueVariantsMap.values());
+    .map(s => ({ value: s.variantScore.trim(), label: `👉 Variante: ${s.variantScore.trim()}` }));
 
   if (allVariants.length === 0) {
     return (

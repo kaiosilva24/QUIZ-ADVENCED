@@ -897,8 +897,18 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
   // Resolve next step ID for 'próxima automaticamente'
   const resolveNextStep = (explicitId) => {
-    if (explicitId) return explicitId;
     const allSteps = steps || [];
+
+    // Se há um explicitId E ele NÃO é uma etapa variante, vai direto
+    // (Etapas variantes só são acessíveis via sistema de pontuação)
+    if (explicitId) {
+      const targetStep = allSteps.find(s => s.id === explicitId);
+      if (targetStep && !targetStep.isVariant) {
+        return explicitId;
+      }
+      // Se o explicitId aponta para uma variante, ignora e deixa o sistema de scores decidir
+    }
+
     let nextIdx = (stepIdx ?? 0) + 1;
     
     // Avança ignorando etapas que são Variantes (elas saem do fluxo sequencial normal)
