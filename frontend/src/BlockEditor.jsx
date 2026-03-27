@@ -932,6 +932,57 @@ function VideoEditor({ block, onChange }) {
   );
 }
 
+// ─── Helper: Tela de Carregamento Nativa Pro ─────────────────────────────────
+function LoadingScreenConfig({ block, theme, onChange, loadingKey = 'showLoading', title = "Tela de Carregamento (Opcional)", toggleLabel = "⏳ Ativar ao Clicar" }) {
+  const isEnabled = block[loadingKey];
+  return (
+    <Section title={title}>
+      <Toggle label={toggleLabel} value={!!isEnabled} onChange={v => onChange({ [loadingKey]: v })} />
+      {isEnabled && (
+        <>
+          <Field label="Estilo da Animação Principal">
+            <Select value={block.loadingStyle || 'spinner'} onChange={v => onChange({ loadingStyle: v })} options={[
+              { value: 'spinner', label: 'Círculo Girando' },
+              { value: 'pulse', label: 'Círculo Pulsando' },
+              { value: 'dots', label: 'Três Pontinhos' },
+            ]} />
+          </Field>
+          <Field label="Cor da Animação Principal"><ColorPicker value={block.loadingColor || (theme && theme.accent) || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
+          
+          <Field label="Textos Dinâmicos (separados por vírgula)">
+            <Input value={block.loadingText || ''} onChange={v => onChange({ loadingText: v })} placeholder="Analisando..., Processando..., Finalizando..." />
+            <p className="text-[10px] text-slate-500 mt-1 mb-2 leading-tight">Dica: use vírgulas para criar vários textos que trocam sozinhos durante o carregamento.</p>
+          </Field>
+          
+          <Field label="Texto Secundário Fixo (opcional)"><Input value={block.progressText || ''} onChange={v => onChange({ progressText: v })} placeholder="Ex: Aguarde um momento..." /></Field>
+          <Field label={`Duração Total: ${block.loadingDuration || 3}s`}>
+            <input type="range" min={1} max={15} step={1} value={block.loadingDuration || 3}
+              onChange={e => onChange({ loadingDuration: Number(e.target.value) })}
+              className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+
+          <div className="pt-3 mt-3 border-t border-white/5 space-y-3">
+            <Toggle label="Ativar Barra de Progresso" value={block.enableProgressBar !== false} onChange={v => onChange({ enableProgressBar: v })} />
+            {block.enableProgressBar !== false && (
+              <>
+                <Field label="Cor do Preenchimento (Progresso)"><ColorPicker value={block.progressFillColor || '#10b981'} onChange={v => onChange({ progressFillColor: v })} /></Field>
+                <Field label="Cor do Fundo da Barra"><ColorPicker value={block.progressBgColor || '#cbd5e1'} onChange={v => onChange({ progressBgColor: v })} /></Field>
+                <Toggle label="Mostrar Texto % Concluído" value={block.showProgressPercent !== false} onChange={v => onChange({ showProgressPercent: v })} />
+              </>
+            )}
+          </div>
+          
+          <div className="pt-3 mt-3 border-t border-white/5 space-y-3">
+            <Field label="Texto de Segurança (Rodapé)">
+              <Input value={block.loadingFooterText ?? '🔒 Suas respostas são completamente confidenciais'} onChange={v => onChange({ loadingFooterText: v })} placeholder="🔒 Suas respostas são confidenciais" />
+            </Field>
+          </div>
+        </>
+      )}
+    </Section>
+  );
+}
+
 function ButtonEditor({ block, onChange, steps, theme }) {
   return (
     <>
@@ -1039,28 +1090,7 @@ function ButtonEditor({ block, onChange, steps, theme }) {
         <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
         <ScoreTargetSelect steps={steps} value={block.scoreTarget} onChange={v => onChange({ scoreTarget: v })} />
       </Section>
-      <Section title="Tela de Carregamento (Opcional)">
-        <Toggle label="⏳ Ativar ao Clicar" value={!!block.showLoading} onChange={v => onChange({ showLoading: v })} />
-        {block.showLoading && (
-          <>
-            <Field label="Estilo da Animação">
-              <Select value={block.loadingStyle || 'spinner'} onChange={v => onChange({ loadingStyle: v })} options={[
-                { value: 'spinner', label: 'Círculo Girando' },
-                { value: 'pulse', label: 'Círculo Pulsando' },
-                { value: 'dots', label: 'Três Pontinhos' },
-              ]} />
-            </Field>
-            <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || (theme && theme.accent) || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
-            <Field label="Texto de Carregamento"><Input value={block.loadingText || ''} onChange={v => onChange({ loadingText: v })} placeholder="Analisando suas respostas..." /></Field>
-            <Field label="Texto Secundário (opcional)"><Input value={block.progressText || ''} onChange={v => onChange({ progressText: v })} placeholder="Aguarde um momento..." /></Field>
-            <Field label={`Duração: ${block.loadingDuration || 3}s`}>
-              <input type="range" min={1} max={15} step={1} value={block.loadingDuration || 3}
-                onChange={e => onChange({ loadingDuration: Number(e.target.value) })}
-                className="w-full accent-indigo-500 cursor-pointer" />
-            </Field>
-          </>
-        )}
-      </Section>
+      <LoadingScreenConfig block={block} theme={theme} onChange={onChange} loadingKey="showLoading" />
     </>
   );
 }
@@ -1282,28 +1312,7 @@ function LeadCaptureEditor({ block, onChange, steps, theme }) {
         </Field>
         <ScoreTargetSelect steps={steps} value={block.scoreTarget} onChange={v => onChange({ scoreTarget: v })} />
       </Section>
-      <Section title="Carregamento Pós-Captura (Opcional)">
-        <Toggle label="Ativar Tela de Carregamento" value={block.enableLoading} onChange={v => onChange({ enableLoading: v })} />
-        {block.enableLoading && (
-          <>
-            <Field label="Estilo da Animação">
-              <Select value={block.loadingStyle || 'spinner'} onChange={v => onChange({ loadingStyle: v })} options={[
-                { value: 'spinner', label: 'Círculo Girando' },
-                { value: 'pulse', label: 'Círculo Pulsando' },
-                { value: 'dots', label: 'Três Pontinhos' },
-              ]} />
-            </Field>
-            <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || theme.accent || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
-            <Field label="Texto de Carregamento"><Input value={block.loadingText} onChange={v => onChange({ loadingText: v })} placeholder="Processando dados..." /></Field>
-            <Field label="Texto de Progresso (opcional)"><Input value={block.progressText} onChange={v => onChange({ progressText: v })} placeholder="Gerando plano personalizado..." /></Field>
-            <Field label={`Tempo de Carregamento: ${block.loadingDuration || 3}s`}>
-              <input type="range" min={1} max={15} step={1} value={block.loadingDuration || 3}
-                onChange={e => onChange({ loadingDuration: Number(e.target.value) })}
-                className="w-full accent-indigo-500 cursor-pointer" />
-            </Field>
-          </>
-        )}
-      </Section>
+      <LoadingScreenConfig block={block} theme={theme} onChange={onChange} loadingKey="enableLoading" title="Carregamento Pós-Captura (Opcional)" toggleLabel="Ativar Tela de Carregamento" />
       <Section title="Botão">
         <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
         <Field label="Cor do Botão"><ColorPicker value={block.buttonBg} onChange={v => onChange({ buttonBg: v })} /></Field>
@@ -1406,28 +1415,7 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
         </Section>
       </div>
       <div className={disabledClass}>
-        <Section title="Carregamento (Opcional)">
-          <Toggle label="Ativar Tela de Carregamento" value={block.enableLoading} onChange={v => onChange({ enableLoading: v })} />
-          {block.enableLoading && (
-            <>
-              <Field label="Estilo da Animação">
-                <Select value={block.loadingStyle || 'spinner'} onChange={v => onChange({ loadingStyle: v })} options={[
-                  { value: 'spinner', label: 'Círculo Girando' },
-                  { value: 'pulse', label: 'Círculo Pulsando' },
-                  { value: 'dots', label: 'Três Pontinhos' },
-                ]} />
-              </Field>
-              <Field label="Cor da Animação"><ColorPicker value={block.loadingColor || theme.accent || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
-              <Field label="Texto de Carregamento"><Input value={block.loadingText} onChange={v => onChange({ loadingText: v })} placeholder="Analisando perfil..." /></Field>
-              <Field label="Texto de Progresso (opcional)"><Input value={block.progressText} onChange={v => onChange({ progressText: v })} placeholder="Gerando plano personalizado..." /></Field>
-              <Field label={`Tempo de Carregamento: ${block.loadingDuration || 3}s`}>
-                <input type="range" min={1} max={15} step={1} value={block.loadingDuration || 3}
-                  onChange={e => onChange({ loadingDuration: Number(e.target.value) })}
-                  className="w-full accent-indigo-500 cursor-pointer" />
-              </Field>
-            </>
-          )}
-        </Section>
+        <LoadingScreenConfig block={block} theme={theme} onChange={onChange} loadingKey="enableLoading" title="Carregamento (Opcional)" toggleLabel="Ativar Tela de Carregamento" />
         <Section title="Botão CTA">
           <Toggle label="Mostrar Botão de Ação" value={block.enableButton !== false} onChange={v => onChange({ enableButton: v })} />
           {block.enableButton !== false && (

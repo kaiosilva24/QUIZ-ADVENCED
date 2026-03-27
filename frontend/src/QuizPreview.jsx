@@ -713,6 +713,147 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   );
 }
 
+// ─── LoadingScreen Pro ────────────────────────────────────────────────────────
+function LoadingScreen({ block, accent, defaultText, compact }) {
+  const duration = (block.loadingDuration || 3) * 1000;
+  const color = block.loadingColor || accent || '#6366f1';
+  const style = block.loadingStyle || 'spinner';
+  const fillColor = block.progressFillColor || '#10b981';
+  const bgColor = block.progressBgColor || '#cbd5e1';
+  const showBar = block.enableProgressBar !== false;
+  const showPct = block.showProgressPercent !== false;
+  const footerText = block.loadingFooterText !== undefined
+    ? block.loadingFooterText
+    : '🔒 Suas respostas são completamente confidenciais';
+
+  // Parse dynamic texts from comma-separated loadingText
+  const rawTexts = (block.loadingText || '').split(',').map(t => t.trim()).filter(Boolean);
+  const texts = rawTexts.length > 0 ? rawTexts : ['Processando...'];
+
+  const [progress, setProgress] = React.useState(0);
+  const [textIdx, setTextIdx] = React.useState(0);
+
+  React.useEffect(() => {
+    const start = Date.now();
+    const interval = 30;
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const pct = Math.min(100, Math.round((elapsed / duration) * 100));
+      setProgress(pct);
+      // Cycle texts evenly distributed over duration
+      const segment = Math.floor((elapsed / duration) * texts.length);
+      setTextIdx(Math.min(segment, texts.length - 1));
+      if (pct >= 100) clearInterval(timer);
+    }, interval);
+    return () => clearInterval(timer);
+  }, []);
+
+  const sz = compact ? 32 : 52;
+
+  return (
+    <div style={{
+      textAlign: 'center',
+      display: 'flex', flexDirection: 'column',
+      gap: compact ? 10 : 20,
+      alignItems: 'center', justifyContent: 'center',
+      minHeight: compact ? 150 : 280,
+      padding: compact ? '12px 8px' : '32px 24px',
+    }}>
+      <style>{`
+        @keyframes quizSpin { to { transform: rotate(360deg); } }
+        @keyframes quizPulse { 0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.15);opacity:.7} }
+        @keyframes quizBounce { 0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)} }
+        @keyframes ldgTextIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+      `}</style>
+
+      {/* Spinner / Pulse / Dots */}
+      {style === 'spinner' && (
+        <div style={{
+          width: sz, height: sz,
+          border: `${compact?3:4}px solid ${color}28`,
+          borderTopColor: color,
+          borderRadius: '50%',
+          animation: 'quizSpin 1s linear infinite',
+          flexShrink: 0,
+        }} />
+      )}
+      {style === 'pulse' && (
+        <div style={{
+          width: sz, height: sz,
+          background: `${color}18`,
+          borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'quizPulse 1.4s ease-in-out infinite',
+          flexShrink: 0,
+        }}>
+          <div style={{ width: '52%', height: '52%', background: color, borderRadius: '50%' }} />
+        </div>
+      )}
+      {style === 'dots' && (
+        <div style={{ display: 'flex', gap: compact ? 5 : 8 }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{
+              width: compact ? 8 : 13, height: compact ? 8 : 13,
+              background: color, borderRadius: '50%',
+              animation: `quizBounce 0.65s infinite ${i*0.13}s alternate`,
+            }} />
+          ))}
+        </div>
+      )}
+
+      {/* Main dynamic text */}
+      <p key={textIdx} style={{
+        color: defaultText, fontWeight: 700,
+        fontSize: compact ? 12 : 20, margin: 0,
+        animation: 'ldgTextIn 0.35s ease-out forwards',
+        maxWidth: compact ? 160 : 320,
+      }}>
+        {texts[textIdx]}
+      </p>
+
+      {/* Progress bar */}
+      {showBar && (
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: compact ? 4 : 6, alignItems: 'center' }}>
+          <div style={{
+            width: '100%', height: compact ? 7 : 10,
+            background: bgColor, borderRadius: 99, overflow: 'hidden',
+          }}>
+            <div style={{
+              height: '100%', width: `${progress}%`,
+              background: fillColor, borderRadius: 99,
+              transition: 'width 0.04s linear',
+            }} />
+          </div>
+          {showPct && (
+            <p style={{ color: defaultText, opacity: 0.6, fontSize: compact ? 9 : 13, margin: 0 }}>
+              {progress}% concluído
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Secondary fixed text */}
+      {block.progressText && (
+        <p style={{ color: defaultText, opacity: 0.55, fontSize: compact ? 9 : 13, margin: 0, fontStyle: 'italic' }}>
+          {block.progressText}
+        </p>
+      )}
+
+      {/* Footer security */}
+      {footerText && (
+        <p style={{
+          color: defaultText, opacity: 0.4,
+          fontSize: compact ? 8 : 12, margin: 0,
+          borderTop: `1px solid ${defaultText}18`,
+          paddingTop: compact ? 6 : 12, width: '100%', textAlign: 'center',
+        }}>
+          {footerText}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // Renderizador fiel ao InLead: converte o config JSON em tela visual
 export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate, selectedBlockId, quizId, visitorId, scores = {} }) {
   const step = config?.steps?.[stepIdx];
@@ -1184,17 +1325,28 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const isIconMode = block.displayMode === 'icon';
       const isUrl = block.actionType === 'url';
       
+      const [isLoading, setIsLoading] = React.useState(false);
+
       const handleClick = () => {
         if (isUrl && block.buttonUrl) {
           const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
           window.open(url, '_blank');
+        } else if (block.showLoading && onNavigate) {
+          setIsLoading(true);
+          const target = resolveNextStep(block.nextStep, block.scoreTarget);
+          setTimeout(() => {
+            setIsLoading(false);
+            if (target) onNavigate(target, block.text || 'Avançar', false, block.scoreTarget);
+          }, (block.loadingDuration || 3) * 1000);
         } else if (onNavigate) {
           const target = resolveNextStep(block.nextStep, block.scoreTarget);
-          if (target) {
-            onNavigate(target, block.text || 'Avançar', block.showLoading ? block : false, block.scoreTarget);
-          }
+          if (target) onNavigate(target, block.text || 'Avançar', false, block.scoreTarget);
         }
       };
+
+      if (isLoading) {
+        return <LoadingScreen block={block} accent={accent} defaultText={defaultText} compact={compact} />;
+      }
 
       if (isIconMode) {
         const arrowStyle = block.arrowStyle || 'chevron_down';
@@ -1323,6 +1475,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       return <VideoBlockPlayer block={{...block, setMediaState}} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} theme={theme} />;
 
     case 'button': {
+      const [isLoading, setIsLoading] = React.useState(false);
+      if (isLoading) {
+        return <LoadingScreen block={block} accent={accent} defaultText={defaultText} compact={compact} />;
+      }
+
       const pos = block.emojiPosition || 'left_inside';
       const btnRadius = block.borderRadius ?? (block.rounded === 'full' ? 99 : block.rounded === 'xl' ? 14 : 8);
       const bgStyleMode = block.bgStyle || (block.glassEffect ? 'glass' : 'solid');
@@ -1389,11 +1546,16 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             if (isUrl && block.buttonUrl) {
               const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
               window.open(url, '_blank');
+            } else if (block.showLoading && onNavigate) {
+              setIsLoading(true);
+              const target = resolveNextStep(block.nextStep, block.scoreTarget);
+              setTimeout(() => {
+                setIsLoading(false);
+                if (target) onNavigate(target, block.text || 'Avançar', false, block.scoreTarget);
+              }, (block.loadingDuration || 3) * 1000);
             } else if (onNavigate) {
               const target = resolveNextStep(block.nextStep, block.scoreTarget);
-              if (target) {
-                onNavigate(target, block.text || 'Avançar', block.showLoading ? block : false, block.scoreTarget);
-              }
+              if (target) onNavigate(target, block.text || 'Avançar', false, block.scoreTarget);
             }
           }}
         >
@@ -1491,67 +1653,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       };
 
       if (isLoading) {
-        const style = block.loadingStyle || 'spinner';
-        const color = block.loadingColor || accent;
-        
-        return (
-          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 12 : 24, alignItems: 'center', justifyContent: 'center', minHeight: compact ? 150 : 250 }}>
-             <style>{`
-              @keyframes quizSpin { to { transform: rotate(360deg); } }
-              @keyframes quizPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: .7; } }
-              @keyframes quizBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-            `}</style>
-
-            {style === 'spinner' && (
-              <div style={{
-                width: compact ? 32 : 48,
-                height: compact ? 32 : 48,
-                border: `4px solid ${color}30`,
-                borderTopColor: color,
-                borderRadius: '50%',
-                animation: 'quizSpin 1s linear infinite'
-              }} />
-            )}
-            
-            {style === 'pulse' && (
-               <div style={{
-                width: compact ? 32 : 56,
-                height: compact ? 32 : 56,
-                backgroundColor: `${color}20`,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                animation: 'quizPulse 1.5s ease-in-out infinite'
-              }}>
-                <div style={{ width: '50%', height: '50%', backgroundColor: color, borderRadius: '50%' }} />
-              </div>
-            )}
-            
-            {style === 'dots' && (
-              <div style={{ display: 'flex', gap: compact ? 4 : 8 }}>
-                {[0, 1, 2].map(i => (
-                  <div key={i} style={{
-                    width: compact ? 8 : 12,
-                    height: compact ? 8 : 12,
-                    backgroundColor: color,
-                    borderRadius: '50%',
-                    animation: `quizBounce 0.6s infinite ${i * 0.1}s alternate`
-                  }} />
-                ))}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8 }}>
-                {block.loadingText && (
-                  <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 13 : 18, margin: 0 }}>{block.loadingText}</p>
-                )}
-                {block.progressText && (
-                  <p style={{ color: defaultText, opacity: .7, fontSize: compact ? 10 : 14, margin: 0 }}>{block.progressText}</p>
-                )}
-            </div>
-          </div>
-        );
+        return <LoadingScreen block={block} accent={accent} defaultText={defaultText} compact={compact} />;
       }
 
       const defaultFieldTitles = { name: 'Nome', email: 'E-mail', phone: 'Telefone', message: 'Mensagem' };
@@ -1915,67 +2017,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       if (!resVisible) return null;
 
       if (isLoading) {
-        const style = block.loadingStyle || 'spinner';
-        const color = block.loadingColor || accent;
-        
-        return (
-          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: compact ? 12 : 24, alignItems: 'center', justifyContent: 'center', minHeight: compact ? 150 : 250 }}>
-             <style>{`
-              @keyframes quizSpin { to { transform: rotate(360deg); } }
-              @keyframes quizPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: .7; } }
-              @keyframes quizBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-            `}</style>
-
-            {style === 'spinner' && (
-              <div style={{
-                width: compact ? 32 : 48,
-                height: compact ? 32 : 48,
-                border: `4px solid ${color}30`,
-                borderTopColor: color,
-                borderRadius: '50%',
-                animation: 'quizSpin 1s linear infinite'
-              }} />
-            )}
-            
-            {style === 'pulse' && (
-              <div style={{
-                width: compact ? 32 : 56,
-                height: compact ? 32 : 56,
-                backgroundColor: `${color}20`,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                animation: 'quizPulse 1.5s ease-in-out infinite'
-              }}>
-                <div style={{ width: '50%', height: '50%', backgroundColor: color, borderRadius: '50%' }} />
-              </div>
-            )}
-            
-            {style === 'dots' && (
-              <div style={{ display: 'flex', gap: compact ? 4 : 8 }}>
-                {[0, 1, 2].map(i => (
-                  <div key={i} style={{
-                    width: compact ? 8 : 12,
-                    height: compact ? 8 : 12,
-                    backgroundColor: color,
-                    borderRadius: '50%',
-                    animation: `quizBounce 0.6s infinite ${i * 0.1}s alternate`
-                  }} />
-                ))}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8 }}>
-                {block.loadingText && (
-                  <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 13 : 18, margin: 0 }}>{block.loadingText}</p>
-                )}
-                {block.progressText && (
-                  <p style={{ color: defaultText, opacity: .7, fontSize: compact ? 10 : 14, margin: 0 }}>{block.progressText}</p>
-                )}
-            </div>
-          </div>
-        );
+        return <LoadingScreen block={block} accent={accent} defaultText={defaultText} compact={compact} />;
       }
 
       // Action handler
