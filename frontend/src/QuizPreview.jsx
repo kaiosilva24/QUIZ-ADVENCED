@@ -901,57 +901,48 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     let nextIdx = (stepIdx ?? 0) + 1;
     const isCurrentVariant = allSteps[stepIdx]?.isVariant;
 
-    // Simular como ficariam os scores se a pessoa clicasse e pontuasse AGORA
+    // Scores acumulados + simulação do botão atual
     let simulatedScores = { ...(scores || {}) };
     if (currentButtonScoreTarget) {
       simulatedScores[currentButtonScoreTarget] = (simulatedScores[currentButtonScoreTarget] || 0) + 1;
     }
 
-    // Se NÃO ESTOU numa Variante, mas a *PRÓXIMA ETAPA DO FUNIL* é Variante: FORÇA COMPUTAÇÃO
-    // Isso é um gateway inultrapassável. Mesmo que haja um 'explicitId' querendo pular pra etapa X,
-    // se o passo físico seguinte for Variante, interceptamos para mostrar o resultado da variante primeiro.
+    // Gateway: força avaliação de variantes quando a próxima etapa física for Variante
     if (!isCurrentVariant && nextIdx < allSteps.length && allSteps[nextIdx].isVariant) {
-      if (Object.keys(simulatedScores).length > 0) {
-        const highestScoreConf = Object.keys(simulatedScores).reduce((a, b) => simulatedScores[a] > simulatedScores[b] ? a : b, '');
-        const lowerHighest = highestScoreConf.toString().trim().toLowerCase();
-        
-        const variantStep = allSteps.find(s => 
-          s.isVariant && s.variantScore && s.variantScore.trim().toLowerCase() === lowerHighest
-        );
-        if (variantStep) return variantStep.id;
+      const variantSteps = allSteps.filter(s => s.isVariant && s.variantScore && s.variantScore.trim() !== '');
+      if (variantSteps.length > 0) {
+        const validKeys = variantSteps.map(s => s.variantScore.trim().toLowerCase());
+        const filtered = {};
+        for (const [k, v] of Object.entries(simulatedScores)) {
+          const n = k.trim().toLowerCase();
+          if (validKeys.includes(n)) filtered[n] = (filtered[n] || 0) + v;
+        }
+        if (Object.keys(filtered).length > 0) {
+          const maxScore = Math.max(...Object.values(filtered));
+          const winners = Object.keys(filtered).filter(k => filtered[k] === maxScore);
+          const chosen = winners[Math.floor(Math.random() * winners.length)];
+          const winner = variantSteps.find(s => s.variantScore.trim().toLowerCase() === chosen);
+          if (winner) return winner.id;
+        }
+        return variantSteps[Math.floor(Math.random() * variantSteps.length)].id;
       }
-
-      // Fallback: pega a primeira Variante se não houver pontuação vitoriosa
-      const firstVariant = allSteps.find(s => s.isVariant);
-      if (firstVariant) return firstVariant.id;
     }
 
     if (isCurrentVariant) {
-      // Se já estou NUMA Variante e aperto 'Avançar', o usuário DEVE ir para a próxima etapa normal
-      // A menos que ele tenha configurado explicitamente uma saída válida não-variante.
       if (explicitId) {
-        const targetStep = allSteps.find(s => s.id === explicitId);
-        if (targetStep && !targetStep.isVariant) return explicitId;
+        const t = allSteps.find(s => s.id === explicitId);
+        if (t && !t.isVariant) return explicitId;
       }
-      
-      // Pula todas as demais variantes para achar o caminho base
-      while (nextIdx < allSteps.length && allSteps[nextIdx].isVariant) {
-        nextIdx++;
-      }
+      while (nextIdx < allSteps.length && allSteps[nextIdx].isVariant) nextIdx++;
       if (nextIdx < allSteps.length) return allSteps[nextIdx].id;
       return null;
     }
 
-    // Fluxo normal contínuo (somente se não bateu de frente com Variantes)
     if (explicitId) {
-      const targetStep = allSteps.find(s => s.id === explicitId);
-      if (targetStep && !targetStep.isVariant) {
-        return explicitId;
-      }
+      const t = allSteps.find(s => s.id === explicitId);
+      if (t && !t.isVariant) return explicitId;
     }
-
     if (nextIdx < allSteps.length) return allSteps[nextIdx].id;
-
     return null;
   };
 

@@ -354,25 +354,16 @@ function QuizRouter() {
         );
       })()}
       <div style={{width:'100%',maxWidth:'440px',minHeight:'100vh'}}>
-        {quizData && currentStep < Object.keys(quizData.config?.steps || {}).length && (
-        <QuizPreview 
-           config={quizData.config} 
-           stepIdx={currentStep} 
-           onNavigate={handleNavigate} 
-           scores={scores} 
-           visitorId={visitorId.current} 
-           quizId={quizData.quiz_id || quizData.id} />
-      )}
-
-      {/* Floating Debugger para corrigir o erro de variantes */}
-      <div className="fixed bottom-2 right-2 bg-black/90 text-lime-400 font-mono text-[10px] p-2 rounded z-50 pointer-events-none opacity-80 whitespace-pre">
-        [DEBUG FUNIL]
-        Etapa Atual: {currentStep} 
-        Prox é Variante?: {quizData?.config?.steps?.[currentStep + 1]?.isVariant ? 'SIM' : 'NÃO'}
-        Pontos Acumulados: {JSON.stringify(scores, null, 1)}
+        <QuizPreview
+          config={quizData.config}
+          stepIdx={currentStep}
+          compact={false}
+          onNavigate={handleNavigate}
+          quizId={quizData.quiz_id || quizData.id}
+          visitorId={getVisitorId()}
+          scores={scores}
+        />
       </div>
-
-    </div>
     </div>
   );
 }

@@ -1,0 +1,149 @@
+[
+  {
+    "id": "step_1",
+    "label": "INÍCIO",
+    "buttons": [
+      {
+        "text": "COMEÇAR AGORA!",
+        "nextStep": null
+      }
+    ]
+  },
+  {
+    "id": "9vqjkiq3c",
+    "label": "Etapa 1",
+    "buttons": [
+      {
+        "text": "Planejo... mas acabo fazendo outra coisa",
+        "nextStep": null,
+        "scoreTarget": "01"
+      },
+      {
+        "text": "Começo bem… e travo no meio",
+        "nextStep": null,
+        "scoreTarget": "Variante 02"
+      },
+      {
+        "text": "Nem começo... já acho que não vai dar certo!",
+        "nextStep": null,
+        "scoreTarget": "var_1774532177299"
+      }
+    ]
+  },
+  {
+    "id": "rzwoj90kh",
+    "label": "Etapa 2",
+    "buttons": [
+      {
+        "text": "Eu paro por um dia… e isso vira semanas",
+        "nextStep": null,
+        "scoreTarget": "01"
+      },
+      {
+        "text": "Resolvo tudo dos outros… e o meu fica pra depois",
+        "nextStep": null,
+        "scoreTarget": "Variante 02"
+      },
+      {
+        "text": "Começo a questionar se vale a pena... e paro",
+        "nextStep": null,
+        "scoreTarget": "var_1774537880769"
+      }
+    ]
+  },
+  {
+    "id": "dnwogcoor",
+    "label": "Etapa 3",
+    "buttons": [
+      {
+        "text": "Minha vida financeira! sempre corro e não saio do lugar",
+        "nextStep": null,
+        "scoreTarget": "var_1774532177299"
+      },
+      {
+        "text": "Minha mente... ansiedade, falta de foco",
+        "nextStep": null,
+        "scoreTarget": "var_1774537880769"
+      },
+      {
+        "text": "Minha confiança... o medo me trava antes",
+        "nextStep": null,
+        "scoreTarget": "var_1774537880769"
+      }
+    ]
+  },
+  {
+    "id": "yverca5dv",
+    "label": "Etapa 4",
+    "buttons": [
+      {
+        "text": "Já tentei… não funciona comigo",
+        "nextStep": null,
+        "scoreTarget": "var_1774532177299"
+      },
+      {
+        "text": "E se eu não for capaz? Tem gente muito melhor que eu",
+        "nextStep": null,
+        "scoreTarget": "var_1774537880769"
+      },
+      {
+        "text": "Depois eu faço… (e nunca faço)",
+        "nextStep": null,
+        "scoreTarget": "var_1774537880769"
+      }
+    ]
+  },
+  {
+    "id": "efawm9f8r",
+    "label": "Etapa 5",
+    "buttons": [
+      {
+        "text": "Alguns meses... percebi isso agora",
+        "nextStep": null,
+        "scoreTarget": "var_1774532177299"
+      },
+      {
+        "text": "Alguns anos... já tentei mas nada muda",
+        "nextStep": null,
+        "scoreTarget": "var_1774537880769"
+      },
+      {
+        "text": "A vida inteira... sempre fui assim",
+        "nextStep": null,
+        "scoreTarget": "var_1774537880769"
+      }
+    ]
+  },
+  {
+    "id": "step_1774620531758",
+    "label": "Etapa 9",
+    "isVariant": true,
+    "variantScore": "Variante 02",
+    "buttons": [
+      {
+        "text": "Avançar",
+        "nextStep": null
+      },
+      {
+        "text": "ASSISTIR AGORA",
+        "nextStep": null
+      }
+    ]
+  },
+  {
+    "id": "ttfuzamzd",
+    "label": "Etapa 9 (Cópia)",
+    "isVariant": true,
+    "variantScore": "01",
+    "buttons": [
+      {
+        "text": "Avançar",
+        "nextStep": null
+      },
+      {
+        "text": "ASSISTIR AGORA",
+        "nextStep": null
+      }
+    ]
+  }
+]

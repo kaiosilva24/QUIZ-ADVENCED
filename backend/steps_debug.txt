@@ -1,0 +1,28 @@
+Step 1 [INÍCIO] isVariant:undefined variantScore:undefined
+  btn:[COMEÇAR AGORA!] nextStep:null scoreTarget:undefined
+Step 2 [Etapa 1] isVariant:undefined variantScore:undefined
+  btn:[Planejo... mas acabo fazendo outra coisa] nextStep:null scoreTarget:01
+  btn:[Começo bem… e travo no meio] nextStep:null scoreTarget:Variante 02
+  btn:[Nem começo... já acho que não vai dar certo!] nextStep:null scoreTarget:var_1774532177299
+Step 3 [Etapa 2] isVariant:undefined variantScore:undefined
+  btn:[Eu paro por um dia… e isso vira semanas] nextStep:null scoreTarget:01
+  btn:[Resolvo tudo dos outros… e o meu fica pra depois] nextStep:null scoreTarget:Variante 02
+  btn:[Começo a questionar se vale a pena... e paro] nextStep:null scoreTarget:var_1774537880769
+Step 4 [Etapa 3] isVariant:undefined variantScore:undefined
+  btn:[Minha vida financeira! sempre corro e não saio do lugar] nextStep:null scoreTarget:var_1774532177299
+  btn:[Minha mente... ansiedade, falta de foco] nextStep:null scoreTarget:var_1774537880769
+  btn:[Minha confiança... o medo me trava antes] nextStep:null scoreTarget:var_1774537880769
+Step 5 [Etapa 4] isVariant:undefined variantScore:undefined
+  btn:[Já tentei… não funciona comigo] nextStep:null scoreTarget:var_1774532177299
+  btn:[E se eu não for capaz? Tem gente muito melhor que eu] nextStep:null scoreTarget:var_1774537880769
+  btn:[Depois eu faço… (e nunca faço)] nextStep:null scoreTarget:var_1774537880769
+Step 6 [Etapa 5] isVariant:undefined variantScore:undefined
+  btn:[Alguns meses... percebi isso agora] nextStep:null scoreTarget:var_1774532177299
+  btn:[Alguns anos... já tentei mas nada muda] nextStep:null scoreTarget:var_1774537880769
+  btn:[A vida inteira... sempre fui assim] nextStep:null scoreTarget:var_1774537880769
+Step 7 [Etapa 9] isVariant:true variantScore:Variante 02
+  btn:[Avançar] nextStep:null scoreTarget:undefined
+  btn:[ASSISTIR AGORA] nextStep:null scoreTarget:undefined
+Step 8 [Etapa 9 (Cópia)] isVariant:true variantScore:01
+  btn:[Avançar] nextStep:null scoreTarget:undefined
+  btn:[ASSISTIR AGORA] nextStep:null scoreTarget:undefined
