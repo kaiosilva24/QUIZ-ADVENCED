@@ -37,7 +37,7 @@ function createBlock(type) {
   switch (type) {
     case 'heading':     return { ...base, text: 'Qual é o seu maior desafio?', size: 'xl', align: 'center', color: '#ffffff', bold: true };
     case 'text':        return { ...base, text: 'Escolha a opção que melhor descreve sua situação atual.', align: 'center', color: '#94a3b8', size: 'base' };
-    case 'image':       return { ...base, src: '', alt: '', fit: 'cover', rounded: true, height: 200 };
+    case 'image':       return { ...base, src: '', alt: '', fit: 'cover', rounded: true, borderRadius: 12, imgScale: 100, align: 'center', layout: 'single' };
     case 'audio':       return { ...base, src: '', avatarSrc: '', senderName: 'Fulano', duration: '', bgColor: '#075e54', bubbleColor: '#dcf8c6', textColor: '#111b21', showWave: true };
     case 'video':       return { ...base, src: '', thumbnailSrc: '', autoplay: false, muted: false, loop: false, hideControls: false, showPlayBtn: true, rounded: true, aspectRatio: '16/9', showTimer: true, ctaText: '', ctaUrl: '' };
     case 'button':      return { ...base, text: '✅ Sim, quero muito!', emoji: '✅', bg: '#6366f1', textColor: '#ffffff', nextStep: null, fullWidth: true, rounded: 'xl' };

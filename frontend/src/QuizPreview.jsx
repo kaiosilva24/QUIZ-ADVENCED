@@ -1023,40 +1023,65 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     }
 
     case 'image': {
+      const isDual = block.layout === 'dual';
       const aspectRatio = block.aspectRatio || '16/9';
-      const scale = block.imgScale ? block.imgScale / 100 : 1;
-      const imageStyle = {
-        width: `${(block.imgScale || 100)}%`,
-        aspectRatio: block.height && !block.aspectRatio ? undefined : aspectRatio,
-        height: block.height && !block.aspectRatio ? (compact ? block.height * 0.5 : block.height) : undefined,
-        objectFit: block.fit || 'cover',
-        objectPosition: block.position || 'center center',
-        borderRadius: block.rounded ? (compact ? 8 : 12) : 0,
-        display: 'block',
-        margin: '0 auto',
-      };
-      if (!block.src) {
+      const isAuto = aspectRatio === 'auto' || !block.aspectRatio;
+      
+      const alignProps = 
+        block.align === 'flex-start' ? { justifyContent: 'flex-start' } :
+        block.align === 'flex-end' ? { justifyContent: 'flex-end' } :
+        { justifyContent: 'center' };
+
+      const baseRadius = block.borderRadius ?? (block.rounded ? 12 : 0);
+      const borderRadius = compact ? Math.round(baseRadius * 0.6) : baseRadius;
+
+      const renderImage = (src, alt, nextStep, scoreTarget) => {
+        const imageStyle = {
+          width: '100%',
+          aspectRatio: isAuto ? undefined : aspectRatio,
+          height: isAuto ? (compact ? (block.height || 200) * 0.5 : (block.height || 200)) : undefined,
+          objectFit: block.fit || 'cover',
+          objectPosition: 'center center',
+          borderRadius: borderRadius,
+          display: 'block',
+        };
+
+        if (!src) {
+          return (
+             <div style={{...imageStyle, background: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <p style={{ color: '#475569', fontSize: compact ? 9 : 12, textAlign: 'center', padding: 8 }}>Sem Imagem</p>
+             </div>
+          );
+        }
+
         return (
-          <div style={{
-            width: `${(block.imgScale || 100)}%`,
-            aspectRatio,
-            background: '#1e293b',
-            borderRadius: block.rounded ? (compact ? 8 : 12) : 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto',
-          }}>
-            <p style={{ color: '#475569', fontSize: compact ? 9 : 12 }}>Imagem não configurada</p>
-          </div>
+          <img src={src} alt={alt || ''} style={{...imageStyle, cursor: 'pointer' }} 
+               onClick={() => {
+                 if (onNavigate) {
+                   const target = resolveNextStep(nextStep);
+                   if (target) onNavigate(target, 'Imagem', false, scoreTarget);
+                 }
+               }} />
         );
-      }
+      };
+
       return (
-        <img src={block.src} alt={block.alt || ''} style={{...imageStyle, cursor: 'pointer' }} 
-             onClick={() => {
-               if (onNavigate) {
-                 const target = resolveNextStep(block.nextStep);
-                 if (target) onNavigate(target, 'Imagem VSL', false, block.scoreTarget);
-               }
-             }} />
+        <div style={{ display: 'flex', width: '100%', ...alignProps }}>
+          <div style={{ 
+            width: `${block.imgScale || 100}%`, 
+            display: isDual ? 'flex' : 'block', 
+            gap: isDual ? (compact ? 8 : 16) : 0 
+          }}>
+            {isDual ? (
+              <>
+                <div style={{ flex: 1, minWidth: 0 }}>{renderImage(block.src, block.alt, block.nextStep, block.scoreTarget)}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>{renderImage(block.src2, block.alt2, block.nextStep2, block.scoreTarget2)}</div>
+              </>
+            ) : (
+              renderImage(block.src, block.alt, block.nextStep, block.scoreTarget)
+            )}
+          </div>
+        </div>
       );
     }
 

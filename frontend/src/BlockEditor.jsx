@@ -614,43 +614,105 @@ function TextEditor({ block, onChange }) {
   );
 }
 
-function ImageEditor({ block, onChange, steps }) {
+function ImageUploaderUI({ src, alt, onChangeSrc, onChangeAlt, labelPrefix }) {
   return (
-    <Section title="Imagem">
-      {/* Upload do PC */}
-      {block.src?.startsWith('data:image') && (
-        <div className="relative w-full rounded-xl overflow-hidden border border-slate-700 mb-1" style={{ height: 80 }}>
-          <img src={block.src} alt="" className="w-full h-full object-cover" />
-          <button onClick={() => onChange({ src: '' })}
-            className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600/90 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer text-xs">×</button>
-        </div>
-      )}
-      <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 hover:bg-slate-800/60 text-xs mb-1">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        {block.src?.startsWith('data:image') ? '✅ Imagem carregada do PC' : 'Carregar Imagem do Computador'}
-        <input type="file" accept="image/*" className="hidden" onChange={e => {
-          const file = e.target.files[0]; if (!file) return;
-          const reader = new FileReader();
-          reader.onload = ev => onChange({ src: ev.target.result });
-          reader.readAsDataURL(file);
-        }} />
-      </label>
+    <>
+      <Field label={`Upload de ${labelPrefix || 'Imagem'} do Computador`}>
+        {src?.startsWith('data:image') && (
+          <div className="relative w-full rounded-xl overflow-hidden border border-slate-700 mb-2" style={{ height: 80 }}>
+            <img src={src} alt="" className="w-full h-full object-cover" />
+            <button onClick={() => onChangeSrc('')}
+              className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600/90 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer text-xs">×</button>
+          </div>
+        )}
+        <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 hover:bg-slate-800/60 text-xs">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          {src?.startsWith('data:image') ? '✅ Trocar Imagem do PC' : 'Carregar Imagem do Computador'}
+          <input type="file" accept="image/*" className="hidden" onChange={e => {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => onChangeSrc(ev.target.result);
+            reader.readAsDataURL(file);
+          }} />
+        </label>
+      </Field>
+      <Field label="Texto Alternativo (Acessibilidade)">
+        <Input value={alt || ''} onChange={onChangeAlt} placeholder="Descrição da imagem" />
+      </Field>
+    </>
+  );
+}
 
-      <Field label="Texto Alternativo"><Input value={block.alt} onChange={v => onChange({ alt: v })} placeholder="Descrição da imagem" /></Field>
-      <Field label="Altura (px)">
-        <input type="range" min={80} max={600} value={block.height || 200}
-          onChange={e => onChange({ height: Number(e.target.value) })}
-          className="w-full accent-indigo-500 cursor-pointer" />
-        <span className="text-xs text-indigo-400">{block.height || 200}px</span>
-      </Field>
-      <Field label="Ajuste de Imagem">
-        <Select value={block.fit || 'cover'} onChange={v => onChange({ fit: v })} options={[
-          { value: 'cover', label: 'Cover (Preencher)' }, { value: 'contain', label: 'Contain (Conter)' }, { value: 'fill', label: 'Fill (Esticar)' }
-        ]} />
-      </Field>
-      <Toggle label="Bordas Arredondadas" value={block.rounded} onChange={v => onChange({ rounded: v })} />
-      <ScoreTargetSelect steps={steps} value={block.scoreTarget} onChange={v => onChange({ scoreTarget: v })} />
-    </Section>
+function ImageEditor({ block, onChange, steps }) {
+  const isDual = block.layout === 'dual';
+
+  return (
+    <>
+      <Section title="Estilo e Layout da Imagem">
+        <Field label="Modo de Exibição">
+          <Select value={block.layout || 'single'} onChange={v => onChange({ layout: v })} options={[
+            { value: 'single', label: 'Uma Imagem' },
+            { value: 'dual', label: 'Duas Imagens (Lado a Lado)' }
+          ]} />
+        </Field>
+        <Field label="Proporção da Imagem">
+          <Select value={block.aspectRatio || 'auto'} onChange={v => onChange({ aspectRatio: v })} options={[
+            { value: 'auto', label: 'Livre / Original (Altura px)' },
+            { value: '16/9', label: '16:9 (Horizontal)' },
+            { value: '1/1', label: '1:1 (Quadrado)' },
+            { value: '4/3', label: '4:3 (Retrato Fino)' },
+            { value: '9/16', label: '9:16 (Vertical)' },
+          ]} />
+        </Field>
+        <Field label="Ajuste de Preenchimento">
+          <Select value={block.fit || 'cover'} onChange={v => onChange({ fit: v })} options={[
+            { value: 'cover', label: 'Cover (Preencher espaço)' }, { value: 'contain', label: 'Contain (Conter)' }, { value: 'fill', label: 'Fill (Esticar / Distorcer)' }
+          ]} />
+        </Field>
+        {(block.aspectRatio === 'auto' || !block.aspectRatio) && (
+          <Field label={`Altura Fixa Livre: ${block.height || 200}px`}>
+            <input type="range" min={40} max={800} step={10} value={block.height || 200}
+              onChange={e => onChange({ height: Number(e.target.value) })}
+              className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+        )}
+        <Field label={`Largura Total ${isDual ? 'do Grupo' : 'da Imagem'}: ${block.imgScale || 100}%`}>
+          <input type="range" min={10} max={100} step={5} value={block.imgScale || 100}
+            onChange={e => onChange({ imgScale: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
+        <Field label="Alinhamento Horizontal">
+           <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
+             { value: 'flex-start', label: 'Esquerda' },
+             { value: 'center', label: 'Centro' },
+             { value: 'flex-end', label: 'Direita' }
+           ]} />
+        </Field>
+        <Field label={`Arredondamento das Bordas: ${block.borderRadius ?? (block.rounded ? 12 : 0)}px`}>
+          <input type="range" min={0} max={100} step={2} value={block.borderRadius ?? (block.rounded ? 12 : 0)}
+            onChange={e => onChange({ borderRadius: Number(e.target.value), rounded: Number(e.target.value) > 0 })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
+      </Section>
+
+      <Section title={isDual ? "Imagem 1 (Esquerda)" : "Imagem e Ação"}>
+        <ImageUploaderUI src={block.src} alt={block.alt} onChangeSrc={v => onChange({ src: v })} onChangeAlt={v => onChange({ alt: v })} labelPrefix="Imagem 1" />
+        <Field label="Ao Clicar na Imagem 1 (Opcional)">
+          <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} placeholder="-- Avançar para Etapa --" />
+        </Field>
+        <ScoreTargetSelect steps={steps} value={block.scoreTarget} onChange={v => onChange({ scoreTarget: v })} />
+      </Section>
+
+      {isDual && (
+        <Section title="Imagem 2 (Direita)">
+          <ImageUploaderUI src={block.src2} alt={block.alt2} onChangeSrc={v => onChange({ src2: v })} onChangeAlt={v => onChange({ alt2: v })} labelPrefix="Imagem 2" />
+          <Field label="Ao Clicar na Imagem 2 (Opcional)">
+            <StepSelect steps={steps} value={block.nextStep2} onChange={v => onChange({ nextStep2: v })} placeholder="-- Avançar para Etapa --" />
+          </Field>
+          <ScoreTargetSelect steps={steps} value={block.scoreTarget2} onChange={v => onChange({ scoreTarget2: v })} />
+        </Section>
+      )}
+    </>
   );
 }
 
