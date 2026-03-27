@@ -142,6 +142,28 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
   const isFirstRender = useRef(true);
   const debounceRef = useRef(null);
 
+  const [title, setTitle] = useState(quiz.title || 'Novo Quiz');
+  const [slug, setSlug] = useState(quiz.slug || '');
+
+  const [config, setConfigRaw] = useState(() => {
+    try {
+      const parsed = JSON.parse(quiz.config_json || '{}');
+      const cfg = {
+        theme: parsed.theme || { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '' },
+        settings: parsed.settings || { saveProgress: false },
+        steps: parsed.steps || [{ id: 'step_1', label: 'Etapa 1', blocks: [] }],
+      };
+      historyStack.current = [cfg];
+      historyIdx.current = 0;
+      return cfg;
+    } catch {
+      const cfg = { theme: { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '' }, settings: { saveProgress: false }, steps: [{ id: 'step_1', label: 'Etapa 1', blocks: [] }] };
+      historyStack.current = [cfg];
+      historyIdx.current = 0;
+      return cfg;
+    }
+  });
+
   // ── setConfig wrapper that records history ─────────────────────────────────
   const setConfig = useCallback((updater) => {
     setConfigRaw(prev => {
