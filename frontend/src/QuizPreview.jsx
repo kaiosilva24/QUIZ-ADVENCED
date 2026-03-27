@@ -98,6 +98,21 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration]       = useState(0);
+  const [speed, setSpeed]             = useState(1);
+
+  const SPEEDS = [1, 1.5, 2];
+  const cycleSpeed = () => {
+    setSpeed(prev => {
+      const next = SPEEDS[(SPEEDS.indexOf(prev) + 1) % SPEEDS.length];
+      if (audioRef.current) audioRef.current.playbackRate = next;
+      return next;
+    });
+  };
+
+  // Keep playbackRate in sync whenever it changes
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.playbackRate = speed;
+  }, [speed]);
 
   // Cores configuráveis com padrões do WPP
   const bubbleBg   = block.bgColor    || '#075e54';
@@ -242,12 +257,32 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
           </div>
         </div>
 
-        {/* Footer: timer esquerda + horário e ticks direita */}
+        {/* Footer: timer esquerda + velocidade + horário e ticks direita */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingLeft: compact ? 2 : 4 }}>
           <span style={{ color:'rgba(255,255,255,0.7)', fontSize: compact ? 8 : 10, fontFamily:'monospace', fontVariantNumeric:'tabular-nums' }}>
             {duration > 0 ? fmt(currentTime) : '0:00'}
           </span>
-          <div style={{ display:'flex', alignItems:'center', gap: compact ? 3 : 5 }}>
+          <div style={{ display:'flex', alignItems:'center', gap: compact ? 4 : 6 }}>
+            {/* Botão de velocidade estilo WPP */}
+            <button
+              onClick={cycleSpeed}
+              style={{
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                borderRadius: compact ? 4 : 6,
+                color: '#fff',
+                fontSize: compact ? 8 : 11,
+                fontWeight: 700,
+                padding: compact ? '1px 4px' : '2px 6px',
+                cursor: 'pointer',
+                lineHeight: 1,
+                letterSpacing: '0.03em',
+                transition: 'background 0.15s',
+              }}
+              title="Alterar velocidade"
+            >
+              {speed === 1 ? '1×' : speed === 1.5 ? '1.5×' : '2×'}
+            </button>
             <span style={{ color:'rgba(255,255,255,0.6)', fontSize: compact ? 8 : 10, fontFamily:'monospace' }}>
               {block.sentAt || ''}
             </span>
