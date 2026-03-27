@@ -430,20 +430,6 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
 
-      {/* ── Draft Restore Banner ──────────────────────────────────────────── */}
-      {draftBanner && (
-        <div className="shrink-0 flex items-center justify-between gap-3 px-5 py-2 bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-xs">
-          <div className="flex items-center gap-2">
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-            <span>Você tem um <strong>rascunho não salvo</strong> desta última sessão.</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={restoreDraft} className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/40 border border-amber-500/40 text-amber-200 transition-all cursor-pointer font-medium">Restaurar</button>
-            <button onClick={discardDraft} className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer">Descartar</button>
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-1 overflow-hidden">
 
       {/* ── LEFT PANEL: Steps + Blocks ───────────────────────────────── */}
