@@ -859,15 +859,57 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
                         }}
                         className="w-full bg-slate-800 border border-slate-600 rounded-lg py-3 px-3 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 cursor-pointer"
                       >
-                        <option value="none">Nenhuma (Corte Seco)</option>
-                        <option value="fadeIn">Surgir (Fade In)</option>
-                        <option value="slideUp">Deslizar de Baixo (Slide Up)</option>
-                        <option value="slideDown">Deslizar de Cima (Slide Down)</option>
-                        <option value="slideLeft">Deslizar da Direita (Slide Left)</option>
-                        <option value="slideRight">Deslizar da Esquerda (Slide Right)</option>
-                        <option value="zoomIn">Aproximar (Zoom In)</option>
-                        <option value="flip">Giro Rápido (Flip)</option>
+                        <optgroup label="— Básicas">
+                          <option value="none">Nenhuma (Corte Seco)</option>
+                          <option value="fadeIn">Surgir Suavemente (Fade In)</option>
+                        </optgroup>
+                        <optgroup label="— Deslizes">
+                          <option value="slideUp">Deslizar de Baixo ↑</option>
+                          <option value="slideDown">Deslizar de Cima ↓</option>
+                          <option value="slideLeft">Deslizar da Direita →</option>
+                          <option value="slideRight">Deslizar da Esquerda ←</option>
+                        </optgroup>
+                        <optgroup label="— Efeitos">
+                          <option value="zoomIn">Aproximar (Zoom In)</option>
+                          <option value="zoomOut">Afastar e Entrar (Zoom Out)</option>
+                          <option value="flip">Giro 3D (Flip)</option>
+                          <option value="rotateIn">Girar ao Entrar (Rotate In)</option>
+                          <option value="bounceIn">Quique ao Entrar (Bounce In)</option>
+                          <option value="elastic">Elástico (Elastic)</option>
+                          <option value="blurIn">Desfocar para Nítido (Blur In)</option>
+                        </optgroup>
+                        <optgroup label="— Especiais">
+                          <option value="stagger">✨ Item por Item (Stagger)</option>
+                        </optgroup>
                       </select>
+
+                      {currentStep?.animation && currentStep.animation !== 'none' && (
+                        <div className="pt-2 space-y-1">
+                          <label className="text-xs text-slate-500 flex justify-between">
+                            <span>⚡ Velocidade</span>
+                            <span className="text-indigo-400 font-semibold">
+                              {currentStep?.animationSpeed === 'fast' ? 'Rápida' :
+                               currentStep?.animationSpeed === 'slow' ? 'Lenta' :
+                               currentStep?.animationSpeed === 'slower' ? 'Muito Lenta' : 'Normal'}
+                            </span>
+                          </label>
+                          <select
+                            value={currentStep?.animationSpeed || 'normal'}
+                            onChange={e => {
+                              const animationSpeed = e.target.value;
+                              setConfig(c => ({
+                                ...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, animationSpeed } : s)
+                              }));
+                            }}
+                            className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                          >
+                            <option value="fast">⚡ Rápida (0.25s)</option>
+                            <option value="normal">🔄 Normal (0.5s)</option>
+                            <option value="slow">🐌 Lenta (0.9s)</option>
+                            <option value="slower">🐢 Muito Lenta (1.5s)</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
 
                     {currentStep?.isVariant && (

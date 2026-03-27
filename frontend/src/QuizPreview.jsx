@@ -946,41 +946,64 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
         .preview-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 4px; }
         .preview-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
         .preview-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
-        @keyframes stepFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes stepSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes stepSlideDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes stepSlideLeft { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes stepSlideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes stepZoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        @keyframes stepFlip { from { opacity: 0; transform: perspective(400px) rotateY(90deg); } to { opacity: 1; transform: perspective(400px) rotateY(0deg); } }
+
+        /* ── Step entry animations ── */
+        @keyframes stepFadeIn   { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes stepSlideUp  { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes stepSlideDown{ from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes stepSlideLeft{ from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes stepSlideRight{from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes stepZoomIn   { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        @keyframes stepZoomOut  { from { opacity: 0; transform: scale(1.12); } to { opacity: 1; transform: scale(1); } }
+        @keyframes stepFlip     { from { opacity: 0; transform: perspective(500px) rotateY(90deg); } to { opacity: 1; transform: perspective(500px) rotateY(0deg); } }
+        @keyframes stepRotateIn { from { opacity: 0; transform: rotate(-12deg) scale(0.92); } to { opacity: 1; transform: rotate(0deg) scale(1); } }
+        @keyframes stepBounceIn { 0%{opacity:0;transform:translateY(40px)} 60%{opacity:1;transform:translateY(-10px)} 80%{transform:translateY(4px)} 100%{opacity:1;transform:translateY(0)} }
+        @keyframes stepElastic  { 0%{opacity:0;transform:scale(0.6)} 55%{opacity:1;transform:scale(1.08)} 75%{transform:scale(0.96)} 90%{transform:scale(1.02)} 100%{opacity:1;transform:scale(1)} }
+        @keyframes stepBlurIn   { from { opacity: 0; filter: blur(12px); } to { opacity: 1; filter: blur(0px); } }
+
+        /* ── Stagger: each block child fades up individually ── */
+        @keyframes stepStaggerItem { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
       <div className="relative z-10 h-full block overflow-y-auto preview-scroll pb-6">
-        <div 
-          key={step?.id}
-          className={`flex flex-col gap-${compact ? '2' : '3'} ${compact ? 'px-4 pt-4 pb-16' : 'p-6'} min-h-full`}
-          style={{
-            animation: step?.animation && step.animation !== 'none' 
-              ? `step${step.animation.charAt(0).toUpperCase() + step.animation.slice(1)} 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards` 
-              : 'none'
-          }}
-        >
-          {(step?.blocks || []).map(block => (
-            <div 
-              key={block.id} 
-              id={`preview-block-${block.id}`} 
-              className={`shrink-0 w-full ${compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300' : ''}`}
+        {(() => {
+          const anim = step?.animation;
+          const isStagger = anim === 'stagger';
+          const speedMap = { fast: '0.25s', normal: '0.5s', slow: '0.9s', slower: '1.5s' };
+          const dur = speedMap[step?.animationSpeed || 'normal'];
+          const ease = 'cubic-bezier(0.16, 1, 0.3, 1)';
+          const containerAnim = anim && anim !== 'none' && !isStagger
+            ? `step${anim.charAt(0).toUpperCase() + anim.slice(1)} ${dur} ${ease} both`
+            : 'none';
+
+          return (
+            <div
+              key={step?.id}
+              className={`flex flex-col gap-${compact ? '2' : '3'} ${compact ? 'px-4 pt-4 pb-16' : 'p-6'} min-h-full`}
+              style={{ animation: containerAnim }}
             >
-              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} scores={scores} onStartLoading={onStartLoading} />
+              {(step?.blocks || []).map((block, idx) => (
+                <div
+                  key={block.id}
+                  id={`preview-block-${block.id}`}
+                  className={`shrink-0 w-full ${compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300' : ''}`}
+                  style={isStagger ? {
+                    animation: `stepStaggerItem ${dur} ${ease} both`,
+                    animationDelay: `${idx * (parseFloat(dur) * 0.18).toFixed(2)}s`,
+                  } : {}}
+                >
+                  <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} scores={scores} onStartLoading={onStartLoading} />
+                </div>
+              ))}
+              {(!step?.blocks || step.blocks.length === 0) && (
+                <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30">
+                  <p style={{ color: textColor, fontSize: compact ? 10 : 13 }}>
+                    Adicione blocos<br />para ver o preview
+                  </p>
+                </div>
+              )}
             </div>
-          ))}
-          {(!step?.blocks || step.blocks.length === 0) && (
-            <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30">
-              <p style={{ color: textColor, fontSize: compact ? 10 : 13 }}>
-                Adicione blocos<br />para ver o preview
-              </p>
-            </div>
-          )}
-        </div>
+          );
+        })()}
       </div>
     </div>
   );
