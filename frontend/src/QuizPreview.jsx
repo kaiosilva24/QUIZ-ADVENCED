@@ -1024,44 +1024,55 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
     case 'image': {
       const isDual = block.layout === 'dual';
-      const aspectRatio = block.aspectRatio || '16/9';
-      const isAuto = aspectRatio === 'auto' || !block.aspectRatio;
       
       const alignProps = 
         block.align === 'flex-start' ? { justifyContent: 'flex-start' } :
         block.align === 'flex-end' ? { justifyContent: 'flex-end' } :
         { justifyContent: 'center' };
 
-      const baseRadius = block.borderRadius ?? (block.rounded ? 12 : 0);
+      const baseRadius = block.borderRadius ?? 0;
       const borderRadius = compact ? Math.round(baseRadius * 0.6) : baseRadius;
+      const containerHeight = compact ? Math.round((block.height || 200) * 0.5) : (block.height || 200);
 
       const renderImage = (src, alt, nextStep, scoreTarget) => {
+        const containerStyle = {
+          width: '100%',
+          height: containerHeight,
+          borderRadius: borderRadius,
+          overflow: 'hidden',
+          position: 'relative',
+          background: src ? 'transparent' : '#1e293b',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        };
+
         const imageStyle = {
           width: '100%',
-          aspectRatio: isAuto ? undefined : aspectRatio,
-          height: isAuto ? (compact ? (block.height || 200) * 0.5 : (block.height || 200)) : undefined,
+          height: '100%',
           objectFit: block.fit || 'cover',
           objectPosition: 'center center',
-          borderRadius: borderRadius,
           display: 'block',
         };
 
         if (!src) {
           return (
-             <div style={{...imageStyle, background: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+             <div style={containerStyle}>
                 <p style={{ color: '#475569', fontSize: compact ? 9 : 12, textAlign: 'center', padding: 8 }}>Sem Imagem</p>
              </div>
           );
         }
 
         return (
-          <img src={src} alt={alt || ''} style={{...imageStyle, cursor: 'pointer' }} 
+          <div style={{...containerStyle, cursor: 'pointer'}}
                onClick={() => {
                  if (onNavigate) {
                    const target = resolveNextStep(nextStep);
                    if (target) onNavigate(target, 'Imagem', false, scoreTarget);
                  }
-               }} />
+               }}>
+            <img src={src} alt={alt || ''} style={imageStyle} />
+          </div>
         );
       };
 

@@ -648,70 +648,69 @@ function ImageEditor({ block, onChange, steps }) {
 
   return (
     <>
-      <Section title="Estilo e Layout da Imagem">
-        <Field label="Modo de Exibição">
-          <Select value={block.layout || 'single'} onChange={v => onChange({ layout: v })} options={[
-            { value: 'single', label: 'Uma Imagem' },
-            { value: 'dual', label: 'Duas Imagens (Lado a Lado)' }
-          ]} />
-        </Field>
-        <Field label="Proporção da Imagem">
-          <Select value={block.aspectRatio || 'auto'} onChange={v => onChange({ aspectRatio: v })} options={[
-            { value: 'auto', label: 'Livre / Original (Altura px)' },
-            { value: '16/9', label: '16:9 (Horizontal)' },
-            { value: '1/1', label: '1:1 (Quadrado)' },
-            { value: '4/3', label: '4:3 (Retrato Fino)' },
-            { value: '9/16', label: '9:16 (Vertical)' },
-          ]} />
-        </Field>
-        <Field label="Ajuste de Preenchimento">
-          <Select value={block.fit || 'cover'} onChange={v => onChange({ fit: v })} options={[
-            { value: 'cover', label: 'Cover (Preencher espaço)' }, { value: 'contain', label: 'Contain (Conter)' }, { value: 'fill', label: 'Fill (Esticar / Distorcer)' }
-          ]} />
-        </Field>
-        {(block.aspectRatio === 'auto' || !block.aspectRatio) && (
-          <Field label={`Altura Fixa Livre: ${block.height || 200}px`}>
-            <input type="range" min={40} max={800} step={10} value={block.height || 200}
-              onChange={e => onChange({ height: Number(e.target.value) })}
-              className="w-full accent-indigo-500 cursor-pointer" />
+      <Section title="Tamanho e Alinhamento">
+        <div className="grid grid-cols-2 gap-3 mb-2">
+          <Field label="Alinhamento">
+             <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
+               { value: 'flex-start', label: 'Esquerda' },
+               { value: 'center', label: 'Centro' },
+               { value: 'flex-end', label: 'Direita' }
+             ]} />
           </Field>
-        )}
-        <Field label={`Largura Total ${isDual ? 'do Grupo' : 'da Imagem'}: ${block.imgScale || 100}%`}>
-          <input type="range" min={10} max={100} step={5} value={block.imgScale || 100}
+          <Field label="Ajuste da Imagem">
+            <Select value={block.fit || 'cover'} onChange={v => onChange({ fit: v })} options={[
+              { value: 'cover', label: 'Preencher Fundo' }, 
+              { value: 'contain', label: 'Conter na Caixa' },
+              { value: 'fill', label: 'Distorcer/Esticar' }
+            ]} />
+          </Field>
+        </div>
+
+        <Field label={`Largura Total: ${block.imgScale || 100}%`}>
+          <input type="range" min={10} max={100} step={2} value={block.imgScale || 100}
             onChange={e => onChange({ imgScale: Number(e.target.value) })}
             className="w-full accent-indigo-500 cursor-pointer" />
         </Field>
-        <Field label="Alinhamento Horizontal">
-           <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
-             { value: 'flex-start', label: 'Esquerda' },
-             { value: 'center', label: 'Centro' },
-             { value: 'flex-end', label: 'Direita' }
-           ]} />
+        
+        <Field label={`Altura da Caixa: ${block.height || 200}px`}>
+          <input type="range" min={40} max={800} step={10} value={block.height || 200}
+            onChange={e => onChange({ height: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
         </Field>
-        <Field label={`Arredondamento das Bordas: ${block.borderRadius ?? (block.rounded ? 12 : 0)}px`}>
-          <input type="range" min={0} max={100} step={2} value={block.borderRadius ?? (block.rounded ? 12 : 0)}
-            onChange={e => onChange({ borderRadius: Number(e.target.value), rounded: Number(e.target.value) > 0 })}
+
+        <Field label={`Arredondamento das Bordas: ${block.borderRadius ?? 0}px`}>
+          <input type="range" min={0} max={100} step={2} value={block.borderRadius ?? 0}
+            onChange={e => onChange({ borderRadius: Number(e.target.value) })}
             className="w-full accent-indigo-500 cursor-pointer" />
         </Field>
       </Section>
 
-      <Section title={isDual ? "Imagem 1 (Esquerda)" : "Imagem e Ação"}>
-        <ImageUploaderUI src={block.src} alt={block.alt} onChangeSrc={v => onChange({ src: v })} onChangeAlt={v => onChange({ alt: v })} labelPrefix="Imagem 1" />
-        <Field label="Ao Clicar na Imagem 1 (Opcional)">
-          <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} placeholder="-- Avançar para Etapa --" />
+      <Section title="Imagens Cadastradas">
+        <Field label="Layout de Imagens">
+          <Select value={block.layout || 'single'} onChange={v => onChange({ layout: v })} options={[
+            { value: 'single', label: 'Uma Imagem Central', icon: '1️⃣' },
+            { value: 'dual', label: 'Duas Imagens Lado a Lado', icon: '2️⃣' }
+          ]} />
         </Field>
-        <ScoreTargetSelect steps={steps} value={block.scoreTarget} onChange={v => onChange({ scoreTarget: v })} />
-      </Section>
 
-      {isDual && (
-        <Section title="Imagem 2 (Direita)">
-          <ImageUploaderUI src={block.src2} alt={block.alt2} onChangeSrc={v => onChange({ src2: v })} onChangeAlt={v => onChange({ alt2: v })} labelPrefix="Imagem 2" />
-          <Field label="Ao Clicar na Imagem 2 (Opcional)">
-            <StepSelect steps={steps} value={block.nextStep2} onChange={v => onChange({ nextStep2: v })} placeholder="-- Avançar para Etapa --" />
+        <div className="mt-4 border-t border-slate-700 pt-4">
+          <ImageUploaderUI src={block.src} alt={block.alt} onChangeSrc={v => onChange({ src: v })} onChangeAlt={v => onChange({ alt: v })} labelPrefix={isDual ? "Imagem 1" : "Sua Foto"} />
+          <Field label="Ação ao Clicar (Opcional)">
+            <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} placeholder="-- Não fazer nada --" />
           </Field>
-          <ScoreTargetSelect steps={steps} value={block.scoreTarget2} onChange={v => onChange({ scoreTarget2: v })} />
-        </Section>
-      )}
+          <ScoreTargetSelect steps={steps} value={block.scoreTarget} onChange={v => onChange({ scoreTarget: v })} />
+        </div>
+
+        {isDual && (
+          <div className="mt-4 border-t border-slate-700 pt-4">
+            <ImageUploaderUI src={block.src2} alt={block.alt2} onChangeSrc={v => onChange({ src2: v })} onChangeAlt={v => onChange({ alt2: v })} labelPrefix="Imagem 2" />
+            <Field label="Ação ao Clicar na Imagem 2 (Opcional)">
+              <StepSelect steps={steps} value={block.nextStep2} onChange={v => onChange({ nextStep2: v })} placeholder="-- Não fazer nada --" />
+            </Field>
+            <ScoreTargetSelect steps={steps} value={block.scoreTarget2} onChange={v => onChange({ scoreTarget2: v })} />
+          </div>
+        )}
+      </Section>
     </>
   );
 }
