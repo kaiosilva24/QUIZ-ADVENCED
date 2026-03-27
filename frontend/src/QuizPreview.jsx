@@ -1589,7 +1589,12 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       
       const [count, setCount] = React.useState(() => {
         const saved = sessionStorage.getItem(storageKey);
-        if (saved) return parseInt(saved, 10);
+        if (saved) {
+           const parsed = parseInt(saved, 10);
+           if (!isNaN(parsed) && parsed >= minAmount && parsed <= maxAmount) {
+             return parsed;
+           }
+        }
         return countMode === 'increasing' ? minAmount : Math.floor((minAmount + maxAmount) / 2);
       });
       
@@ -1605,7 +1610,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             let nextVal;
             if (countMode === 'increasing') {
               const inc = Math.floor(Math.random() * 3) + 1;
-              nextVal = prev + inc > maxAmount ? maxAmount : prev + inc;
+              if (prev + inc > maxAmount) {
+                 nextVal = minAmount; // Loop back to start
+              } else {
+                 nextVal = prev + inc;
+              }
             } else {
               nextVal = Math.floor(Math.random() * (maxAmount - minAmount + 1)) + minAmount;
             }
