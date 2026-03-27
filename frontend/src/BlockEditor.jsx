@@ -203,22 +203,40 @@ function StepSelect({ steps, value, onChange, placeholder }) {
 }
 
 function ScoreTargetSelect({ steps, value, onChange }) {
-  const allVariants = (steps || []).reduce((acc, s) => {
+  const stepVariants = (steps || [])
+    .filter(s => s.isVariant && s.variantScore && s.variantScore.trim() !== '')
+    .map(s => ({ value: s.variantScore.trim() }));
+    
+  const legacyVariants = (steps || []).reduce((acc, s) => {
     (s.blocks || []).forEach(b => {
       if (b.type === 'result' && b.dynamicResults && b.variants?.length > 0) {
-        acc.push(...b.variants);
+        acc.push(...b.variants.map(v => ({ value: v.id, label: v.name || v.id })));
       }
     });
     return acc;
   }, []);
 
-  if (allVariants.length === 0) return null;
+  // Remove duplicates by value
+  const uniqueVariantsMap = new Map();
+  stepVariants.forEach(v => uniqueVariantsMap.set(v.value.toLowerCase(), { value: v.value, label: `👉 Variante: ${v.value}` }));
+  legacyVariants.forEach(v => uniqueVariantsMap.set(v.value.toLowerCase(), { value: v.value, label: `Antigo: ${v.label}` }));
+  const allVariants = Array.from(uniqueVariantsMap.values());
+
+  if (allVariants.length === 0) {
+    return (
+      <div className="p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20 mb-3 mt-2">
+        <p className="text-[11px] text-indigo-300 leading-tight">
+          💡 <strong>Dica:</strong> Crie uma <strong className="text-white">Variante de Resultado</strong> em uma Etapa clicando nela, e dê um nome (Ex: "A", "Homem"). Essa opção aparecerá aqui para você pontuar e encaminhar os leads automaticamente!
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <Field label="Pontuar para Resultado (Resultados Dinâmicos)">
+    <Field label="Dar Pontos Se Escolhido (Destravar Variante)">
       <Select value={value || ''} onChange={onChange} options={[
-        { value: '', label: '-- Não Pontuar --' },
-        ...allVariants.map(v => ({ value: v.id, label: v.name || `Resultado ${v.id}` }))
+        { value: '', label: '-- Nenhuma Pontuação --' },
+        ...allVariants
       ]} />
     </Field>
   );
