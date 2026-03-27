@@ -948,6 +948,7 @@ function LoadingScreenConfig({ block, theme, onChange, loadingKey = 'showLoading
             ]} />
           </Field>
           <Field label="Cor da Animação Principal"><ColorPicker value={block.loadingColor || (theme && theme.accent) || '#6366f1'} onChange={v => onChange({ loadingColor: v })} /></Field>
+          <Field label="Cor do Texto"><ColorPicker value={block.loadingTextColor || theme?.text || '#f8fafc'} onChange={v => onChange({ loadingTextColor: v })} /></Field>
           
           <Field label="Textos Dinâmicos (separados por vírgula)">
             <Input value={block.loadingText || ''} onChange={v => onChange({ loadingText: v })} placeholder="Analisando..., Processando..., Finalizando..." />

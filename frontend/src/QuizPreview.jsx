@@ -717,6 +717,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
 function LoadingScreen({ block, accent, defaultText, compact }) {
   const duration = (block.loadingDuration || 3) * 1000;
   const color = block.loadingColor || accent || '#6366f1';
+  const textCol = block.loadingTextColor || defaultText || '#f8fafc';
   const style = block.loadingStyle || 'spinner';
   const fillColor = block.progressFillColor || '#10b981';
   const bgColor = block.progressBgColor || '#cbd5e1';
@@ -803,7 +804,7 @@ function LoadingScreen({ block, accent, defaultText, compact }) {
 
       {/* Main dynamic text */}
       <p key={textIdx} style={{
-        color: defaultText, fontWeight: 700,
+        color: textCol, fontWeight: 700,
         fontSize: compact ? 12 : 20, margin: 0,
         animation: 'ldgTextIn 0.35s ease-out forwards',
         maxWidth: compact ? 160 : 320,
@@ -825,7 +826,7 @@ function LoadingScreen({ block, accent, defaultText, compact }) {
             }} />
           </div>
           {showPct && (
-            <p style={{ color: defaultText, opacity: 0.6, fontSize: compact ? 9 : 13, margin: 0 }}>
+            <p style={{ color: textCol, opacity: 0.6, fontSize: compact ? 9 : 13, margin: 0 }}>
               {progress}% concluído
             </p>
           )}
@@ -834,7 +835,7 @@ function LoadingScreen({ block, accent, defaultText, compact }) {
 
       {/* Secondary fixed text */}
       {block.progressText && (
-        <p style={{ color: defaultText, opacity: 0.55, fontSize: compact ? 9 : 13, margin: 0, fontStyle: 'italic' }}>
+        <p style={{ color: textCol, opacity: 0.55, fontSize: compact ? 9 : 13, margin: 0, fontStyle: 'italic' }}>
           {block.progressText}
         </p>
       )}
@@ -842,9 +843,9 @@ function LoadingScreen({ block, accent, defaultText, compact }) {
       {/* Footer security */}
       {footerText && (
         <p style={{
-          color: defaultText, opacity: 0.4,
+          color: textCol, opacity: 0.4,
           fontSize: compact ? 8 : 12, margin: 0,
-          borderTop: `1px solid ${defaultText}18`,
+          borderTop: `1px solid ${textCol}28`,
           paddingTop: compact ? 6 : 12, width: '100%', textAlign: 'center',
         }}>
           {footerText}
@@ -871,6 +872,17 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
 
   // Global media state for VSL sync
   const [mediaState, setMediaState] = React.useState({ hasStarted: false, ended: false, currentTime: 0 });
+
+  // Full-screen loading overlay state
+  const [loadingBlock, setLoadingBlock] = React.useState(null);
+
+  const onStartLoading = React.useCallback((block, afterMs, navigateFn) => {
+    setLoadingBlock(block);
+    setTimeout(() => {
+      setLoadingBlock(null);
+      navigateFn();
+    }, afterMs);
+  }, []);
 
   const containerStyle = {
     background: buildBackground(theme),
@@ -912,6 +924,22 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
           style={{ background: overlayColor, opacity: overlayOpacity, zIndex: 0 }} />
       )}
 
+      {/* ── FULL-SCREEN LOADING TAKEOVER ── */}
+      {loadingBlock && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 50,
+          background: buildBackground(theme),
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {showOverlay && (
+            <div style={{ position: 'absolute', inset: 0, background: overlayColor, opacity: overlayOpacity }} />
+          )}
+          <div style={{ position: 'relative', zIndex: 1, width: '100%', padding: compact ? '0 16px' : '0 24px' }}>
+            <LoadingScreen block={loadingBlock} accent={accent} defaultText={loadingBlock.loadingTextColor || textColor} compact={compact} />
+          </div>
+        </div>
+      )}
+
       {/* Scrollable content & Animations */}
       <style>{`
         .preview-scroll::-webkit-scrollbar { width: 8px; }
@@ -942,7 +970,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
               id={`preview-block-${block.id}`} 
               className={`shrink-0 w-full ${compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300' : ''}`}
             >
-              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} scores={scores} />
+              <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} scores={scores} onStartLoading={onStartLoading} />
             </div>
           ))}
           {(!step?.blocks || step.blocks.length === 0) && (
@@ -1089,7 +1117,7 @@ function CountrySelectDropdown({ dialCountry, setDialCountry, setDialCode, compa
   );
 }
 
-function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId, mediaState, setMediaState, steps, stepIdx, scores }) {
+function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId, mediaState, setMediaState, steps, stepIdx, scores, onStartLoading }) {
   const scale = compact ? 0.6 : 1;
   const { accent, textColor: defaultText } = theme;
 
@@ -1324,29 +1352,21 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     case 'arrow_button': {
       const isIconMode = block.displayMode === 'icon';
       const isUrl = block.actionType === 'url';
-      
-      const [isLoading, setIsLoading] = React.useState(false);
 
       const handleClick = () => {
         if (isUrl && block.buttonUrl) {
           const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
           window.open(url, '_blank');
-        } else if (block.showLoading && onNavigate) {
-          setIsLoading(true);
+        } else if (block.showLoading && onStartLoading && onNavigate) {
           const target = resolveNextStep(block.nextStep, block.scoreTarget);
-          setTimeout(() => {
-            setIsLoading(false);
+          onStartLoading(block, (block.loadingDuration || 3) * 1000, () => {
             if (target) onNavigate(target, block.text || 'Avançar', false, block.scoreTarget);
-          }, (block.loadingDuration || 3) * 1000);
+          });
         } else if (onNavigate) {
           const target = resolveNextStep(block.nextStep, block.scoreTarget);
           if (target) onNavigate(target, block.text || 'Avançar', false, block.scoreTarget);
         }
       };
-
-      if (isLoading) {
-        return <LoadingScreen block={block} accent={accent} defaultText={defaultText} compact={compact} />;
-      }
 
       if (isIconMode) {
         const arrowStyle = block.arrowStyle || 'chevron_down';
@@ -1475,11 +1495,6 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       return <VideoBlockPlayer block={{...block, setMediaState}} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} theme={theme} />;
 
     case 'button': {
-      const [isLoading, setIsLoading] = React.useState(false);
-      if (isLoading) {
-        return <LoadingScreen block={block} accent={accent} defaultText={defaultText} compact={compact} />;
-      }
-
       const pos = block.emojiPosition || 'left_inside';
       const btnRadius = block.borderRadius ?? (block.rounded === 'full' ? 99 : block.rounded === 'xl' ? 14 : 8);
       const bgStyleMode = block.bgStyle || (block.glassEffect ? 'glass' : 'solid');
@@ -1546,13 +1561,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             if (isUrl && block.buttonUrl) {
               const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
               window.open(url, '_blank');
-            } else if (block.showLoading && onNavigate) {
-              setIsLoading(true);
+            } else if (block.showLoading && onStartLoading && onNavigate) {
               const target = resolveNextStep(block.nextStep, block.scoreTarget);
-              setTimeout(() => {
-                setIsLoading(false);
+              onStartLoading(block, (block.loadingDuration || 3) * 1000, () => {
                 if (target) onNavigate(target, block.text || 'Avançar', false, block.scoreTarget);
-              }, (block.loadingDuration || 3) * 1000);
+              });
             } else if (onNavigate) {
               const target = resolveNextStep(block.nextStep, block.scoreTarget);
               if (target) onNavigate(target, block.text || 'Avançar', false, block.scoreTarget);
