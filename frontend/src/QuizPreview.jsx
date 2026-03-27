@@ -896,7 +896,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
   const { accent, textColor: defaultText } = theme;
 
   // Resolve next step ID for 'próxima automaticamente'
-  const resolveNextStep = (explicitId) => {
+  const resolveNextStep = (explicitId, currentButtonScoreTarget = null) => {
     const allSteps = steps || [];
 
     // Se há um explicitId E ele NÃO é uma etapa variante, vai direto
@@ -910,31 +910,45 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     }
 
     let nextIdx = (stepIdx ?? 0) + 1;
-    
-    // Avança ignorando etapas que são Variantes (elas saem do fluxo sequencial normal)
-    while (nextIdx < allSteps.length && allSteps[nextIdx].isVariant) {
-      nextIdx++;
+    const isCurrentVariant = allSteps[stepIdx]?.isVariant;
+
+    // Simular como ficariam os scores se a pessoa clicasse e pontuasse AGORA
+    let simulatedScores = { ...(scores || {}) };
+    if (currentButtonScoreTarget) {
+      simulatedScores[currentButtonScoreTarget] = (simulatedScores[currentButtonScoreTarget] || 0) + 1;
     }
 
-    // Se achou uma etapa normal, vai pra ela
+    if (isCurrentVariant) {
+      // Se já estou NUMA Variante e aperto 'Avançar', pula as variantes que restam 
+      // para achar a próxima etapa normal (ex: redirecionamento final)
+      while (nextIdx < allSteps.length && allSteps[nextIdx].isVariant) {
+        nextIdx++;
+      }
+    } else {
+      // Se não sou variante, e a *Próxima* Etapa for Variante: Hora de resolver os scores!
+      // (Isso impede de pular as variantes se tiver etapas normais perdidas depois delas)
+      if (nextIdx < allSteps.length && allSteps[nextIdx].isVariant) {
+        
+        if (Object.keys(simulatedScores).length > 0) {
+          const highestScoreConf = Object.keys(simulatedScores).reduce((a, b) => simulatedScores[a] > simulatedScores[b] ? a : b, '');
+          const lowerHighest = highestScoreConf.toString().trim().toLowerCase();
+          
+          const variantStep = allSteps.find(s => 
+            s.isVariant && s.variantScore && s.variantScore.trim().toLowerCase() === lowerHighest
+          );
+          if (variantStep) return variantStep.id;
+        }
+
+        // Fallback: pega a primeira Variante se não pontuou
+        const firstVariant = allSteps.find(s => s.isVariant);
+        if (firstVariant) return firstVariant.id;
+      }
+    }
+
+    // Se não entrou na resolução de Variantes, segue o fluxo normal (vai pra próxima)
     if (nextIdx < allSteps.length) {
       return allSteps[nextIdx].id;
     }
-
-    // Se acabaram as etapas normais, avalia as variantes pelo Score
-    if (scores && Object.keys(scores).length > 0) {
-      const highestScoreConf = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b, '');
-      const lowerHighest = highestScoreConf.toString().trim().toLowerCase();
-      
-      const variantStep = allSteps.find(s => 
-        s.isVariant && s.variantScore && s.variantScore.trim().toLowerCase() === lowerHighest
-      );
-      if (variantStep) return variantStep.id;
-    }
-
-    // Fallback: se não pontuou nada ou não achou exato, pega a primeira Variante que existir
-    const firstVariant = allSteps.find(s => s.isVariant);
-    if (firstVariant) return firstVariant.id;
 
     return null;
   };
@@ -1089,7 +1103,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           <img src={src} alt={alt || ''} style={{...imageStyle, cursor: 'pointer' }} 
                onClick={() => {
                  if (onNavigate) {
-                   const target = resolveNextStep(nextStep);
+                   const target = resolveNextStep(nextStep, scoreTarget);
                    if (target) onNavigate(target, 'Imagem', false, scoreTarget);
                  }
                }} />
@@ -1125,7 +1139,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
           window.open(url, '_blank');
         } else if (onNavigate) {
-          const target = resolveNextStep(block.nextStep);
+          const target = resolveNextStep(block.nextStep, block.scoreTarget);
           if (target) {
             onNavigate(target, block.text || 'Avançar', block.showLoading ? block : false, block.scoreTarget);
           }
@@ -1326,7 +1340,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
               const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
               window.open(url, '_blank');
             } else if (onNavigate) {
-              const target = resolveNextStep(block.nextStep);
+              const target = resolveNextStep(block.nextStep, block.scoreTarget);
               if (target) {
                 onNavigate(target, block.text || 'Avançar', block.showLoading ? block : false, block.scoreTarget);
               }
@@ -1394,7 +1408,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
            finalObj.phone = `${dialCode} ${finalObj.phone}`;
         }
         if (onNavigate) {
-           const target = resolveNextStep(block.nextStep);
+           const target = resolveNextStep(block.nextStep, block.scoreTarget);
            if (target) onNavigate(target, Object.keys(finalObj).length > 0 ? JSON.stringify(finalObj) : (block.buttonText || 'Quero meu resultado'), false, block.scoreTarget);
         } else if (block.redirectUrl) {
           const url = block.redirectUrl.startsWith('http') ? block.redirectUrl : `https://${block.redirectUrl}`;
@@ -1918,7 +1932,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const handleAction = () => {
         if (!compact) {
           if (finalButtonAction === 'next_step') {
-            const targetId = resolveNextStep(finalNextStep);
+            const targetId = resolveNextStep(finalNextStep, block.scoreTarget);
             if (onNavigate && targetId) onNavigate(targetId, finalButtonText);
           } else if (finalButtonUrl) {
             const url = finalButtonUrl.startsWith('http') ? finalButtonUrl : `https://${finalButtonUrl}`;
