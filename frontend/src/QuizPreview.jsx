@@ -898,17 +898,6 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
   // Resolve next step ID for 'próxima automaticamente'
   const resolveNextStep = (explicitId, currentButtonScoreTarget = null) => {
     const allSteps = steps || [];
-
-    // Se há um explicitId E ele NÃO é uma etapa variante, vai direto
-    // (Etapas variantes só são acessíveis via sistema de pontuação)
-    if (explicitId) {
-      const targetStep = allSteps.find(s => s.id === explicitId);
-      if (targetStep && !targetStep.isVariant) {
-        return explicitId;
-      }
-      // Se o explicitId aponta para uma variante, ignora e deixa o sistema de scores decidir
-    }
-
     let nextIdx = (stepIdx ?? 0) + 1;
     const isCurrentVariant = allSteps[stepIdx]?.isVariant;
 
@@ -918,37 +907,50 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       simulatedScores[currentButtonScoreTarget] = (simulatedScores[currentButtonScoreTarget] || 0) + 1;
     }
 
+    // Se NÃO ESTOU numa Variante, mas a *PRÓXIMA ETAPA DO FUNIL* é Variante: FORÇA COMPUTAÇÃO
+    // Isso é um gateway inultrapassável. Mesmo que haja um 'explicitId' querendo pular pra etapa X,
+    // se o passo físico seguinte for Variante, interceptamos para mostrar o resultado da variante primeiro.
+    if (!isCurrentVariant && nextIdx < allSteps.length && allSteps[nextIdx].isVariant) {
+      if (Object.keys(simulatedScores).length > 0) {
+        const highestScoreConf = Object.keys(simulatedScores).reduce((a, b) => simulatedScores[a] > simulatedScores[b] ? a : b, '');
+        const lowerHighest = highestScoreConf.toString().trim().toLowerCase();
+        
+        const variantStep = allSteps.find(s => 
+          s.isVariant && s.variantScore && s.variantScore.trim().toLowerCase() === lowerHighest
+        );
+        if (variantStep) return variantStep.id;
+      }
+
+      // Fallback: pega a primeira Variante se não houver pontuação vitoriosa
+      const firstVariant = allSteps.find(s => s.isVariant);
+      if (firstVariant) return firstVariant.id;
+    }
+
     if (isCurrentVariant) {
-      // Se já estou NUMA Variante e aperto 'Avançar', pula as variantes que restam 
-      // para achar a próxima etapa normal (ex: redirecionamento final)
+      // Se já estou NUMA Variante e aperto 'Avançar', o usuário DEVE ir para a próxima etapa normal
+      // A menos que ele tenha configurado explicitamente uma saída válida não-variante.
+      if (explicitId) {
+        const targetStep = allSteps.find(s => s.id === explicitId);
+        if (targetStep && !targetStep.isVariant) return explicitId;
+      }
+      
+      // Pula todas as demais variantes para achar o caminho base
       while (nextIdx < allSteps.length && allSteps[nextIdx].isVariant) {
         nextIdx++;
       }
-    } else {
-      // Se não sou variante, e a *Próxima* Etapa for Variante: Hora de resolver os scores!
-      // (Isso impede de pular as variantes se tiver etapas normais perdidas depois delas)
-      if (nextIdx < allSteps.length && allSteps[nextIdx].isVariant) {
-        
-        if (Object.keys(simulatedScores).length > 0) {
-          const highestScoreConf = Object.keys(simulatedScores).reduce((a, b) => simulatedScores[a] > simulatedScores[b] ? a : b, '');
-          const lowerHighest = highestScoreConf.toString().trim().toLowerCase();
-          
-          const variantStep = allSteps.find(s => 
-            s.isVariant && s.variantScore && s.variantScore.trim().toLowerCase() === lowerHighest
-          );
-          if (variantStep) return variantStep.id;
-        }
+      if (nextIdx < allSteps.length) return allSteps[nextIdx].id;
+      return null;
+    }
 
-        // Fallback: pega a primeira Variante se não pontuou
-        const firstVariant = allSteps.find(s => s.isVariant);
-        if (firstVariant) return firstVariant.id;
+    // Fluxo normal contínuo (somente se não bateu de frente com Variantes)
+    if (explicitId) {
+      const targetStep = allSteps.find(s => s.id === explicitId);
+      if (targetStep && !targetStep.isVariant) {
+        return explicitId;
       }
     }
 
-    // Se não entrou na resolução de Variantes, segue o fluxo normal (vai pra próxima)
-    if (nextIdx < allSteps.length) {
-      return allSteps[nextIdx].id;
-    }
+    if (nextIdx < allSteps.length) return allSteps[nextIdx].id;
 
     return null;
   };
