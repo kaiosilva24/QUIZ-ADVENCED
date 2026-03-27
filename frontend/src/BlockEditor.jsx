@@ -9,6 +9,8 @@ import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import { TextAlign } from '@tiptap/extension-text-align';
 import { Placeholder } from '@tiptap/extension-placeholder';
+import Cropper from 'react-easy-crop';
+import getCroppedImg from './utils/cropImage';
 
 function Field({ label, children }) {
   return (
@@ -614,13 +616,91 @@ function TextEditor({ block, onChange }) {
   );
 }
 
+function ImageCropperModal({ imageSrc, onComplete, onCancel }) {
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [aspect, setAspect] = useState(16 / 9)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+
+  const handleSave = async () => {
+    try {
+      setIsProcessing(true)
+      const croppedImageBase64 = await getCroppedImg(imageSrc, croppedAreaPixels)
+      onComplete(croppedImageBase64)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/95 backdrop-blur-sm p-4 md:p-8">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-white font-bold text-lg">Recortar Imagem</h3>
+        <button onClick={onCancel} className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:text-white transition-colors">✕ Fechar Janela</button>
+      </div>
+      
+      <div className="flex-1 relative bg-black/50 rounded-xl overflow-hidden border border-slate-700">
+        <Cropper
+          image={imageSrc}
+          crop={crop}
+          zoom={zoom}
+          aspect={aspect}
+          onCropChange={setCrop}
+          onCropComplete={(_, croppedPixels) => setCroppedAreaPixels(croppedPixels)}
+          onZoomChange={setZoom}
+        />
+      </div>
+
+      <div className="mt-4 bg-slate-800 border border-slate-700 rounded-xl p-4 space-y-4 w-full">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-slate-400 font-medium">Zoom (Aproxime para focar nos detalhes)</label>
+          <input type="range" min={1} max={3} step={0.1} value={zoom} onChange={e => setZoom(Number(e.target.value))} className="w-full accent-indigo-500" />
+        </div>
+        
+        <div className="flex flex-col gap-2">
+          <label className="text-xs text-slate-400 font-medium">Formato do Recorte</label>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setAspect(undefined)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${!aspect ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>Livre / Original</button>
+            <button onClick={() => setAspect(1)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${aspect === 1 ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>1:1 (Quadrado)</button>
+            <button onClick={() => setAspect(16/9)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${aspect === 16/9 ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>16:9 (Horizontal)</button>
+            <button onClick={() => setAspect(4/3)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${aspect === 4/3 ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>4:3 (Retrato Fino)</button>
+            <button onClick={() => setAspect(9/16)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${aspect === 9/16 ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>9:16 (Vertical)</button>
+          </div>
+        </div>
+
+        <button 
+          onClick={handleSave} 
+          disabled={isProcessing}
+          className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors">
+          {isProcessing ? 'Processando Imagem...' : '✂️ Pegar Somente Essa Parte (Cortar)'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function ImageUploaderUI({ src, alt, onChangeSrc, onChangeAlt, labelPrefix }) {
+  const [tempImage, setTempImage] = useState(null);
+
   return (
     <>
+      {tempImage && (
+        <ImageCropperModal
+          imageSrc={tempImage}
+          onCancel={() => setTempImage(null)}
+          onComplete={(cropped) => {
+            onChangeSrc(cropped);
+            setTempImage(null);
+          }}
+        />
+      )}
       <Field label={`Upload de ${labelPrefix || 'Imagem'} do Computador`}>
         {src?.startsWith('data:image') && (
-          <div className="relative w-full rounded-xl overflow-hidden border border-slate-700 mb-2" style={{ height: 80 }}>
-            <img src={src} alt="" className="w-full h-full object-cover" />
+          <div className="relative w-full rounded-xl overflow-hidden border border-slate-700 mb-2" style={{ height: 100, background: '#1e293b' }}>
+            <img src={src} alt="" className="w-full h-full object-contain" />
             <button onClick={() => onChangeSrc('')}
               className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600/90 hover:bg-red-500 text-white flex items-center justify-center cursor-pointer text-xs">×</button>
           </div>
@@ -631,8 +711,9 @@ function ImageUploaderUI({ src, alt, onChangeSrc, onChangeAlt, labelPrefix }) {
           <input type="file" accept="image/*" className="hidden" onChange={e => {
             const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
-            reader.onload = ev => onChangeSrc(ev.target.result);
+            reader.onload = ev => setTempImage(ev.target.result);
             reader.readAsDataURL(file);
+            e.target.value = '';
           }} />
         </label>
       </Field>
@@ -649,32 +730,17 @@ function ImageEditor({ block, onChange, steps }) {
   return (
     <>
       <Section title="Tamanho e Alinhamento">
-        <div className="grid grid-cols-2 gap-3 mb-2">
-          <Field label="Alinhamento">
-             <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
-               { value: 'flex-start', label: 'Esquerda' },
-               { value: 'center', label: 'Centro' },
-               { value: 'flex-end', label: 'Direita' }
-             ]} />
-          </Field>
-          <Field label="Ajuste da Imagem">
-            <Select value={block.fit || 'cover'} onChange={v => onChange({ fit: v })} options={[
-              { value: 'cover', label: 'Preencher Fundo' }, 
-              { value: 'contain', label: 'Conter na Caixa' },
-              { value: 'fill', label: 'Distorcer/Esticar' }
-            ]} />
-          </Field>
-        </div>
+        <Field label="Alinhamento Horizontal">
+           <Select value={block.align || 'center'} onChange={v => onChange({ align: v })} options={[
+             { value: 'flex-start', label: 'Esquerda' },
+             { value: 'center', label: 'Centro' },
+             { value: 'flex-end', label: 'Direita' }
+           ]} />
+        </Field>
 
-        <Field label={`Largura Total: ${block.imgScale || 100}%`}>
+        <Field label={`Largura Total na Tela: ${block.imgScale || 100}%`}>
           <input type="range" min={10} max={100} step={2} value={block.imgScale || 100}
             onChange={e => onChange({ imgScale: Number(e.target.value) })}
-            className="w-full accent-indigo-500 cursor-pointer" />
-        </Field>
-        
-        <Field label={`Altura da Caixa: ${block.height || 200}px`}>
-          <input type="range" min={40} max={800} step={10} value={block.height || 200}
-            onChange={e => onChange({ height: Number(e.target.value) })}
             className="w-full accent-indigo-500 cursor-pointer" />
         </Field>
 

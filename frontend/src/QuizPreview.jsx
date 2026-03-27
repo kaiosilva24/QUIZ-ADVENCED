@@ -1032,47 +1032,31 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
       const baseRadius = block.borderRadius ?? 0;
       const borderRadius = compact ? Math.round(baseRadius * 0.6) : baseRadius;
-      const containerHeight = compact ? Math.round((block.height || 200) * 0.5) : (block.height || 200);
 
       const renderImage = (src, alt, nextStep, scoreTarget) => {
-        const containerStyle = {
-          width: '100%',
-          height: containerHeight,
-          borderRadius: borderRadius,
-          overflow: 'hidden',
-          position: 'relative',
-          background: src ? 'transparent' : '#1e293b',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        };
-
         const imageStyle = {
           width: '100%',
-          height: '100%',
-          objectFit: block.fit || 'cover',
-          objectPosition: 'center center',
+          height: 'auto',
+          borderRadius: borderRadius,
           display: 'block',
         };
 
         if (!src) {
           return (
-             <div style={containerStyle}>
+             <div style={{ width: '100%', height: compact ? 60 : 120, borderRadius, background: '#1e293b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <p style={{ color: '#475569', fontSize: compact ? 9 : 12, textAlign: 'center', padding: 8 }}>Sem Imagem</p>
              </div>
           );
         }
 
         return (
-          <div style={{...containerStyle, cursor: 'pointer'}}
+          <img src={src} alt={alt || ''} style={{...imageStyle, cursor: 'pointer' }} 
                onClick={() => {
                  if (onNavigate) {
                    const target = resolveNextStep(nextStep);
                    if (target) onNavigate(target, 'Imagem', false, scoreTarget);
                  }
-               }}>
-            <img src={src} alt={alt || ''} style={imageStyle} />
-          </div>
+               }} />
         );
       };
 
