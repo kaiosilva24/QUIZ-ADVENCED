@@ -845,6 +845,31 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
                       </p>
                     </div>
 
+                    <div className="space-y-2 pt-4 border-t border-slate-700/50">
+                      <label className="text-xs text-slate-400 font-medium tracking-wide uppercase flex items-center gap-2">
+                        ✨ Animação de Entrada
+                      </label>
+                      <select 
+                        value={currentStep?.animation || 'none'}
+                        onChange={e => {
+                          const animation = e.target.value;
+                          setConfig(c => ({
+                            ...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, animation } : s)
+                          }));
+                        }}
+                        className="w-full bg-slate-800 border border-slate-600 rounded-lg py-3 px-3 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                      >
+                        <option value="none">Nenhuma (Corte Seco)</option>
+                        <option value="fadeIn">Surgir (Fade In)</option>
+                        <option value="slideUp">Deslizar de Baixo (Slide Up)</option>
+                        <option value="slideDown">Deslizar de Cima (Slide Down)</option>
+                        <option value="slideLeft">Deslizar da Direita (Slide Left)</option>
+                        <option value="slideRight">Deslizar da Esquerda (Slide Right)</option>
+                        <option value="zoomIn">Aproximar (Zoom In)</option>
+                        <option value="flip">Giro Rápido (Flip)</option>
+                      </select>
+                    </div>
+
                     {currentStep?.isVariant && (
                       <div className="space-y-2 pt-4 border-t border-slate-700/50">
                         <label className="text-xs text-indigo-300 font-bold uppercase tracking-wider flex items-center gap-2">

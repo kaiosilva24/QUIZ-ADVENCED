@@ -771,15 +771,30 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
           style={{ background: overlayColor, opacity: overlayOpacity, zIndex: 0 }} />
       )}
 
-      {/* Scrollable content */}
+      {/* Scrollable content & Animations */}
       <style>{`
         .preview-scroll::-webkit-scrollbar { width: 8px; }
         .preview-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 4px; }
         .preview-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
         .preview-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+        @keyframes stepFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes stepSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes stepSlideDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes stepSlideLeft { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes stepSlideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes stepZoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes stepFlip { from { opacity: 0; transform: perspective(400px) rotateY(90deg); } to { opacity: 1; transform: perspective(400px) rotateY(0deg); } }
       `}</style>
       <div className="relative z-10 h-full block overflow-y-auto preview-scroll pb-6">
-        <div className={`flex flex-col gap-${compact ? '2' : '3'} ${compact ? 'px-4 pt-4 pb-16' : 'p-6'} min-h-full`}>
+        <div 
+          key={step?.id}
+          className={`flex flex-col gap-${compact ? '2' : '3'} ${compact ? 'px-4 pt-4 pb-16' : 'p-6'} min-h-full`}
+          style={{
+            animation: step?.animation && step.animation !== 'none' 
+              ? `step${step.animation.charAt(0).toUpperCase() + step.animation.slice(1)} 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards` 
+              : 'none'
+          }}
+        >
           {(step?.blocks || []).map(block => (
             <div 
               key={block.id} 
