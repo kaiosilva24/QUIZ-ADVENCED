@@ -255,16 +255,39 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
               zIndex: 2,
             }} />
           </div>
+
+          {/* Botão de velocidade – LADO DIREITO da waveform, estilo WPP */}
+          <button
+            onClick={cycleSpeed}
+            style={{
+              flexShrink: 0,
+              background: 'rgba(255,255,255,0.18)',
+              border: '1.5px solid rgba(255,255,255,0.35)',
+              borderRadius: compact ? 6 : 8,
+              color: '#fff',
+              fontSize: compact ? 10 : 14,
+              fontWeight: 800,
+              padding: compact ? '3px 6px' : '5px 11px',
+              cursor: 'pointer',
+              lineHeight: 1.2,
+              letterSpacing: '0.02em',
+              transition: 'background 0.15s, transform 0.1s',
+              minWidth: compact ? 24 : 38,
+              textAlign: 'center',
+            }}
+            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.92)'}
+            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+            title="Alterar velocidade"
+          >
+            {speed === 1 ? '1×' : speed === 1.5 ? '1.5×' : '2×'}
+          </button>
         </div>
 
-        {/* Footer: timer | sentAt+ticks | botão de velocidade WPP */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingLeft: compact ? 2 : 4, marginTop: compact ? 2 : 3 }}>
-          {/* Timer esquerda */}
+        {/* Footer: timer esquerda + sentAt+ticks direita */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingLeft: compact ? 2 : 4, marginTop: compact ? 1 : 2 }}>
           <span style={{ color:'rgba(255,255,255,0.7)', fontSize: compact ? 8 : 10, fontFamily:'monospace', fontVariantNumeric:'tabular-nums' }}>
             {duration > 0 ? fmt(currentTime) : '0:00'}
           </span>
-
-          {/* Centro: horário + ticks */}
           <div style={{ display:'flex', alignItems:'center', gap: compact ? 3 : 5 }}>
             <span style={{ color:'rgba(255,255,255,0.6)', fontSize: compact ? 8 : 10, fontFamily:'monospace' }}>
               {block.sentAt || ''}
@@ -275,31 +298,6 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
               <polyline points="7,6 12,11 19,1" stroke="#53bdeb" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-
-          {/* Botão de velocidade – lado direito, tamanho WPP */}
-          <button
-            onClick={cycleSpeed}
-            style={{
-              background: 'rgba(255,255,255,0.18)',
-              border: '1.5px solid rgba(255,255,255,0.3)',
-              borderRadius: compact ? 6 : 9,
-              color: '#fff',
-              fontSize: compact ? 9 : 13,
-              fontWeight: 800,
-              padding: compact ? '2px 6px' : '3px 9px',
-              cursor: 'pointer',
-              lineHeight: 1.2,
-              letterSpacing: '0.02em',
-              transition: 'background 0.15s, transform 0.1s',
-              minWidth: compact ? 24 : 34,
-              textAlign: 'center',
-            }}
-            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.93)'}
-            onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
-            title="Alterar velocidade"
-          >
-            {speed === 1 ? '1×' : speed === 1.5 ? '1.5×' : '2×'}
-          </button>
         </div>
 
       </div>
