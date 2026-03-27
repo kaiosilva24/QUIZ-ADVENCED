@@ -10,7 +10,7 @@ import {
   GripVertical, Plus, Trash2, ChevronLeft, Save, Eye, EyeOff,
   Type, Image, MousePointerClick, AlignLeft, ToggleLeft, Minus,
   CheckCircle2, Users, Layers, Palette, Settings, ArrowRight, Music, Video, Copy, MoveVertical, Timer,
-  Undo2, Redo2, Radio
+  Undo2, Redo2, Radio, RefreshCw, AlertCircle, Cloud
 } from 'lucide-react';
 import QuizPreview from './QuizPreview';
 import BlockEditor from './BlockEditor';
@@ -137,61 +137,10 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
   const historyIdx = useRef(-1);
   const skipPush = useRef(false);
 
-  // ── Draft banner state ────────────────────────────────────────────────────
-  const [draftBanner, setDraftBanner] = useState(null); // null | { config, title, slug }
+  const activeQuizId = useRef(quiz.id || null);
+  const [syncStatus, setSyncStatus] = useState('saved'); // 'saved' | 'saving' | 'error'
+  const isFirstRender = useRef(true);
   const debounceRef = useRef(null);
-
-  const [title, setTitle] = useState(quiz.title || 'Novo Quiz');
-  const [slug, setSlug] = useState(quiz.slug || '');
-
-  const [config, setConfigRaw] = useState(() => {
-    try {
-      const parsed = JSON.parse(quiz.config_json || '{}');
-      const cfg = {
-        theme: parsed.theme || { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '' },
-        settings: parsed.settings || { saveProgress: false },
-        steps: parsed.steps || [{ id: 'step_1', label: 'Etapa 1', blocks: [] }],
-      };
-      historyStack.current = [cfg];
-      historyIdx.current = 0;
-      return cfg;
-    } catch {
-      const cfg = { theme: { bg: '#0f172a', accent: '#6366f1', text: '#f8fafc', bgImage: '' }, settings: { saveProgress: false }, steps: [{ id: 'step_1', label: 'Etapa 1', blocks: [] }] };
-      historyStack.current = [cfg];
-      historyIdx.current = 0;
-      return cfg;
-    }
-  });
-
-  // Detect draft on first render
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (!raw) return;
-      const draft = JSON.parse(raw);
-      const saved = JSON.parse(quiz.config_json || '{}');
-      if (JSON.stringify(draft.config) !== JSON.stringify(saved)) {
-        setDraftBanner(draft);
-      }
-    } catch {}
-  }, []);
-
-  const restoreDraft = () => {
-    if (!draftBanner) return;
-    skipPush.current = true;
-    setConfigRaw(draftBanner.config);
-    skipPush.current = false;
-    if (draftBanner.title) setTitle(draftBanner.title);
-    if (draftBanner.slug) setSlug(draftBanner.slug);
-    historyStack.current = [draftBanner.config];
-    historyIdx.current = 0;
-    setDraftBanner(null);
-  };
-
-  const discardDraft = () => {
-    localStorage.removeItem(DRAFT_KEY);
-    setDraftBanner(null);
-  };
 
   // ── setConfig wrapper that records history ─────────────────────────────────
   const setConfig = useCallback((updater) => {
@@ -241,12 +190,50 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
     return () => window.removeEventListener('keydown', handler);
   }, [undo, redo]);
 
-  // ── Auto-save draft (debounced 600ms) ─────────────────────────────────────
+  // ── Auto-save (debounced 1500ms) ─────────────────────────────────────────
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setSyncStatus('saving');
     clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ config, title, slug }));
-    }, 600);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const config_json = JSON.stringify(config);
+        const finalTitle = title || 'Novo Quiz';
+        const finalSlug = slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/(^-|-$)/g, '') : '';
+        const API = '/api';
+
+        if (activeQuizId.current) {
+          await fetch(`${API}/quizzes/${activeQuizId.current}`, { 
+            method: 'PUT', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ title: finalTitle, slug: finalSlug, config_json, is_active: 1 }) 
+          });
+          setSyncStatus('saved');
+        } else {
+          // POST para criar novo
+          const res = await fetch(`${API}/quizzes`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ title: finalTitle, slug: finalSlug, config_json, is_active: 1 }) 
+          });
+          if (res.ok) {
+            const data = await res.json();
+            activeQuizId.current = data.id || data.quiz_id;
+            if (activeQuizId.current) {
+              localStorage.setItem('admin_editing_quiz_id', activeQuizId.current);
+            }
+            setSyncStatus('saved');
+          } else {
+            setSyncStatus('error');
+          }
+        }
+      } catch (e) {
+        setSyncStatus('error');
+      }
+    }, 1500);
     return () => clearTimeout(debounceRef.current);
   }, [config, title, slug]);
 
@@ -402,31 +389,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
     }));
   };
 
-  const save = async () => {
-    let finalTitle = title;
-    if (!finalTitle || finalTitle.trim() === 'Novo Quiz' || finalTitle.trim() === 'Meu Lindo Quiz') {
-      const p = prompt('Digite o nome do seu Quiz (que vai ser usado no link):', finalTitle || 'Meu Quiz');
-      if (p === null) return;
-      finalTitle = p.trim() || 'Meu Quiz';
-      setTitle(finalTitle);
-    }
-    setSaving(true);
-    const config_json = JSON.stringify(config);
-    let finalSlug = slug ? slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/(^-|-$)/g, '') : '';
-    setSlug(finalSlug);
 
-    const API = '/api';
-    if (quiz.id) {
-      await fetch(`${API}/quizzes/${quiz.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: finalTitle, slug: finalSlug, config_json, is_active: 1 }) });
-    } else {
-      await fetch(`${API}/quizzes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: finalTitle, slug: finalSlug, config_json }) });
-    }
-    setSaving(false);
-    // Clear draft after saving
-    localStorage.removeItem(DRAFT_KEY);
-    setDraftBanner(null);
-    onBack();
-  };
 
   if (showPreview) {
     return (
@@ -785,9 +748,14 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm text-slate-300 hover:text-white transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-500">
               <Eye size={14} /> Preview
             </button>
-            <button onClick={save} disabled={saving}
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-sm font-medium transition-all cursor-pointer shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] focus:outline-none focus:ring-2 focus:ring-indigo-400 will-change-transform">
-              <Save size={14} /> {saving ? 'Salvando...' : 'Salvar'}
+            <div className="flex items-center gap-2 px-4 h-9 bg-slate-800/50 border border-slate-700/50 rounded-xl">
+              {syncStatus === 'saving' && <span className="text-slate-400 text-xs font-semibold flex items-center gap-1.5"><RefreshCw size={12} className="animate-spin" /> Salvando...</span>}
+              {syncStatus === 'saved' && <span className="text-emerald-400 text-xs font-semibold flex items-center gap-1.5"><Cloud size={14} /> Salvo</span>}
+              {syncStatus === 'error' && <span className="text-red-400 text-xs font-semibold flex items-center gap-1.5"><AlertCircle size={12} /> Erro ao salvar</span>}
+            </div>
+            <button onClick={onBack}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-sm font-medium transition-all cursor-pointer">
+              Sair
             </button>
           </div>
         </div>
