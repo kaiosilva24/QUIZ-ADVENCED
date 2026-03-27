@@ -118,13 +118,11 @@ function SortableStep({ step, idx, currentStepIdx, onClick, updateLabel, onClone
           aria-label="Duplicar etapa">
           <Copy size={11} />
         </button>
-        {onDelete && (
-          <button onClick={e => { e.stopPropagation(); onDelete(idx); }}
-            className="hover:text-red-400 cursor-pointer focus:outline-none"
-            aria-label="Remover etapa">
-            <Trash2 size={11} />
-          </button>
-        )}
+        <button onClick={e => { e.stopPropagation(); if (onDelete) onDelete(idx); }}
+          className="hover:text-red-400 cursor-pointer focus:outline-none"
+          aria-label="Remover etapa">
+          <Trash2 size={11} />
+        </button>
       </div>
     </div>
   );
