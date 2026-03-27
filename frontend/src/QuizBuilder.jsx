@@ -510,7 +510,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
                       onClick={() => { setCurrentStepIdx(idx); setSelectedBlockId(null); }}
                       updateLabel={updateStepLabel}
                       onClone={cloneStep}
-                      onDelete={config.steps.length > 1 ? deleteStep : null}
+                      onDelete={deleteStep}
                     />
                   ))}
                 </SortableContext>
