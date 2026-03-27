@@ -220,7 +220,7 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
           </button>
 
           {/* Waveform com bolinha azul deslizando */}
-          <div style={{ flex: 1, position: 'relative', height: compact ? 24 : 36, display:'flex', alignItems:'center' }}>
+          <div style={{ flex: 1, position: 'relative', height: compact ? 24 : 36, display:'flex', alignItems:'center', minWidth: compact ? 60 : 100 }}>
             {/* Barras */}
             <div style={{ display:'flex', alignItems:'center', gap: compact ? 1.5 : 2, width:'100%', height:'100%' }}>
               {Array.from({ length: waveCount }, (_, i) => {
@@ -230,6 +230,7 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
                 return (
                   <div key={i} style={{
                     flex: 1,
+                    minWidth: compact ? 2 : 3,
                     height: `${h * (compact ? 22 : 34)}px`,
                     background: played ? 'rgba(255,255,255,0.85)' : waveColor,
                     borderRadius: 2,
@@ -267,12 +268,12 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
               color: '#fff',
               fontSize: compact ? 10 : 14,
               fontWeight: 800,
-              padding: compact ? '3px 6px' : '5px 11px',
+              padding: compact ? '2px 4px' : '4px 8px',
               cursor: 'pointer',
               lineHeight: 1.2,
               letterSpacing: '0.02em',
               transition: 'background 0.15s, transform 0.1s',
-              minWidth: compact ? 24 : 38,
+              minWidth: compact ? 30 : 46,
               textAlign: 'center',
             }}
             onMouseDown={e => e.currentTarget.style.transform = 'scale(0.92)'}
