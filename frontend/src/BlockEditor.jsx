@@ -1332,8 +1332,8 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
           <Field label="Quando mostrar este bloco">
             <Select value={block.resDelay || 'none'} onChange={v => onChange({ resDelay: v })} options={[
               { value: 'none',   label: 'Imediatamente' },
-              { value: 'on_end', label: 'Ao terminar o VSL (vídeo da página)' },
-              { value: 'custom', label: 'Após X segundos do VSL' },
+              { value: 'on_end', label: 'Ao terminar o VSL ou Áudio' },
+              { value: 'custom', label: 'Após X segundos (VSL / Áudio)' },
             ]} />
           </Field>
           {block.resDelay === 'custom' && (
@@ -1345,7 +1345,7 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
             </Field>
           )}
           {block.resDelay !== 'none' && (
-            <p className="text-xs text-slate-500">⚠️ Réferencia o primeiro bloco de vídeo (VSL) da página.</p>
+            <p className="text-xs text-slate-500">⚠️ Referencia o primeiro bloco de mídia (Vídeo ou Áudio WhatsApp) ativo nesta etapa.</p>
           )}
         </Section>
         <Section title="Resultado">
