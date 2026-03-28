@@ -2144,35 +2144,43 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
               };
             }
 
-            let animCSS = 'none';
+            const animName = block.buttonAnimation || 'none';
             const speed = block.buttonAnimationSpeed ?? 1.5;
-            if (block.buttonAnimation === 'pulse') animCSS = `pulse ${speed}s infinite`;
-            else if (block.buttonAnimation === 'neon') animCSS = `neon ${speed}s infinite alternate`;
-            else if (block.buttonAnimation === 'blink') animCSS = `blink ${speed}s infinite`;
-            else if (block.buttonAnimation === 'shake') animCSS = `shake ${speed}s infinite`;
-            else if (block.buttonAnimation === 'heartbeat') animCSS = `heartbeat ${speed}s infinite`;
+            const btnId = `resbtn_${block.id}`;
+            const keyframes = {
+              pulse: `@keyframes ${btnId}_pulse {0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}`,
+              neon: `@keyframes ${btnId}_neon {0%,100%{box-shadow:0 0 5px ${finalButtonBg},0 0 10px ${finalButtonBg}}50%{box-shadow:0 0 15px ${finalButtonBg},0 0 25px ${finalButtonBg}}}`,
+              blink: `@keyframes ${btnId}_blink {0%,49%{opacity:1}50%,100%{opacity:0.4}}`,
+              shake: `@keyframes ${btnId}_shake {0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}`,
+              heartbeat: `@keyframes ${btnId}_heartbeat {0%,100%{transform:scale(1)}14%{transform:scale(1.08)}28%{transform:scale(1)}42%{transform:scale(1.08)}70%{transform:scale(1)}}`,
+              none: '',
+            };
+            const animCSS = animName !== 'none' ? `${btnId}_${animName} ${speed}s infinite` : 'none';
 
             return (
-              <button
-                onClick={e => { e.stopPropagation(); handleAction(); }}
-                style={{
-                  display: 'flex', flexDirection: pos === 'top_large' ? 'column' : 'row',
-                  alignItems: 'center', justifyContent: 'center', gap: pos === 'top_large' ? (compact ? 6 : 10) : (compact ? 6 : 8),
-                  width: `${block.buttonBoxWidth || 100}%`,
-                  minHeight: block.buttonBoxHeight || 44,
-                  padding: compact ? '8px 12px' : '14px 24px',
-                  borderRadius: btnRadius,
-                  fontSize: block.buttonFontSize || 15,
-                  fontWeight: 600,
-                  fontFamily: block.buttonFontFamily ? `'${block.buttonFontFamily}', sans-serif` : undefined,
-                  cursor: 'pointer',
-                  position: 'relative',
-                  margin: '0 auto',
-                  color: finalButtonTextColor,
-                  transition: 'transform 0.15s, opacity 0.15s',
-                  animation: animCSS,
-                  ...glassStyle
-                }}>
+              <>
+                {animName !== 'none' && <style>{keyframes[animName]}</style>}
+                <button
+                  onClick={e => { e.stopPropagation(); handleAction(); }}
+                  style={{
+                    display: 'flex', flexDirection: pos === 'top_large' ? 'column' : 'row',
+                    alignItems: 'center', justifyContent: 'center', gap: pos === 'top_large' ? (compact ? 6 : 10) : (compact ? 6 : 8),
+                    width: `${block.buttonBoxWidth || 100}%`,
+                    height: compact ? Math.round((block.buttonBoxHeight || 44) * 0.5) : (block.buttonBoxHeight || 44),
+                    paddingLeft: compact ? 8 : 16,
+                    paddingRight: compact ? 8 : 16,
+                    borderRadius: btnRadius,
+                    fontSize: compact ? Math.round((block.buttonFontSize || 15) * 0.6) : (block.buttonFontSize || 15),
+                    fontWeight: 600,
+                    fontFamily: block.buttonFontFamily ? `'${block.buttonFontFamily}', sans-serif` : undefined,
+                    cursor: 'pointer',
+                    position: 'relative',
+                    margin: '0 auto',
+                    color: finalButtonTextColor,
+                    transition: 'opacity 0.15s ease, transform 0.15s',
+                    animation: animCSS,
+                    ...glassStyle
+                  }}>
                 {pos === 'left_inside' && (block.buttonEmojiUnified ? <Emoji unified={block.buttonEmojiUnified} size={compact ? 16 : 20} /> : block.buttonEmoji && <span>{block.buttonEmoji}</span>)}
                 {pos === 'top_large' && (block.buttonEmojiUnified ? <Emoji unified={block.buttonEmojiUnified} size={compact ? 24 : 36} /> : block.buttonEmoji && <span style={{fontSize: compact ? 24 : 36, lineHeight: 1}}>{block.buttonEmoji}</span>)}
                 
@@ -2180,6 +2188,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                 
                 {pos === 'right_inside' && (block.buttonEmojiUnified ? <Emoji unified={block.buttonEmojiUnified} size={compact ? 16 : 20} /> : block.buttonEmoji && <span>{block.buttonEmoji}</span>)}
               </button>
+              </>
             );
           })()}
 
