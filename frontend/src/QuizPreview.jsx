@@ -99,6 +99,8 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration]       = useState(0);
   const [speed, setSpeed]             = useState(1);
+  const [ended, setEnded]             = useState(false);
+  const [hasStarted, setHasStarted]   = useState(false);
 
   const SPEEDS = [1, 1.5, 2];
   const cycleSpeed = () => {
@@ -131,7 +133,11 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
     if (!audioRef.current) return;
     try {
       if (playing) { audioRef.current.pause(); setPlaying(false); }
-      else { await audioRef.current.play(); setPlaying(true); }
+      else { 
+        if (!hasStarted) setHasStarted(true);
+        await audioRef.current.play(); 
+        setPlaying(true); 
+      }
     } catch(e) { console.error('Audio play error:', e); }
   };
 
@@ -144,6 +150,13 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
   React.useEffect(() => {
     return () => { if (audioRef.current) triggerFinalPing(audioRef.current.duration); };
   }, []);
+
+  // Sync to QuizPreview context
+  React.useEffect(() => {
+    if (block.setMediaState) {
+      block.setMediaState({ hasStarted, currentTime, ended });
+    }
+  }, [hasStarted, currentTime, ended, block.setMediaState]);
   const progress = duration > 0 ? currentTime / duration : 0;
   const avatarSz  = compact ? 32 : 46;
   const btnSz     = compact ? 22 : 32;
@@ -158,7 +171,7 @@ function AudioBlockPlayer({ block, compact, quizId, visitorId, stepId }) {
             trackTime(e.target.currentTime, e.target.duration);
           }}
           onLoadedMetadata={e => setDuration(e.target.duration)}
-          onEnded={() => { setPlaying(false); setCurrentTime(0); triggerFinalPing(audioRef.current?.duration); }} />
+          onEnded={() => { setPlaying(false); setEnded(true); triggerFinalPing(audioRef.current?.duration); }} />
       )}
 
       {/* ── Bolha principal ── */}
@@ -404,6 +417,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   useEffect(() => {
     if (isEmbed && src && block.autoplay && !startedRef.current) {
       startedRef.current = true;
+      setHasStarted(true);
       setPlaying(true);
     }
   }, [isEmbed, src, block.autoplay]);
@@ -1512,7 +1526,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
 
     case 'audio':
-      return <AudioBlockPlayer block={block} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} />;
+      return <AudioBlockPlayer block={{...block, setMediaState}} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} />;
 
     case 'video':
       return <VideoBlockPlayer block={{...block, setMediaState}} compact={compact} quizId={quizId} visitorId={visitorId} stepId={stepId} theme={theme} />;
