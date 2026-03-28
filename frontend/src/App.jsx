@@ -288,11 +288,7 @@ function QuizRouter() {
     }
   };
 
-  if (loading) return (
-    <div style={{minHeight:'100vh',background:'#020617',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:18}}>
-      Carregando...
-    </div>
-  );
+  if (loading) return null; // Transição silenciosa, sem texto de carregamento
 
   if (error === 'NO_QUIZ_CONFIGURED') return (
     <div style={{minHeight:'100vh',background:'#020617',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',color:'white',textAlign:'center',padding:24}}>
