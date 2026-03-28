@@ -2018,12 +2018,9 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const [localSeconds, setLocalSeconds] = React.useState(0);
 
       React.useEffect(() => {
-        // Only run local interval if we are in preview mode OR there's no media to track
-        const hasMedia = steps && steps[stepIdx]?.blocks?.some(b => b.type === 'video' || b.type === 'audio');
-        if (compact || !hasMedia) {
-          const interval = setInterval(() => setLocalSeconds(s => s + 1), 1000);
-          return () => clearInterval(interval);
-        }
+        // Relógio local sempre roda para permitir delay cronológico estrito independentemente de mídia
+        const interval = setInterval(() => setLocalSeconds(s => s + 1), 1000);
+        return () => clearInterval(interval);
       }, [compact, steps, stepIdx]);
 
       React.useEffect(() => {
@@ -2044,19 +2041,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
         if (delay === 'custom') {
           const secs = finalResDelaySeconds || 0;
-          if (!compact && hasMedia) {
-            if (mediaState && mediaState.hasStarted && mediaState.currentTime >= secs) {
-              setResVisible(true);
-            } else {
-              setResVisible(false);
-            }
+          // Conta os segundos corridos no relógio local do block estritamente (independe do progresso do vídeo)
+          if (localSeconds >= secs) {
+            setResVisible(true);
           } else {
-            // Conta os segundos corridos no relógio local do block
-            if (localSeconds >= secs) {
-              setResVisible(true);
-            } else {
-              setResVisible(false);
-            }
+            setResVisible(false);
           }
         }
       }, [finalResDelay, finalResDelaySeconds, mediaState, compact, localSeconds, steps, stepIdx]);
