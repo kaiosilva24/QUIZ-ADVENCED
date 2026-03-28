@@ -1998,6 +1998,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
       if (finalHeadingFontFamily) injectFont(finalHeadingFontFamily);
       if (finalTextFontFamily) injectFont(finalTextFontFamily);
+      if (block.buttonFontFamily) injectFont(block.buttonFontFamily);
 
       const [resVisible, setResVisible] = React.useState(false);
 
@@ -2116,24 +2117,71 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             }} dangerouslySetInnerHTML={{ __html: finalText }} />
           ) : null}
 
-          {finalEnableButton && finalButtonText && (
-            <button
-              onClick={e => { e.stopPropagation(); handleAction(); }}
-              style={{
+          {finalEnableButton && finalButtonText && (() => {
+            const pos = block.buttonEmojiPosition || 'left_inside';
+            const btnRadius = block.buttonBorderRadius ?? 14;
+            const bgStyleMode = block.buttonBgStyle || 'solid';
+
+            let glassStyle;
+            if (bgStyleMode === 'glass') {
+              glassStyle = {
+                background: 'rgba(255,255,255,0.1)',
+                backdropFilter: `blur(${block.buttonBlurAmount ?? 10}px)`,
+                border: '1px solid rgba(255,255,255,0.25)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+              };
+            } else if (bgStyleMode === 'border_only') {
+              glassStyle = {
+                background: 'transparent',
+                border: `${block.buttonBorderWidth ?? 2}px solid ${block.buttonBorderColor || finalButtonTextColor}`,
+                boxShadow: 'none',
+              };
+            } else {
+              glassStyle = {
                 background: finalButtonBg,
-                color: finalButtonTextColor,
-                padding: compact ? '8px 16px' : '14px 28px',
-                borderRadius: 12,
+                boxShadow: `0 4px 20px ${finalButtonBg}40`,
                 border: 'none',
-                fontSize: compact ? 10 : 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: `0 4px 20px ${finalButtonBg}50`,
-                transition: 'transform 0.15s, box-shadow 0.15s',
-              }}>
-              {finalButtonText}
-            </button>
-          )}
+              };
+            }
+
+            let animCSS = 'none';
+            const speed = block.buttonAnimationSpeed ?? 1.5;
+            if (block.buttonAnimation === 'pulse') animCSS = `pulse ${speed}s infinite`;
+            else if (block.buttonAnimation === 'neon') animCSS = `neon ${speed}s infinite alternate`;
+            else if (block.buttonAnimation === 'blink') animCSS = `blink ${speed}s infinite`;
+            else if (block.buttonAnimation === 'shake') animCSS = `shake ${speed}s infinite`;
+            else if (block.buttonAnimation === 'heartbeat') animCSS = `heartbeat ${speed}s infinite`;
+
+            return (
+              <button
+                onClick={e => { e.stopPropagation(); handleAction(); }}
+                style={{
+                  display: 'flex', flexDirection: pos === 'top_large' ? 'column' : 'row',
+                  alignItems: 'center', justifyContent: 'center', gap: pos === 'top_large' ? (compact ? 6 : 10) : (compact ? 6 : 8),
+                  width: `${block.buttonBoxWidth || 100}%`,
+                  minHeight: block.buttonBoxHeight || 44,
+                  padding: compact ? '8px 12px' : '14px 24px',
+                  borderRadius: btnRadius,
+                  fontSize: block.buttonFontSize || 15,
+                  fontWeight: 600,
+                  fontFamily: block.buttonFontFamily ? `'${block.buttonFontFamily}', sans-serif` : undefined,
+                  cursor: 'pointer',
+                  position: 'relative',
+                  margin: '0 auto',
+                  color: finalButtonTextColor,
+                  transition: 'transform 0.15s, opacity 0.15s',
+                  animation: animCSS,
+                  ...glassStyle
+                }}>
+                {pos === 'left_inside' && (block.buttonEmojiUnified ? <Emoji unified={block.buttonEmojiUnified} size={compact ? 16 : 20} /> : block.buttonEmoji && <span>{block.buttonEmoji}</span>)}
+                {pos === 'top_large' && (block.buttonEmojiUnified ? <Emoji unified={block.buttonEmojiUnified} size={compact ? 24 : 36} /> : block.buttonEmoji && <span style={{fontSize: compact ? 24 : 36, lineHeight: 1}}>{block.buttonEmoji}</span>)}
+                
+                <span style={{flex: pos === 'top_large' ? 'initial' : 1}}>{finalButtonText}</span>
+                
+                {pos === 'right_inside' && (block.buttonEmojiUnified ? <Emoji unified={block.buttonEmojiUnified} size={compact ? 16 : 20} /> : block.buttonEmoji && <span>{block.buttonEmoji}</span>)}
+              </button>
+            );
+          })()}
 
           {block.clickAnywhere && finalButtonAction === 'next_step' && !compact && (
             <p style={{ color: defaultText, opacity: 0.35, fontSize: compact ? 7 : 10, marginTop: 0 }}>Toque em qualquer lugar para continuar</p>

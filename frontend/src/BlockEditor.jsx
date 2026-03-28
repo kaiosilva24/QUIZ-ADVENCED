@@ -1421,18 +1421,12 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
           <Toggle label="Mostrar Botão de Ação" value={block.enableButton !== false} onChange={v => onChange({ enableButton: v })} />
           {block.enableButton !== false && (
             <>
-              <Field label="Texto do Botão"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
-              <Field label="Cor do Fundo do Botão"><ColorPicker value={block.buttonBg || theme?.accent || '#6366f1'} onChange={v => onChange({ buttonBg: v })} /></Field>
-              <Field label="Cor do Texto do Botão"><ColorPicker value={block.buttonTextColor || '#ffffff'} onChange={v => onChange({ buttonTextColor: v })} /></Field>
               <Field label="Ação ao Clicar">
                 <Select value={block.buttonAction || 'url'} onChange={v => onChange({ buttonAction: v })} options={[
                   { value: 'url', label: 'Abrir URL externa' },
                   { value: 'next_step', label: 'Ir para próxima etapa' },
                 ]} />
               </Field>
-              {(block.buttonAction || 'url') === 'url' && (
-                <Field label="URL do Botão"><Input value={block.buttonUrl} onChange={v => onChange({ buttonUrl: v })} placeholder="https://..." /></Field>
-              )}
               {block.buttonAction === 'next_step' && (
                 <Field label="Etapa Destino">
                   <Select value={block.nextStep || ''} onChange={v => onChange({ nextStep: v })} options={[
@@ -1444,6 +1438,88 @@ function ResultEditor({ block, onChange, theme, steps, currentStepIdx }) {
               {block.buttonAction === 'next_step' && (
                 <Toggle label="Clicar em qualquer lugar avança" value={block.clickAnywhere} onChange={v => onChange({ clickAnywhere: v })} />
               )}
+              {(block.buttonAction || 'url') === 'url' && (
+                <Field label="URL do Botão"><Input value={block.buttonUrl} onChange={v => onChange({ buttonUrl: v })} placeholder="https://..." /></Field>
+              )}
+
+              <div className="mt-4 pt-4 border-t border-slate-700/50 space-y-4">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Design do Botão</p>
+                <Field label="Texto"><Input value={block.buttonText} onChange={v => onChange({ buttonText: v })} /></Field>
+                <Field label="Emoji"><EmojiSelect emoji={block.buttonEmoji} unified={block.buttonEmojiUnified} onChange={(e, u) => onChange({ buttonEmoji: e, buttonEmojiUnified: u })} /></Field>
+                <Field label="Posição do Emoji">
+                  <Select value={block.buttonEmojiPosition || 'left_inside'} onChange={v => onChange({ buttonEmojiPosition: v })} options={[
+                    { value: 'left_inside', label: 'Esquerda (Dentro)' },
+                    { value: 'right_inside', label: 'Direita (Dentro)' },
+                    { value: 'left_outside', label: 'Esquerda Fora (InLead)' },
+                    { value: 'top_large', label: 'Topo Gigante' }
+                  ]} />
+                </Field>
+                <Field label="Fonte do Botão"><FontPicker value={block.buttonFontFamily} onChange={v => onChange({ buttonFontFamily: v })} /></Field>
+                <Field label={`Tamanho do Texto: ${block.buttonFontSize || 15}px`}>
+                  <input type="range" min={10} max={32} step={1} value={block.buttonFontSize || 15}
+                    onChange={e => onChange({ buttonFontSize: Number(e.target.value) })}
+                    className="w-full accent-indigo-500 cursor-pointer" />
+                </Field>
+                <Field label="Cor de Fundo"><ColorPicker value={block.buttonBg || theme?.accent || '#6366f1'} onChange={v => onChange({ buttonBg: v })} /></Field>
+                <Field label="Cor do Texto"><ColorPicker value={block.buttonTextColor || '#ffffff'} onChange={v => onChange({ buttonTextColor: v })} /></Field>
+
+                <Field label={`Largura da Caixa: ${block.buttonBoxWidth || 100}%`}>
+                  <input type="range" min={30} max={100} step={5} value={block.buttonBoxWidth || 100}
+                    onChange={e => onChange({ buttonBoxWidth: Number(e.target.value) })}
+                    className="w-full accent-indigo-500 cursor-pointer" />
+                </Field>
+                <Field label={`Altura Mínima: ${block.buttonBoxHeight || 44}px`}>
+                  <input type="range" min={20} max={120} step={4} value={block.buttonBoxHeight || 44}
+                    onChange={e => onChange({ buttonBoxHeight: Number(e.target.value) })}
+                    className="w-full accent-indigo-500 cursor-pointer" />
+                </Field>
+                <Field label={`Arredondamento: ${block.buttonBorderRadius ?? 14}px`}>
+                  <input type="range" min={0} max={60} step={2} value={block.buttonBorderRadius ?? 14}
+                    onChange={e => onChange({ buttonBorderRadius: Number(e.target.value) })}
+                    className="w-full accent-indigo-500 cursor-pointer" />
+                </Field>
+                <Field label="Estilo de Fundo">
+                  <Select value={block.buttonBgStyle || 'solid'} onChange={v => onChange({ buttonBgStyle: v })} options={[
+                    { value: 'solid', label: 'Sólido (Padrão)' },
+                    { value: 'glass', label: 'Efeito Ofuscado (Glass)' },
+                    { value: 'border_only', label: 'Somente Borda (Transparente)' },
+                  ]} />
+                </Field>
+                {block.buttonBgStyle === 'glass' && (
+                  <Field label={`Intensidade do Blur: ${block.buttonBlurAmount ?? 10}px`}>
+                    <input type="range" min={2} max={30} step={2} value={block.buttonBlurAmount ?? 10}
+                      onChange={e => onChange({ buttonBlurAmount: Number(e.target.value) })}
+                      className="w-full accent-indigo-500 cursor-pointer" />
+                  </Field>
+                )}
+                {block.buttonBgStyle === 'border_only' && (
+                  <>
+                    <Field label="Cor da Borda"><ColorPicker value={block.buttonBorderColor || block.buttonTextColor || '#6366f1'} onChange={v => onChange({ buttonBorderColor: v })} /></Field>
+                    <Field label={`Espessura da Borda: ${block.buttonBorderWidth ?? 2}px`}>
+                      <input type="range" min={1} max={8} step={1} value={block.buttonBorderWidth ?? 2}
+                        onChange={e => onChange({ buttonBorderWidth: Number(e.target.value) })}
+                        className="w-full accent-indigo-500 cursor-pointer" />
+                    </Field>
+                  </>
+                )}
+                <Field label="Animação do Botão">
+                  <Select value={block.buttonAnimation || 'none'} onChange={v => onChange({ buttonAnimation: v })} options={[
+                    { value: 'none', label: 'Nenhuma' },
+                    { value: 'pulse', label: 'Pulso (Aumenta e Volta)' },
+                    { value: 'neon', label: 'Neon (Brilho Externo)' },
+                    { value: 'blink', label: 'Piscar (Opacidade)' },
+                    { value: 'shake', label: 'Tremer (Lateral)' },
+                    { value: 'heartbeat', label: 'Coração Pulsando' },
+                  ]} />
+                </Field>
+                {block.buttonAnimation && block.buttonAnimation !== 'none' && (
+                  <Field label={`Velocidade (${block.buttonAnimationSpeed ?? 1.5}s)`}>
+                    <input type="range" min={0.2} max={4.0} step={0.1} value={block.buttonAnimationSpeed ?? 1.5}
+                      onChange={e => onChange({ buttonAnimationSpeed: Number(e.target.value) })}
+                      className="w-full accent-indigo-500 cursor-pointer" />
+                  </Field>
+                )}
+              </div>
             </>
           )}
         </Section>
