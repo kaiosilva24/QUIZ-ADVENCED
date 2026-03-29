@@ -1088,9 +1088,31 @@ function ButtonEditor({ block, onChange, steps, theme }) {
             <Input value={block.buttonUrl || ''} onChange={v => onChange({ buttonUrl: v })} placeholder="https://meusite.com" />
           </Field>
         )}
-        <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
+      <Toggle label="Largura Total" value={block.fullWidth !== false} onChange={v => onChange({ fullWidth: v })} />
         <ScoreTargetSelect steps={steps} value={block.scoreTarget} onChange={v => onChange({ scoreTarget: v })} />
       </Section>
+
+      <Section title="⏰ Aparecimento (Delay)">
+        <Field label="Quando mostrar este bloco">
+          <Select value={block.showDelay || 'none'} onChange={v => onChange({ showDelay: v })} options={[
+            { value: 'none',   label: 'Imediatamente' },
+            { value: 'on_end', label: 'Ao terminar o VSL ou Áudio' },
+            { value: 'custom', label: 'Após X segundos (VSL / Áudio)' },
+          ]} />
+        </Field>
+        {block.showDelay === 'custom' && (
+          <Field label={`Aparecer após: ${block.showDelaySeconds || 0}s`}>
+            <input type="range" min={0} max={600} step={1}
+              value={block.showDelaySeconds || 0}
+              onChange={e => onChange({ showDelaySeconds: Number(e.target.value) })}
+              className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+        )}
+        {block.showDelay && block.showDelay !== 'none' && (
+          <p className="text-xs text-slate-500">⚠️ Referencia o primeiro bloco de mídia (Vídeo ou Áudio WhatsApp) ativo nesta etapa.</p>
+        )}
+      </Section>
+
       <LoadingScreenConfig block={block} theme={theme} onChange={onChange} loadingKey="showLoading" />
     </>
   );

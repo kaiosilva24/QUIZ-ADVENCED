@@ -1629,6 +1629,35 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         );
       }
       
+      // ── Delay de aparecimento ───────────────────────────────
+      const btnShowDelay = block.showDelay || 'none';
+      const [btnVisible, setBtnVisible] = React.useState(btnShowDelay === 'none');
+      const [btnLocalSecs, setBtnLocalSecs] = React.useState(0);
+      const btnNeedsTimer = btnShowDelay !== 'none' && !btnVisible;
+
+      React.useEffect(() => {
+        if (!btnNeedsTimer) return;
+        const iv = setInterval(() => setBtnLocalSecs(s => s + 1), 1000);
+        return () => clearInterval(iv);
+      }, [btnNeedsTimer]);
+
+      React.useEffect(() => {
+        if (btnShowDelay === 'none') { setBtnVisible(true); return; }
+        const hasMedia = steps && steps[stepIdx]?.blocks?.some(b => b.type === 'video' || b.type === 'audio');
+        if (btnShowDelay === 'on_end') {
+          if (!compact && hasMedia) setBtnVisible(mediaState && mediaState.hasStarted && mediaState.ended);
+          else setBtnVisible(compact ? btnLocalSecs >= 2 : true);
+          return;
+        }
+        if (btnShowDelay === 'custom') {
+          const secs = block.showDelaySeconds || 0;
+          setBtnVisible(btnLocalSecs >= secs);
+        }
+      }, [btnShowDelay, block.showDelaySeconds, mediaState, compact, btnLocalSecs, steps, stepIdx]);
+
+      if (!btnVisible) return null;
+      // ── Fim delay ──────────────────────────────────────────
+
       return (
         <>
           {animName !== 'none' && <style>{keyframes[animName]}</style>}
