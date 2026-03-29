@@ -2016,12 +2016,14 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
       const [resVisible, setResVisible] = React.useState(false);
       const [localSeconds, setLocalSeconds] = React.useState(0);
+      // Only tick when delay is active and result not yet visible (avoids re-renders when idle)
+      const needsLocalTimer = finalResDelay !== 'none' && !resVisible;
 
       React.useEffect(() => {
-        // Relógio local sempre roda para permitir delay cronológico estrito independentemente de mídia
+        if (!needsLocalTimer) return;
         const interval = setInterval(() => setLocalSeconds(s => s + 1), 1000);
         return () => clearInterval(interval);
-      }, [compact, steps, stepIdx]);
+      }, [needsLocalTimer]);
 
       React.useEffect(() => {
         const delay = finalResDelay;
@@ -2033,7 +2035,6 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           if (!compact && hasMedia) {
             setResVisible(mediaState && mediaState.hasStarted && mediaState.ended);
           } else {
-            // Em preview ou sem mídia, pra 'on_end', mostramos com um delay mockado rápido ou instantâneo
             setResVisible(compact ? localSeconds >= 2 : true);
           }
           return;
@@ -2041,7 +2042,6 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
         if (delay === 'custom') {
           const secs = finalResDelaySeconds || 0;
-          // Conta os segundos corridos no relógio local do block estritamente (independe do progresso do vídeo)
           if (localSeconds >= secs) {
             setResVisible(true);
           } else {

@@ -53,7 +53,7 @@ function createBlock(type) {
   }
 }
 
-function SortableBlock({ block, isSelected, onSelect, onDelete, onClone }) {
+const SortableBlock = React.memo(function SortableBlock({ block, isSelected, onSelect, onDelete, onClone }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
   const typeInfo = BLOCK_TYPES.find(t => t.type === block.type) || BLOCK_TYPES[0];
@@ -89,9 +89,9 @@ function SortableBlock({ block, isSelected, onSelect, onDelete, onClone }) {
       </div>
     </div>
   );
-}
+});
 
-function SortableStep({ step, idx, currentStepIdx, onClick, updateLabel, onClone, onDelete }) {
+const SortableStep = React.memo(function SortableStep({ step, idx, currentStepIdx, onClick, updateLabel, onClone, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: step.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
   
@@ -126,7 +126,7 @@ function SortableStep({ step, idx, currentStepIdx, onClick, updateLabel, onClone
       </div>
     </div>
   );
-}
+});
 
 export default function QuizBuilder({ quiz, domain, onBack }) {
   const DRAFT_KEY = `quiz_draft_${quiz.id || 'new'}`;
@@ -289,8 +289,8 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
     }
   };
 
-  const currentStep = config.steps[currentStepIdx];
-  const selectedBlock = currentStep?.blocks.find(b => b.id === selectedBlockId) || null;
+  const currentStep = useMemo(() => config.steps[currentStepIdx], [config.steps, currentStepIdx]);
+  const selectedBlock = useMemo(() => currentStep?.blocks.find(b => b.id === selectedBlockId) || null, [currentStep, selectedBlockId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -386,15 +386,15 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
     }));
   };
 
-  const updateBlock = (blockId, patch) => {
+  const updateBlock = useCallback((blockId, patch) => {
     setConfig(c => ({
       ...c,
       steps: c.steps.map((s, i) => i === currentStepIdx
         ? { ...s, blocks: s.blocks.map(b => b.id === blockId ? { ...b, ...patch } : b) } : s)
     }));
-  };
+  }, [currentStepIdx]);
 
-  const handleStepDragEnd = (event) => {
+  const handleStepDragEnd = useCallback((event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     
@@ -409,9 +409,9 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
       setCurrentStepIdx(newCurrentIdx);
       return { ...c, steps: newSteps };
     });
-  };
+  }, [currentStepIdx]);
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = useCallback((event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     setConfig(c => ({
@@ -423,7 +423,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
         return { ...s, blocks: arrayMove(s.blocks, oldIdx, newIdx) };
       })
     }));
-  };
+  }, [currentStepIdx]);
 
 
 
@@ -809,7 +809,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
                 theme={config.theme}
                 steps={config.steps}
                 currentStepIdx={currentStepIdx}
-                onChange={(patch) => updateBlock(selectedBlock.id, patch)}
+                onChange={patch => updateBlock(selectedBlock.id, patch)}
               />
             ) : (
               <div className="flex flex-col gap-5 max-w-lg mx-auto mt-4 px-2">
