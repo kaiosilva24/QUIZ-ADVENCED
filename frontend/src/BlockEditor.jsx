@@ -1749,8 +1749,120 @@ function LiveCounterEditor({ block, onChange, steps, currentStepIdx }) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Main component
+// CheckboxSelectorEditor
 // ────────────────────────────────────────────────────────────────────────────
+function CheckboxSelectorEditor({ block, onChange, steps }) {
+  const opts = block.options || [];
+
+  const updateOpt = (idx, patch) => {
+    const updated = opts.map((o, i) => i === idx ? { ...o, ...patch } : o);
+    onChange({ options: updated });
+  };
+
+  const addOpt = () => {
+    const id = `opt_${Date.now()}`;
+    onChange({ options: [...opts, { id, text: `Opção ${opts.length + 1}`, scoreTarget: '' }] });
+  };
+
+  const removeOpt = (idx) => {
+    onChange({ options: opts.filter((_, i) => i !== idx) });
+  };
+
+  return (
+    <>
+      <Section title="Configurações Gerais">
+        <Field label="Modo de Seleção">
+          <Select value={block.multiSelect ? 'multi' : 'single'} onChange={v => onChange({ multiSelect: v === 'multi' })} options={[
+            { value: 'single', label: '🔘 Seleção Única (1 opção)' },
+            { value: 'multi',  label: '☑️ Múltipla Seleção (várias)' },
+          ]} />
+        </Field>
+        {block.multiSelect && (
+          <Field label={`Mínimo de Seleções: ${block.minSelect || 1}`}>
+            <input type="range" min={1} max={10} step={1} value={block.minSelect || 1}
+              onChange={e => onChange({ minSelect: Number(e.target.value) })}
+              className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+        )}
+        <Field label="Etapa ao Confirmar">
+          <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} placeholder="-- Próxima Etapa --" />
+        </Field>
+      </Section>
+
+      <Section title="Estilo dos Itens">
+        <Field label={`Arredondamento: ${block.itemRadius ?? 14}px`}>
+          <input type="range" min={0} max={60} step={2} value={block.itemRadius ?? 14}
+            onChange={e => onChange({ itemRadius: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
+        <Field label="Estilo do Checkbox">
+          <Select value={block.checkboxStyle || 'square'} onChange={v => onChange({ checkboxStyle: v })} options={[
+            { value: 'square',  label: '☐  Quadrado' },
+            { value: 'circle',  label: '○  Círculo' },
+            { value: 'hidden',  label: '— Oculto' },
+          ]} />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Fundo (Normal)"><ColorPicker value={block.itemBg || 'transparent'} onChange={v => onChange({ itemBg: v })} /></Field>
+          <Field label="Borda (Normal)"><ColorPicker value={block.itemBorder || '#334155'} onChange={v => onChange({ itemBorder: v })} /></Field>
+          <Field label="Fundo Selecionado"><ColorPicker value={block.itemSelectedBg || '#6366f1'} onChange={v => onChange({ itemSelectedBg: v })} /></Field>
+          <Field label="Borda Selecionada"><ColorPicker value={block.itemSelectedBorder || '#6366f1'} onChange={v => onChange({ itemSelectedBorder: v })} /></Field>
+        </div>
+        <Field label="Cor do Texto"><ColorPicker value={block.itemTextColor || '#ffffff'} onChange={v => onChange({ itemTextColor: v })} /></Field>
+      </Section>
+
+      <Section title="Botão de Confirmação">
+        <Field label="Texto do Botão"><Input value={block.confirmText || 'Confirmar →'} onChange={v => onChange({ confirmText: v })} /></Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Cor de Fundo"><ColorPicker value={block.confirmBg || '#6366f1'} onChange={v => onChange({ confirmBg: v })} /></Field>
+          <Field label="Cor do Texto"><ColorPicker value={block.confirmTextColor || '#ffffff'} onChange={v => onChange({ confirmTextColor: v })} /></Field>
+        </div>
+        <Field label={`Arredondamento: ${block.confirmRadius ?? 14}px`}>
+          <input type="range" min={0} max={60} step={2} value={block.confirmRadius ?? 14}
+            onChange={e => onChange({ confirmRadius: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
+      </Section>
+
+      <Section title="Opções de Seleção">
+        <div className="space-y-3">
+          {opts.map((opt, idx) => (
+            <div key={opt.id} className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500 font-bold w-5 text-center">{idx + 1}</span>
+                <input
+                  value={opt.text}
+                  onChange={e => updateOpt(idx, { text: e.target.value })}
+                  placeholder="Texto da opção..."
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500"
+                />
+                <button onClick={() => removeOpt(idx)}
+                  className="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors">
+                  ×
+                </button>
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 uppercase tracking-wider">Pontuar como (Variante)</label>
+                <input
+                  value={opt.scoreTarget || ''}
+                  onChange={e => updateOpt(idx, { scoreTarget: e.target.value })}
+                  placeholder="Ex: Homem, Aprovado, Perfil A..."
+                  className="w-full mt-1 bg-slate-900 border border-indigo-500/30 rounded-lg px-3 py-1.5 text-xs text-indigo-300 outline-none focus:border-indigo-400 placeholder-slate-600"
+                />
+              </div>
+            </div>
+          ))}
+          <button onClick={addOpt}
+            className="w-full py-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-500 hover:text-indigo-400 transition-all">
+            + Adicionar Opção
+          </button>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+
 export default function BlockEditor({ block, theme, steps, currentStepIdx, onChange }) {
   if (!block) return null;
 
@@ -1769,6 +1881,7 @@ export default function BlockEditor({ block, theme, steps, currentStepIdx, onCha
     lead_capture: LeadCaptureEditor,
     result: ResultEditor,
     spacer: SpacerEditor,
+    checkbox_selector: CheckboxSelectorEditor,
   };
 
   const Editor = editorMap[block.type];

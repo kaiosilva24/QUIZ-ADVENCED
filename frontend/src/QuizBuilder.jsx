@@ -10,7 +10,7 @@ import {
   GripVertical, Plus, Trash2, ChevronLeft, Save, Eye, EyeOff,
   Type, Image, MousePointerClick, AlignLeft, ToggleLeft, Minus,
   CheckCircle2, Users, Layers, Palette, Settings, ArrowRight, Music, Video, Copy, MoveVertical, Timer,
-  Undo2, Redo2, Radio, RefreshCw, AlertCircle, Cloud
+  Undo2, Redo2, Radio, RefreshCw, AlertCircle, Cloud, LayoutList
 } from 'lucide-react';
 import QuizPreview from './QuizPreview';
 import BlockEditor from './BlockEditor';
@@ -29,7 +29,8 @@ const BLOCK_TYPES = [
   { type: 'lead_capture', label: 'Captura de Lead',   icon: Users,           color: '#ef4444' },
   { type: 'animated_progress', label: 'Barra Animada', icon: Timer,          color: '#f43f5e' },
   { type: 'live_counter', label: 'Ao Vivo (Oscilante)', icon: Radio,         color: '#ef4444' },
-  { type: 'result',       label: 'Tela de Resultado', icon: CheckCircle2,    color: '#22c55e' },
+  { type: 'result',         label: 'Tela de Resultado',  icon: CheckCircle2,  color: '#22c55e' },
+  { type: 'checkbox_selector', label: 'Seletor de Opções', icon: LayoutList,   color: '#a855f7' },
 ];
 
 function createBlock(type) {
@@ -49,6 +50,26 @@ function createBlock(type) {
     case 'spacer':      return { ...base, height: 40 };
     case 'lead_capture':return { ...base, fields: ['name', 'email', 'phone'], buttonText: 'Quero meu resultado →', buttonBg: '#6366f1' };
     case 'result':      return { ...base, heading: '🎉 Parabéns!', text: 'Você está pronto para dar o próximo passo.', buttonText: 'Acessar agora →', buttonUrl: '#', buttonBg: '#10b981', enableLoading: false, loadingText: 'Analisando suas respostas...', loadingDuration: 3 };
+    case 'checkbox_selector': return { ...base,
+      multiSelect: true,
+      minSelect: 1,
+      confirmText: 'Confirmar →',
+      confirmBg: '#6366f1',
+      confirmTextColor: '#ffffff',
+      itemBg: 'transparent',
+      itemBorder: '#334155',
+      itemSelectedBg: '#6366f1',
+      itemSelectedBorder: '#6366f1',
+      itemTextColor: '#ffffff',
+      itemRadius: 14,
+      checkboxStyle: 'square',
+      nextStep: null,
+      options: [
+        { id: 'opt_1', text: 'Opção 1', scoreTarget: '' },
+        { id: 'opt_2', text: 'Opção 2', scoreTarget: '' },
+        { id: 'opt_3', text: 'Opção 3', scoreTarget: '' },
+      ]
+    };
     default:            return base;
   }
 }

@@ -2251,6 +2251,126 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       );
     }
 
+    case 'checkbox_selector': {
+      const opts = block.options || [];
+      const isMulti = block.multiSelect !== false;
+      const [selected, setSelected] = React.useState([]);
+
+      const toggleOpt = (optId) => {
+        if (isMulti) {
+          setSelected(prev =>
+            prev.includes(optId) ? prev.filter(id => id !== optId) : [...prev, optId]
+          );
+        } else {
+          setSelected(prev => prev.includes(optId) ? [] : [optId]);
+        }
+      };
+
+      const canConfirm = selected.length >= (isMulti ? (block.minSelect || 1) : 1);
+
+      const handleConfirm = () => {
+        if (!canConfirm || compact) return;
+        // Accumulate scores for each selected option
+        selected.forEach(optId => {
+          const opt = opts.find(o => o.id === optId);
+          if (opt?.scoreTarget && opt.scoreTarget.trim()) {
+            // Fire score via onNavigate piggyback — we'll navigate once after scoring all
+          }
+        });
+        const target = block.nextStep;
+        if (onNavigate && target) {
+          // Pass selected option scoreTargets as a comma list for upstream processing
+          const scoreStr = selected
+            .map(id => opts.find(o => o.id === id)?.scoreTarget)
+            .filter(Boolean)
+            .join(',');
+          onNavigate(target, scoreStr || 'Confirmado', false, scoreStr || null);
+        }
+      };
+
+      const cbStyle = block.checkboxStyle || 'square';
+      const radius = block.itemRadius ?? 14;
+
+      return (
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8 }}>
+          {opts.map(opt => {
+            const isSel = selected.includes(opt.id);
+            return (
+              <button
+                key={opt.id}
+                onClick={() => toggleOpt(opt.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: compact ? 8 : 12,
+                  width: '100%',
+                  padding: compact ? '6px 10px' : '12px 16px',
+                  borderRadius: radius,
+                  border: `2px solid ${isSel ? (block.itemSelectedBorder || '#6366f1') : (block.itemBorder || '#334155')}`,
+                  background: isSel ? (block.itemSelectedBg || '#6366f1') : (block.itemBg || 'transparent'),
+                  color: block.itemTextColor || '#ffffff',
+                  fontSize: compact ? 9 : 14,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  transition: 'all 0.18s ease',
+                  textAlign: 'left',
+                  outline: 'none',
+                }}
+              >
+                {/* Checkbox indicator */}
+                {cbStyle !== 'hidden' && (
+                  <div style={{
+                    width: compact ? 14 : 20,
+                    height: compact ? 14 : 20,
+                    borderRadius: cbStyle === 'circle' ? '50%' : 4,
+                    border: `2px solid ${isSel ? '#fff' : (block.itemBorder || '#334155')}`,
+                    background: isSel ? 'rgba(255,255,255,0.3)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                    transition: 'all 0.18s ease',
+                  }}>
+                    {isSel && (
+                      <svg width={compact ? 8 : 12} height={compact ? 8 : 12} viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
+                )}
+                <span style={{ flex: 1 }}>{opt.text}</span>
+              </button>
+            );
+          })}
+
+          {/* Confirm button */}
+          <button
+            onClick={handleConfirm}
+            disabled={!canConfirm}
+            style={{
+              marginTop: compact ? 4 : 8,
+              width: '100%',
+              padding: compact ? '6px 12px' : '13px 20px',
+              borderRadius: block.confirmRadius ?? 14,
+              background: canConfirm ? (block.confirmBg || '#6366f1') : '#1e293b',
+              color: canConfirm ? (block.confirmTextColor || '#ffffff') : '#475569',
+              fontSize: compact ? 9 : 15,
+              fontWeight: 600,
+              cursor: canConfirm ? 'pointer' : 'not-allowed',
+              border: 'none',
+              transition: 'all 0.2s ease',
+              opacity: canConfirm ? 1 : 0.6,
+            }}
+          >
+            {block.confirmText || 'Confirmar →'}
+            {isMulti && !canConfirm && (
+              <span style={{ opacity: 0.7, fontSize: compact ? 7 : 11, marginLeft: 6 }}>
+                (selecione {block.minSelect || 1}+)
+              </span>
+            )}
+          </button>
+        </div>
+      );
+    }
+
     default:
       return null;
   }
