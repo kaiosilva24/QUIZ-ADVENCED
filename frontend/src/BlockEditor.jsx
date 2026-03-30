@@ -1949,6 +1949,17 @@ function TestimonialCarouselEditor({ block, onChange }) {
         </Field>
       </Section>
 
+      <Section title="Comportamento do Carrossel">
+        <Toggle label="Ocultar botões Anterior/Próximo" value={!!block.hideNavButtons} onChange={v => onChange({ hideNavButtons: v })} />
+        <Field label="Tempo Rotação Automática (Seg's)">
+           <Input type="number" value={block.autoplayDelay || 0} onChange={v => onChange({ autoplayDelay: parseInt(v) || 0 })} placeholder="0 para desativar" />
+        </Field>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Cor Bolinha (Ativa)"><ColorPicker value={block.dotActiveColor || '#000000'} onChange={v => onChange({ dotActiveColor: v })} /></Field>
+          <Field label="Cor Bolinha (Inativa)"><ColorPicker value={block.dotInactiveColor || 'rgba(0,0,0,0.3)'} onChange={v => onChange({ dotInactiveColor: v })} /></Field>
+        </div>
+      </Section>
+
       {/* ── BOTÕES DE FILTRO ── */}
       <Section title="Botões de Filtro">
         <Toggle label="Mostrar Botões de Filtro" value={block.showFilterButtons !== false} onChange={v => onChange({ showFilterButtons: v })} />

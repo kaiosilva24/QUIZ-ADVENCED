@@ -2392,12 +2392,25 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       // Reset index when filter changes
       React.useEffect(() => { setCarouselIdx(0); }, [activeFilter]);
 
+      const isVideoPlayingRef = React.useRef(false);
+      const delay = block.autoplayDelay || 0;
+
+      React.useEffect(() => {
+        if (!delay || compact || total <= 1) return;
+        const iv = setInterval(() => {
+          if (!isVideoPlayingRef.current) {
+            setCarouselIdx(prev => (prev + 1) % total);
+          }
+        }, delay * 1000);
+        return () => clearInterval(iv);
+      }, [delay, compact, total]);
+
       const cardBg = block.cardBg || '#1e293b';
       const cardBorder = block.cardBorder || '#334155';
       const cs = compact ? 0.55 : 1;
 
       // Mini VideoPlayer for testimonial (reuses VSL logic)
-      function TestiVideoPlayer({ tm }) {
+      function TestiVideoPlayer({ tm, playingRef }) {
         const videoRef = React.useRef(null);
         const iframeRef = React.useRef(null);
         const [playing, setPlaying] = React.useState(false);
@@ -2412,6 +2425,10 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         const ar = tm.videoAspectRatio || '9/16';
         const radius = tm.videoRounded !== false ? (compact ? 8 : 14) : 0;
         const showUnmuteOverlay = !!(tm.videoAutoplay && tm.videoMuted && src && !userUnmuted);
+
+        React.useEffect(() => {
+          if (playingRef) playingRef.current = playing && !showUnmuteOverlay;
+        }, [playing, showUnmuteOverlay, playingRef]);
 
         const getEmbedUrl = (url) => {
           if (!url) return '';
@@ -2482,7 +2499,8 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
               {src && !isEmbed && (
                 <video ref={videoRef} src={src} loop={!!tm.videoAutoloop} playsInline disablePictureInPicture
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
-                  onCanPlay={handleCanPlay} />
+                  onCanPlay={handleCanPlay}
+                  onEnded={() => setPlaying(false)} />
               )}
               {/* Thumbnail */}
               {src && tm.thumbnailSrc && showThumb && (
@@ -2587,7 +2605,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
               {/* Video */}
               <div style={{ padding: compact ? '8px 10px' : '12px 14px' }}>
-                <TestiVideoPlayer tm={tm} />
+                <TestiVideoPlayer tm={tm} playingRef={isVideoPlayingRef} />
               </div>
 
               {/* Text content */}
@@ -2626,13 +2644,13 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                 <div style={{ display: 'flex', justifyContent: 'center', gap: compact ? 3 : 5, paddingBottom: compact ? 6 : 10 }}>
                   {filtered.map((_, i) => (
                     <button key={i} onClick={() => goTo(i)}
-                      style={{ width: i === safIdx ? (compact ? 14 : 20) : (compact ? 5 : 7), height: compact ? 5 : 7, borderRadius: 999, background: i === safIdx ? accent : 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', transition: 'all 0.2s', padding: 0 }} />
+                      style={{ width: i === safIdx ? (compact ? 14 : 20) : (compact ? 5 : 7), height: compact ? 5 : 7, borderRadius: 999, background: i === safIdx ? (block.dotActiveColor || '#000000') : (block.dotInactiveColor || 'rgba(0,0,0,0.3)'), border: 'none', cursor: 'pointer', transition: 'all 0.2s', padding: 0 }} />
                   ))}
                 </div>
               )}
 
               {/* Prev / Next buttons */}
-              {total > 1 && (
+              {total > 1 && !block.hideNavButtons && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: compact ? '6px 10px' : '8px 14px', borderTop: `1px solid ${cardBorder}` }}>
                   <button onClick={goPrev} disabled={safIdx === 0}
                     style={{ display: 'flex', alignItems: 'center', gap: compact ? 3 : 5, padding: compact ? '4px 8px' : '7px 14px', borderRadius: compact ? 6 : 10, border: `1px solid ${cardBorder}`, background: 'transparent', color: defaultText, fontSize: compact ? 8 : 12, fontWeight: 500, cursor: safIdx === 0 ? 'not-allowed' : 'pointer', opacity: safIdx === 0 ? 0.3 : 1, transition: 'all 0.15s' }}>
