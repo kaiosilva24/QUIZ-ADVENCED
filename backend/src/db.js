@@ -7,58 +7,67 @@ async function getDB() {
 
     const dbPassword = process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD) : '#Nk552446#Nk';
 
-    try {
-        poolInstance = new Pool({
-            host: 'aws-1-us-east-1.pooler.supabase.com',
-            port: 6543,
-            database: 'postgres',
-            user: 'postgres.eptmqlnqdaljyxdfcuxg',
-            password: dbPassword,
-            min: 5,
-            ssl: { rejectUnauthorized: false }
-        });
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            const dbPassword = encodeURIComponent(process.env.DB_PASSWORD || '#Nk552446#Nk');
+            const connectionString = `postgresql://postgres.eptmqlnqdaljyxdfcuxg:${dbPassword}@aws-1-us-east-1.pooler.supabase.com:6543/postgres`;
 
-        // Test connection
-        const client = await poolInstance.connect();
-        console.log(`[DB] Connected to Supabase PostgreSQL Database`);
-        client.release();
+            const pool = new Pool({
+                connectionString,
+                ssl: { rejectUnauthorized: false },
+                min: 0,
+                max: 10,
+                connectionTimeoutMillis: 60000,
+                idleTimeoutMillis: 60000,
+            });
 
-        await runMigrations(poolInstance);
+            // Test connection
+            const client = await pool.connect();
+            console.log(`[DB] Connected to Supabase PostgreSQL Database`);
+            client.release();
 
-        // Map sqlite `.all`, `.get`, `.run`
-        poolInstance.all = async (sql, params) => {
-            if (!poolInstance) return [];
-            const res = await poolInstance.query(sql, params);
-            return res.rows;
-        };
-        poolInstance.get = async (sql, params) => {
-            if (!poolInstance) return null;
-            const res = await poolInstance.query(sql, params);
-            return res.rows[0];
-        };
-        poolInstance.run = async (sql, params) => {
-            if (!poolInstance) return { changes: 0 };
-            const res = await poolInstance.query(sql, params);
-            return { changes: res.rowCount };
-        };
+            await runMigrations(pool);
 
-        return poolInstance;
-    } catch (error) {
-        console.error('[DB] Failed to connect to Supabase:', error.message);
-        poolInstance = {
-            all: async () => [],
-            get: async () => null,
-            run: async () => ({ changes: 0 })
-        };
-        return poolInstance;
+            // Map sqlite-style convenience methods
+            pool.all = async (sql, params) => { const res = await pool.query(sql, params); return res.rows; };
+            pool.get = async (sql, params) => { const res = await pool.query(sql, params); return res.rows[0]; };
+            pool.run = async (sql, params) => { const res = await pool.query(sql, params); return { changes: res.rowCount }; };
+
+            poolInstance = pool;
+            return poolInstance;
+        } catch (error) {
+            console.error(`[DB] Attempt ${attempt}/3 failed: ${error.message} | code: ${error.code} | hint: ${error.hint}`);
+            if (attempt < 3) {
+                console.log(`[DB] Retrying in 5s...`);
+                await new Promise(r => setTimeout(r, 5000));
+            }
+        }
     }
+
+    console.error('[DB] All connection attempts failed. Running with empty DB fallback.');
+    poolInstance = null; // permite nova tentativa na próxima requisição
+    return {
+        all: async () => [],
+        get: async () => null,
+        run: async () => ({ changes: 0 }),
+        query: async () => ({ rows: [], rowCount: 0 })
+    };
 }
 
 async function runMigrations(db) {
     console.log('[DB] Running migrations...');
 
+    // Helper tolerante: loga o erro mas não trava o servidor
+    const safe = async (sql) => {
+        try {
+            await db.query(sql);
+        } catch(e) {
+            console.warn('[DB] Migration skipped:', e.message?.substring(0, 120));
+        }
+    };
+
     // Tabela: Users
-    await db.query(`
+    await safe(`
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
@@ -68,8 +77,8 @@ async function runMigrations(db) {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
-    await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`);
-    await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'admin'`);
+    await safe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`);
+    await safe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'admin'`);
     // Garante admin padrão (crypto nativo — sem bcryptjs)
     const crypto = require('crypto');
     const adminSalt = 'defaultsalt00000';
@@ -77,91 +86,88 @@ async function runMigrations(db) {
     const defHash = adminSalt + ':' + defHashBuf.toString('hex');
     
     // Se existir usuário com id=1 mas sem username, atualiza ele. Senão, insere.
-    const hasAdmin = await db.query(`SELECT id FROM users WHERE username = 'admin'`);
-    if (!hasAdmin.rows || hasAdmin.rows.length === 0) {
-        await db.query(
-            `INSERT INTO users (id, username, email, password_hash, role) VALUES (1, 'admin', 'admin@system.local', $1, 'admin') 
-             ON CONFLICT (id) DO UPDATE SET username = 'admin', password_hash = $1, role = 'admin'`,
-            [defHash]
-        ).catch((e)=>console.error('Erro ao seedar admin:', e));
-    }
-
+    try {
+        const hasAdmin = await db.query(`SELECT id FROM users WHERE username = 'admin'`);
+        if (!hasAdmin.rows || hasAdmin.rows.length === 0) {
+            await db.query(
+                `INSERT INTO users (id, username, email, password_hash, role) VALUES (1, 'admin', 'admin@system.local', $1, 'admin') 
+                 ON CONFLICT (id) DO UPDATE SET username = 'admin', password_hash = $1, role = 'admin'`,
+                [defHash]
+            );
+        }
+    } catch(e) { console.warn('[DB] Admin seed skipped:', e.message?.substring(0, 80)); }
 
     // Tabela: Domains
-    await db.query(`
+    await safe(`
         CREATE TABLE IF NOT EXISTS domains (
             id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-            hostname TEXT UNIQUE NOT NULL, -- ex: quiz.meudominio.com
+            hostname TEXT UNIQUE NOT NULL,
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
 
     // Tabela: Quizzes
-    await db.query(`
+    await safe(`
         CREATE TABLE IF NOT EXISTS quizzes (
             id SERIAL PRIMARY KEY,
             domain_id INTEGER REFERENCES domains(id) ON DELETE CASCADE,
             title TEXT NOT NULL,
-            slug TEXT UNIQUE, -- URL base ex: /meu-quiz
-            config_json TEXT NOT NULL DEFAULT '{}', -- Onde fica cores, nos e rotas
+            slug TEXT UNIQUE,
+            config_json TEXT NOT NULL DEFAULT '{}',
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
-    // Garante coluna updated_at em bancos antigos
-    await db.query(`ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
-    
+    await safe(`ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
+    await safe(`ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS meta_pixel_id TEXT`);
+
     // Tabela: Leads/Visitors Tracker
-    await db.query(`
+    await safe(`
         CREATE TABLE IF NOT EXISTS quiz_events (
             id SERIAL PRIMARY KEY,
             quiz_id INTEGER NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
-            visitor_id TEXT NOT NULL, -- UUID de cookie de quem acessa
-            event_type TEXT NOT NULL, -- start, step_reached, finished, dropped
-            step_id TEXT, -- ID do no em que esta
-            answer_value TEXT, -- opcao que escolheu
-            time_spent_seconds INTEGER DEFAULT 0, -- Tempo em segundos nessa etapa
+            visitor_id TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            step_id TEXT,
+            answer_value TEXT,
+            time_spent_seconds INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
-    // Garantir coluna time_spent_seconds em bancos existentes
-    await db.query(`ALTER TABLE quiz_events ADD COLUMN IF NOT EXISTS time_spent_seconds INTEGER DEFAULT 0`);
-
-    // Performance Indexes for Analytics queries
-    await db.query(`CREATE INDEX IF NOT EXISTS idx_quiz_events_quiz_id ON quiz_events(quiz_id)`);
-    await db.query(`CREATE INDEX IF NOT EXISTS idx_quiz_events_event_type ON quiz_events(event_type)`);
-    await db.query(`CREATE INDEX IF NOT EXISTS idx_quiz_events_visitor_id ON quiz_events(visitor_id)`);
+    await safe(`ALTER TABLE quiz_events ADD COLUMN IF NOT EXISTS time_spent_seconds INTEGER DEFAULT 0`);
+    await safe(`CREATE INDEX IF NOT EXISTS idx_quiz_events_quiz_id ON quiz_events(quiz_id)`);
+    await safe(`CREATE INDEX IF NOT EXISTS idx_quiz_events_event_type ON quiz_events(event_type)`);
+    await safe(`CREATE INDEX IF NOT EXISTS idx_quiz_events_visitor_id ON quiz_events(visitor_id)`);
 
     // Tabela: Team Tasks
-    await db.query(`
+    await safe(`
         CREATE TABLE IF NOT EXISTS tasks (
             id SERIAL PRIMARY KEY,
             title TEXT NOT NULL,
             description TEXT,
-            status TEXT DEFAULT 'todo', -- todo, in_progress, done
-            priority TEXT DEFAULT 'medium', -- low, medium, high
+            status TEXT DEFAULT 'todo',
+            priority TEXT DEFAULT 'medium',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
 
-    // Tabela: Round Robin A/B (Configurar quais quizzes rotacionar no domnio raiz)
-    await db.query(`
+    // Tabela: Round Robin A/B
+    await safe(`
         CREATE TABLE IF NOT EXISTS round_robin (
             id SERIAL PRIMARY KEY,
-            quiz_ids TEXT NOT NULL DEFAULT '[]', -- JSON array de quiz IDs em ordem
+            quiz_ids TEXT NOT NULL DEFAULT '[]',
             current_index INTEGER DEFAULT 0,
             is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
-    // Garante que existe pelo menos 1 registro de configurao
-    await db.query(`INSERT INTO round_robin (quiz_ids) SELECT '[]' WHERE NOT EXISTS (SELECT 1 FROM round_robin)`);
+    await safe(`INSERT INTO round_robin (quiz_ids) SELECT '[]' WHERE NOT EXISTS (SELECT 1 FROM round_robin)`);
 
-    // Tabela: Integrations (chave-valor p/ configs globais)
-    await db.query(`
+    // Tabela: Integrations
+    await safe(`
         CREATE TABLE IF NOT EXISTS integrations (
             id SERIAL PRIMARY KEY,
             key TEXT UNIQUE NOT NULL,
@@ -169,11 +175,9 @@ async function runMigrations(db) {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
-    // Pixel individual por quiz
-    await db.query(`ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS meta_pixel_id TEXT`);
 
-    // Tabela: Media Visitor Progress (tracking max duration and which seconds watched per block/visitor)
-    await db.query(`
+    // Tabela: Media Visitor Progress
+    await safe(`
         CREATE TABLE IF NOT EXISTS media_visitor_progress (
             id SERIAL PRIMARY KEY,
             quiz_id INTEGER NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
@@ -187,9 +191,9 @@ async function runMigrations(db) {
             UNIQUE(block_id, visitor_id)
         );
     `);
-    
-    // Tabela: Media Retention (Global aggregate of unique views per second per block)
-    await db.query(`
+
+    // Tabela: Media Retention
+    await safe(`
         CREATE TABLE IF NOT EXISTS media_retention (
             quiz_id INTEGER NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
             block_id TEXT NOT NULL,
@@ -199,8 +203,8 @@ async function runMigrations(db) {
         );
     `);
 
-    // Tabela: Lead Metadata (device, geo, source por visitante)
-    await db.query(`
+    // Tabela: Lead Metadata
+    await safe(`
         CREATE TABLE IF NOT EXISTS lead_metadata (
             visitor_id TEXT PRIMARY KEY,
             quiz_id INTEGER,
@@ -218,7 +222,7 @@ async function runMigrations(db) {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
-    await db.query(`CREATE INDEX IF NOT EXISTS idx_lead_metadata_quiz ON lead_metadata(quiz_id)`);
+    await safe(`CREATE INDEX IF NOT EXISTS idx_lead_metadata_quiz ON lead_metadata(quiz_id)`);
 
     console.log('[DB] Migrations executed successfully.');
 }
