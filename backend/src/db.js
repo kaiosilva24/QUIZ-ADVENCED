@@ -5,25 +5,31 @@ let poolInstance = null;
 async function getDB() {
     if (poolInstance) return poolInstance;
 
-    const dbPassword = process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD) : '#Nk552446#Nk';
-
     for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-            const dbPassword = encodeURIComponent(process.env.DB_PASSWORD || '#Nk552446#Nk');
-            const connectionString = `postgresql://postgres.eptmqlnqdaljyxdfcuxg:${dbPassword}@aws-1-us-east-1.pooler.supabase.com:6543/postgres`;
+            const connectionString = process.env.DATABASE_URL || 'postgresql://admin:SecurePass_WhatsApp_2026!@129.80.149.224:8080/whatsapp_warming';
 
             const pool = new Pool({
                 connectionString,
-                ssl: { rejectUnauthorized: false },
+                ssl: false, // Desabilitado caso o Oracle não force SSL (se precisar ligar: { rejectUnauthorized: false })
                 min: 0,
                 max: 10,
                 connectionTimeoutMillis: 60000,
                 idleTimeoutMillis: 60000,
             });
 
+            // Força todas as conexões do pool a usarem o schema correto
+            pool.on('connect', client => {
+                client.query('SET search_path TO quiz_system, public').catch(e => console.error('[DB] Schema falhou:', e.message));
+            });
+
             // Test connection
             const client = await pool.connect();
-            console.log(`[DB] Connected to Supabase PostgreSQL Database`);
+            
+            // Garante que o schema existe
+            await client.query('CREATE SCHEMA IF NOT EXISTS quiz_system').catch(e => console.error('[DB] Create schema falhou:', e.message));
+
+            console.log(`[DB] Connected to Oracle PostgreSQL Database`);
             client.release();
 
             await runMigrations(pool);
