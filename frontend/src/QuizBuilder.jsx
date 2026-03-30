@@ -10,7 +10,7 @@ import {
   GripVertical, Plus, Trash2, ChevronLeft, Save, Eye, EyeOff,
   Type, Image, MousePointerClick, AlignLeft, ToggleLeft, Minus,
   CheckCircle2, Users, Layers, Palette, Settings, ArrowRight, Music, Video, Copy, MoveVertical, Timer,
-  Undo2, Redo2, Radio, RefreshCw, AlertCircle, Cloud, LayoutList
+  Undo2, Redo2, Radio, RefreshCw, AlertCircle, Cloud, LayoutList, ImagePlus, BarChart3, Images
 } from 'lucide-react';
 import QuizPreview from './QuizPreview';
 import BlockEditor from './BlockEditor';
@@ -32,6 +32,9 @@ const BLOCK_TYPES = [
   { type: 'result',         label: 'Tela de Resultado',  icon: CheckCircle2,  color: '#22c55e' },
   { type: 'checkbox_selector', label: 'Seletor de Opções', icon: LayoutList,   color: '#a855f7' },
   { type: 'testimonial_carousel', label: 'Carrossel Depoimentos', icon: Users, color: '#f59e0b' },
+  { type: 'image_button_selector', label: 'Botões c/ Imagem', icon: ImagePlus, color: '#10b981' },
+  { type: 'animated_metrics', label: 'Métricas Animadas', icon: BarChart3, color: '#ec4899' },
+  { type: 'image_carousel', label: 'Carrossel Imagens', icon: Images, color: '#f59e0b' },
 ];
 
 function createBlock(type) {
@@ -120,9 +123,50 @@ function createBlock(type) {
         },
       ]
     };
+    case 'image_button_selector': return { ...base,
+      columns: 3,
+      multiSelect: false,
+      minSelect: 1,
+      cardBg: 'transparent',
+      cardBorder: '#334155',
+      cardSelectedBg: '#6366f120',
+      cardSelectedBorder: '#6366f1',
+      textColor: '#ffffff',
+      cardRadius: 16,
+      nextStep: null,
+      showCheckbox: false,
+      checkboxStyle: 'circle',
+      options: [
+        { id: 'opt_1', text: 'Opção 1', imageSrc: '', scoreTarget: '' },
+        { id: 'opt_2', text: 'Opção 2', imageSrc: '', scoreTarget: '' },
+        { id: 'opt_3', text: 'Opção 3', imageSrc: '', scoreTarget: '' },
+      ]
+    };
+    case 'animated_metrics': return { ...base,
+      mode: 'donut',
+      boxBg: 'transparent',
+      boxBorder: 'transparent',
+      boxRadius: 16,
+      metrics: [
+        { id: 'm_1', value: 30, color: '#ef4444', bgColor: '#334155', text: 'Desempenho antes', textColor: '#94a3b8' },
+        { id: 'm_2', value: 100, color: '#22c55e', bgColor: '#334155', text: 'Com nosso método', textColor: '#94a3b8' },
+      ]
+    };
+    case 'image_carousel': return { ...base,
+      aspectRatio: '16/9',
+      objectFit: 'cover',
+      showDots: true,
+      showArrows: true,
+      autoplay: false,
+      autoplaySpeed: 3000,
+      images: [
+        { id: 'img_1', url: '' },
+      ]
+    };
     default:            return base;
   }
 }
+
 
 const SortableBlock = React.memo(function SortableBlock({ block, isSelected, onSelect, onDelete, onClone }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });

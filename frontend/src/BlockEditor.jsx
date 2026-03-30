@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import EmojiPicker, { Emoji } from 'emoji-picker-react';
-import { Trash2, CheckCircle2 } from 'lucide-react';
+import { Trash2, CheckCircle2, ImagePlus, Plus } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { StarterKit } from '@tiptap/starter-kit';
 import { Underline } from '@tiptap/extension-underline';
@@ -56,6 +56,22 @@ function Select({ value, onChange, options }) {
     >
       {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
+  );
+}
+
+function Slider({ min, max, value, onChange }) {
+  return (
+    <div className="flex items-center gap-3">
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={value || 0}
+        onChange={e => onChange(parseInt(e.target.value))}
+        className="flex-1 accent-indigo-500 bg-slate-800 rounded-lg h-1 highlight-none outline-none cursor-pointer"
+      />
+      <span className="text-xs text-slate-400 font-mono w-6 text-right">{value}</span>
+    </div>
   );
 }
 
@@ -2115,6 +2131,318 @@ function TestimonialCarouselEditor({ block, onChange }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Auxiliares
+// ─────────────────────────────────────────────────────────────────────────────
+function ScoreTargetSelector({ value, onChange, availableScores }) {
+  return (
+    <div className="space-y-2">
+      <Input value={value || ''} onChange={onChange} placeholder="Ex: Variante A, B, Macho..." />
+      {availableScores && availableScores.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {availableScores.map(score => (
+            <button
+              key={score}
+              onClick={() => onChange(score)}
+              className="text-[10px] px-2 py-0.5 rounded bg-slate-700 text-slate-300 hover:bg-indigo-600 hover:text-white transition-colors cursor-pointer"
+            >
+              {score}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ImageButtonSelectorEditor
+// ─────────────────────────────────────────────────────────────────────────────
+function ImageButtonSelectorEditor({ block, onChange, steps, currentStepIdx }) {
+  const options = block.options || [];
+
+  const updateOption = (idx, patch) => {
+    const newOptions = [...options];
+    newOptions[idx] = { ...newOptions[idx], ...patch };
+    onChange({ options: newOptions });
+  };
+
+  const addOption = () => {
+    onChange({ options: [...options, { id: `opt_${Date.now()}`, text: `Nova Opção`, imageSrc: '', scoreTarget: '' }] });
+  };
+
+  const removeOption = (idx) => {
+    onChange({ options: options.filter((_, i) => i !== idx) });
+  };
+
+  const availableScores = [...new Set((steps || []).map(s => s.variantScore).filter(Boolean))];
+
+  return (
+    <>
+      <Section title="Comportamento">
+        <Toggle label="Seleção Múltipla" value={!!block.multiSelect} onChange={v => onChange({ multiSelect: v })} />
+        <Field label="Exibir Checkbox no card">
+          <Toggle label="Mostrar" value={!!block.showCheckbox} onChange={v => onChange({ showCheckbox: v })} />
+        </Field>
+        {block.showCheckbox && (
+          <Field label="Estilo do Checkbox">
+            <Select value={block.checkboxStyle || 'circle'} onChange={v => onChange({ checkboxStyle: v })} options={[
+              { value: 'circle', label: 'Círculo' },
+              { value: 'square', label: 'Quadrado' }
+            ]} />
+          </Field>
+        )}
+        {!block.multiSelect && (
+          <Field label="Ação ao Selecionar">
+            <Select
+              value={block.nextStep || ''}
+              onChange={v => onChange({ nextStep: v })}
+              options={[
+                { value: '', label: 'Ir para a próxima etapa (padrão)' },
+                ...(steps || [])
+                  .filter((s, idx) => idx > currentStepIdx && !s.isVariant)
+                  .map(s => ({ value: s.id, label: `Pular para: ${(s.title || '').replace(/(<([^>]+)>)/gi, '').substring(0, 30)}` }))
+              ]}
+            />
+          </Field>
+        )}
+      </Section>
+      <Section title="Aparência">
+        <Field label="Número de Colunas no PC (Lado a lado)">
+          <Select value={block.columns || 3} onChange={v => onChange({ columns: parseInt(v) || 3 })} options={[
+            { value: '1', label: '1 Coluna (Lista vertical)' },
+            { value: '2', label: '2 Colunas (Lado a lado)' },
+            { value: '3', label: '3 Colunas (Lado a lado)' },
+            { value: '4', label: '4 Colunas' },
+          ]} />
+        </Field>
+        <Field label="Arredondamento do Card (px)"><Slider min={0} max={40} value={block.cardRadius ?? 16} onChange={v => onChange({ cardRadius: v })} /></Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Fundo"><ColorPicker value={block.cardBg || 'transparent'} onChange={v => onChange({ cardBg: v })} /></Field>
+          <Field label="Borda"><ColorPicker value={block.cardBorder || '#334155'} onChange={v => onChange({ cardBorder: v })} /></Field>
+          <Field label="Fundo (Selecionado)"><ColorPicker value={block.cardSelectedBg || '#6366f120'} onChange={v => onChange({ cardSelectedBg: v })} /></Field>
+          <Field label="Borda (Selecionado)"><ColorPicker value={block.cardSelectedBorder || '#6366f1'} onChange={v => onChange({ cardSelectedBorder: v })} /></Field>
+          <Field label="Cor do Texto"><ColorPicker value={block.textColor || '#ffffff'} onChange={v => onChange({ textColor: v })} /></Field>
+        </div>
+      </Section>
+      <Section title="Opções">
+        <div className="space-y-4">
+          {options.map((opt, idx) => (
+            <div key={opt.id} className="relative bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+              <button onClick={() => removeOption(idx)} className="absolute top-2 right-2 text-slate-500 hover:text-red-400">
+                <Trash2 size={14} />
+              </button>
+              
+              <Field label="Imagem do Botão (Upload)">
+                <label className="flex items-center justify-center gap-2 w-full mt-2 py-2 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer bg-slate-900/50 text-xs">
+                  <ImagePlus size={14} />
+                  {opt.imageSrc ? 'Trocar Imagem' : 'Carregar Imagem'}
+                  <input type="file" accept="image/*" className="hidden" onChange={e => {
+                    const f = e.target.files[0]; if (!f) return;
+                    const r = new FileReader(); r.onload = ev => updateOption(idx, { imageSrc: ev.target.result });
+                    r.readAsDataURL(f); e.target.value = '';
+                  }} />
+                </label>
+                {opt.imageSrc && (
+                   <div className="mt-2 relative w-16 h-16 rounded overflow-hidden border border-slate-600">
+                     <img src={opt.imageSrc} alt="" className="w-full h-full object-cover" />
+                     <button onClick={() => updateOption(idx, { imageSrc: '' })} className="absolute top-0 right-0 w-5 h-5 bg-red-600 flex items-center justify-center text-white text-xs">×</button>
+                   </div>
+                )}
+              </Field>
+
+              <div className="mt-3">
+                <Field label="Texto da opção">
+                  <Input value={opt.text} onChange={v => updateOption(idx, { text: v })} placeholder="Ex: Macho" />
+                </Field>
+              </div>
+              <div className="mt-3">
+                <Field label="Tag Variante p/ esse clique (Ex: 'A')">
+                  <ScoreTargetSelector value={opt.scoreTarget || ''} onChange={v => updateOption(idx, { scoreTarget: v })} availableScores={availableScores} />
+                </Field>
+              </div>
+            </div>
+          ))}
+          <button onClick={addOption} className="w-full py-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-500 hover:text-indigo-400 transition-all cursor-pointer">
+            + Adicionar Opção
+          </button>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AnimatedMetricsEditor
+// ─────────────────────────────────────────────────────────────────────────────
+function AnimatedMetricsEditor({ block, onChange }) {
+  const metrics = block.metrics || [];
+
+  const updateMetric = (idx, patch) => {
+    const newMetrics = [...metrics];
+    newMetrics[idx] = { ...newMetrics[idx], ...patch };
+    onChange({ metrics: newMetrics });
+  };
+
+  const addMetric = () => {
+    onChange({ metrics: [...metrics, { id: `m_${Date.now()}`, value: 50, color: '#6366f1', bgColor: '#334155', text: 'Descrição', textColor: '#94a3b8' }] });
+  };
+
+  const removeMetric = (idx) => {
+    onChange({ metrics: metrics.filter((_, i) => i !== idx) });
+  };
+
+  return (
+    <>
+      <Section title="Estilo e Formato">
+        <Field label="Tipo do Gráfico">
+          <Select value={block.mode || 'donut'} onChange={v => onChange({ mode: v })} options={[
+            { value: 'donut', label: 'Círculo (Donut)' },
+            { value: 'bar', label: 'Barra Vertical' }
+          ]} />
+        </Field>
+        <Field label="Cor de Fundo da Caixa (opcional)">
+           <ColorPicker value={block.boxBg || 'transparent'} onChange={v => onChange({ boxBg: v })} />
+        </Field>
+        <Field label="Cor da Borda da Caixa">
+           <ColorPicker value={block.boxBorder || 'transparent'} onChange={v => onChange({ boxBorder: v })} />
+        </Field>
+        <Field label="Arredondamento da Caixa (px)">
+          <Slider min={0} max={40} value={block.boxRadius ?? 16} onChange={v => onChange({ boxRadius: v })} />
+        </Field>
+      </Section>
+
+      <Section title="Métricas">
+        <div className="space-y-4">
+          {metrics.map((m, idx) => (
+            <div key={m.id} className="relative bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+              <button onClick={() => removeMetric(idx)} className="absolute top-2 right-2 text-slate-500 hover:text-red-400">
+                <Trash2 size={14} />
+              </button>
+              <div className="pt-2 space-y-3">
+                <Field label={`Valor Final (%) - ${m.value}%`}>
+                  <Slider min={0} max={100} value={m.value || 0} onChange={v => updateMetric(idx, { value: v })} />
+                </Field>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Cor Principal">
+                    <ColorPicker value={m.color} onChange={v => updateMetric(idx, { color: v })} />
+                  </Field>
+                  <Field label="Cor Trilho/Fundo">
+                    <ColorPicker value={m.bgColor} onChange={v => updateMetric(idx, { bgColor: v })} />
+                  </Field>
+                </div>
+                <Field label="Texto Descritivo">
+                  <Input value={m.text || ''} onChange={v => updateMetric(idx, { text: v })} placeholder="Ex: Resultado sem método" />
+                </Field>
+                <Field label="Cor do Texto">
+                  <ColorPicker value={m.textColor || '#94a3b8'} onChange={v => updateMetric(idx, { textColor: v })} />
+                </Field>
+              </div>
+            </div>
+          ))}
+          <button onClick={addMetric} className="w-full py-2 flex items-center justify-center gap-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-500 hover:text-indigo-400 transition-all cursor-pointer">
+            <Plus size={14} /> Adicionar Métrica
+          </button>
+        </div>
+      </Section>
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ImageCarouselEditor
+// ─────────────────────────────────────────────────────────────────────────────
+function ImageCarouselEditor({ block, onChange }) {
+  const images = block.images || [{ id: `img_${Date.now()}`, url: '' }];
+
+  const addImage = () => {
+    onChange({ images: [...images, { id: `img_${Date.now()}`, url: '' }] });
+  };
+
+  const updateImage = (idx, patch) => {
+    const newImgs = [...images];
+    newImgs[idx] = { ...newImgs[idx], ...patch };
+    onChange({ images: newImgs });
+  };
+
+  const removeImage = (idx) => {
+    onChange({ images: images.filter((_, i) => i !== idx) });
+  };
+
+  return (
+    <>
+      <Section title="Exibição e Comportamento">
+        <Field label="Formato (Aspect Ratio)">
+          <Select value={block.aspectRatio || '16/9'} onChange={v => onChange({ aspectRatio: v })} options={[
+            { value: '16/9', label: '16:9 (Widescreen)' },
+            { value: '4/3', label: '4:3 (Retangular Clássico)' },
+            { value: '1/1', label: '1:1 (Quadrado)' },
+            { value: 'auto', label: 'Automático (Tamanho original)' },
+          ]} />
+        </Field>
+        {block.aspectRatio !== 'auto' && (
+          <Field label="Ajuste da Imagem (Object Fit)">
+            <Select value={block.objectFit || 'cover'} onChange={v => onChange({ objectFit: v })} options={[
+              { value: 'cover', label: 'Preencher (Cortar as bordas)' },
+              { value: 'contain', label: 'Conter (Exibir tudo, com bordas)' },
+            ]} />
+          </Field>
+        )}
+        <Field label="Arredondamento do Carrossel (px)">
+          <Slider min={0} max={40} value={block.borderRadius ?? 16} onChange={v => onChange({ borderRadius: v })} />
+        </Field>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Mostrar Setas na Tela">
+            <Toggle value={!!block.showArrows} onChange={v => onChange({ showArrows: v })} />
+          </Field>
+          <Field label="Mostrar Pontos (Dots)">
+            <Toggle value={!!block.showDots} onChange={v => onChange({ showDots: v })} />
+          </Field>
+          <Field label="Autoplay Automático">
+            <Toggle value={!!block.autoplay} onChange={v => onChange({ autoplay: v })} />
+          </Field>
+        </div>
+        {block.autoplay && (
+          <Field label="Velocidade (Milissegundos)">
+            <Input type="number" value={block.autoplaySpeed || 3000} onChange={v => onChange({ autoplaySpeed: parseInt(v) })} placeholder="3000 ms" />
+          </Field>
+        )}
+      </Section>
+      <Section title="Imagens">
+        <div className="space-y-4">
+          {images.map((img, idx) => (
+            <div key={img.id} className="relative bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+              <button onClick={() => removeImage(idx)} className="absolute top-2 right-2 text-slate-500 hover:text-red-400 z-10">
+                <Trash2 size={14} />
+              </button>
+              <Field label={`Imagem ${idx + 1}`}>
+                <label className="flex items-center justify-center gap-2 w-full mt-2 py-2 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer bg-slate-900/50 text-xs">
+                  <ImagePlus size={14} />
+                  {img.url ? 'Trocar Imagem' : 'Carregar Imagem'}
+                  <input type="file" accept="image/*" className="hidden" onChange={e => {
+                    const f = e.target.files[0]; if (!f) return;
+                    const r = new FileReader(); r.onload = ev => updateImage(idx, { url: ev.target.result });
+                    r.readAsDataURL(f); e.target.value = '';
+                  }} />
+                </label>
+                {img.url && (
+                   <div className="mt-2 relative w-full h-24 rounded overflow-hidden border border-slate-600 bg-black/50">
+                     <img src={img.url} alt="" className="w-full h-full object-cover" />
+                     <button onClick={() => updateImage(idx, { url: '' })} className="absolute top-0 right-0 w-6 h-6 bg-red-600 flex items-center justify-center text-white text-xs z-10">×</button>
+                   </div>
+                )}
+              </Field>
+            </div>
+          ))}
+          <button onClick={addImage} className="w-full py-2 flex items-center justify-center gap-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-500 hover:text-indigo-400 transition-all cursor-pointer">
+            <Plus size={14} /> Adicionar Imagem
+          </button>
+        </div>
+      </Section>
+    </>
+  );
+}
+
 export default function BlockEditor({ block, theme, steps, currentStepIdx, onChange }) {
   if (!block) return null;
 
@@ -2135,6 +2463,9 @@ export default function BlockEditor({ block, theme, steps, currentStepIdx, onCha
     spacer: SpacerEditor,
     checkbox_selector: CheckboxSelectorEditor,
     testimonial_carousel: TestimonialCarouselEditor,
+    image_button_selector: ImageButtonSelectorEditor,
+    animated_metrics: AnimatedMetricsEditor,
+    image_carousel: ImageCarouselEditor,
   };
 
   const Editor = editorMap[block.type];

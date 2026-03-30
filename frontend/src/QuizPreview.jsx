@@ -2664,6 +2664,345 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       );
     }
 
+    case 'image_button_selector': {
+      const isMulti = !!block.multiSelect;
+      const options = block.options || [];
+      const cardBg = block.cardBg || 'transparent';
+      const cardBorder = block.cardBorder || '#334155';
+      const cardSelectedBg = block.cardSelectedBg || '#6366f120';
+      const cardSelectedBorder = block.cardSelectedBorder || '#6366f1';
+      const txtColor = block.textColor || defaultText;
+      const radius = block.cardRadius ?? 16;
+      const cols = block.columns || 3;
+
+      let selections = [];
+      if (!compact && typeof window !== 'undefined') {
+        try {
+           const pStr = sessionStorage.getItem(`quiz_${quizId}_progress`) || '{}';
+           const pData = JSON.parse(pStr);
+           selections = pData[block.id] || [];
+        } catch(e){}
+      }
+
+      const isSelected = (id) => selections.includes(id);
+
+      const handleSelect = (opt) => {
+        if (compact) return;
+        let pData = {};
+        try { pData = JSON.parse(sessionStorage.getItem(`quiz_${quizId}_progress`) || '{}'); } catch(e){}
+
+        let current = pData[block.id] || [];
+        let newSels = current;
+
+        if (isMulti) {
+          if (current.includes(opt.id)) {
+            newSels = current.filter(id => id !== opt.id);
+          } else {
+            newSels = [...current, opt.id];
+          }
+        } else {
+          newSels = [opt.id];
+        }
+
+        pData[block.id] = newSels;
+        sessionStorage.setItem(`quiz_${quizId}_progress`, JSON.stringify(pData));
+
+        if (!isMulti && onNavigate) {
+          const nextId = resolveNextStep(block.nextStep, opt.scoreTarget);
+          if (nextId) setTimeout(() => onNavigate(nextId), 300);
+        }
+      };
+
+      const handleConfirm = () => {
+         if (compact) return;
+         if (isMulti && onNavigate) {
+           const nextId = resolveNextStep(block.nextStep);
+           if (nextId) onNavigate(nextId);
+         }
+      };
+
+      return (
+        <div style={{ width: '100%' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: compact ? 8 : 16 }}>
+            {options.map((opt) => {
+               const sel = isSelected(opt.id);
+               return (
+                 <div
+                   key={opt.id}
+                   onClick={() => handleSelect(opt)}
+                   style={{
+                     cursor: compact ? 'default' : 'pointer',
+                     background: sel ? cardSelectedBg : cardBg,
+                     border: `2px solid ${sel ? cardSelectedBorder : cardBorder}`,
+                     borderRadius: radius,
+                     overflow: 'hidden',
+                     display: 'flex',
+                     flexDirection: 'column',
+                     transition: 'all 0.2s',
+                   }}
+                 >
+                   {opt.imageSrc && (
+                     <div style={{ width: '100%', aspectRatio: '1/1', background: 'rgba(255,255,255,0.05)' }}>
+                       <img src={opt.imageSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                     </div>
+                   )}
+                   <div style={{ padding: compact ? '8px 4px' : '16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: compact ? 4 : 8, textAlign: 'center' }}>
+                     {block.showCheckbox && (
+                       <div style={{
+                         width: compact ? 12 : 20, height: compact ? 12 : 20, flexShrink: 0,
+                         borderRadius: block.checkboxStyle === 'square' ? (compact ? 2 : 4) : '50%',
+                         border: `2px solid ${sel ? cardSelectedBorder : cardBorder}`,
+                         background: sel ? cardSelectedBorder : 'transparent',
+                         display: 'flex', alignItems: 'center', justifyContent: 'center'
+                       }}>
+                         {sel && <svg width={compact ? 8 : 14} height={compact ? 8 : 14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}><polyline points="20 6 9 17 4 12" /></svg>}
+                       </div>
+                     )}
+                     <span style={{ color: txtColor, fontSize: compact ? 10 : 14, fontWeight: sel ? 700 : 500, lineHeight: 1.2 }}>
+                       {opt.text}
+                     </span>
+                   </div>
+                 </div>
+               );
+            })}
+          </div>
+          {isMulti && (
+             <div style={{ marginTop: compact ? 12 : 24, display: 'flex', justifyContent: 'center' }}>
+               <button
+                 onClick={handleConfirm}
+                 style={{
+                   padding: compact ? '6px 16px' : '12px 32px',
+                   borderRadius: 999,
+                   background: cardSelectedBorder,
+                   color: '#fff',
+                   border: 'none',
+                   fontSize: compact ? 10 : 15,
+                   fontWeight: 700,
+                   cursor: 'pointer',
+                   opacity: selections.length >= (block.minSelect || 1) ? 1 : 0.5,
+                   pointerEvents: selections.length >= (block.minSelect || 1) ? 'auto' : 'none',
+                   transition: 'opacity 0.2s'
+                 }}
+               >
+                 Confirmar →
+               </button>
+             </div>
+          )}
+        </div>
+      );
+    }
+
+    case 'animated_metrics': {
+      const [animationProgress, setAnimationProgress] = React.useState(0);
+      
+      React.useEffect(() => {
+        let frame;
+        let start;
+        const duration = 2000;
+        const animate = (timestamp) => {
+          if (!start) start = timestamp;
+          const progress = Math.min((timestamp - start) / duration, 1);
+          const easeProgress = 1 - Math.pow(1 - progress, 3);
+          setAnimationProgress(easeProgress);
+          if (progress < 1) {
+            frame = requestAnimationFrame(animate);
+          }
+        };
+        frame = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(frame);
+      }, []);
+
+      const metrics = block.metrics || [];
+      const mode = block.mode || 'donut';
+      const radius = block.boxRadius ?? 16;
+      const isDonut = mode === 'donut';
+      
+      return (
+        <div style={{
+          width: '100%',
+          background: block.boxBg || 'transparent',
+          border: `1px solid ${block.boxBorder || 'transparent'}`,
+          borderRadius: radius,
+          padding: compact ? 10 : 20,
+          display: 'grid',
+          gridTemplateColumns: `repeat(${metrics.length || 1}, minmax(0, 1fr))`,
+          gap: compact ? 8 : 20,
+          alignItems: 'end'
+        }}>
+          {metrics.map(m => {
+             const targetVal = m.value || 0;
+             const currentVal = Math.round(targetVal * animationProgress);
+             
+             if (isDonut) {
+               const size = compact ? 60 : 120;
+               const strokeWidth = compact ? 6 : 12;
+               const r = (size - strokeWidth) / 2;
+               const c = Math.PI * (r * 2);
+               const pct = ((100 - currentVal) / 100) * c;
+               
+               return (
+                 <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 6 : 12 }}>
+                   <div style={{ position: 'relative', width: size, height: size }}>
+                     <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+                       <circle cx={size/2} cy={size/2} r={r} fill="transparent" stroke={m.bgColor || '#334155'} strokeWidth={strokeWidth} />
+                       <circle cx={size/2} cy={size/2} r={r} fill="transparent" stroke={m.color || '#ef4444'} strokeWidth={strokeWidth} strokeDasharray={c} strokeDashoffset={pct} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.1s linear' }} />
+                     </svg>
+                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                       <span style={{ color: defaultText, fontSize: compact ? 12 : 24, fontWeight: 800 }}>{currentVal}%</span>
+                     </div>
+                   </div>
+                   {m.text && (
+                     <p style={{ margin: 0, color: m.textColor || defaultText, fontSize: compact ? 8 : 13, textAlign: 'center', lineHeight: 1.3, fontWeight: 500 }}>
+                       {m.text}
+                     </p>
+                   )}
+                 </div>
+               );
+             } else {
+               const height = compact ? 80 : 160;
+               return (
+                 <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 6 : 12, height: '100%', justifyContent: 'flex-end' }}>
+                   <span style={{ color: defaultText, fontSize: compact ? 11 : 20, fontWeight: 800 }}>{currentVal}%</span>
+                   <div style={{ width: compact ? 24 : 48, height, background: m.bgColor || '#334155', borderRadius: compact ? 6 : 12, overflow: 'hidden', position: 'relative' }}>
+                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${currentVal}%`, background: m.color || '#ef4444', transition: 'height 0.1s linear' }} />
+                   </div>
+                   {m.text && (
+                     <p style={{ margin: 0, color: m.textColor || defaultText, fontSize: compact ? 8 : 13, textAlign: 'center', lineHeight: 1.3, fontWeight: 500 }}>
+                       {m.text}
+                     </p>
+                   )}
+                 </div>
+               );
+             }
+          })}
+        </div>
+      );
+    }
+
+    case 'image_carousel': {
+      const images = block.images || [];
+      const hasImages = images.some(img => img.url);
+
+      const [currentIndex, setCurrentIndex] = React.useState(0);
+      const isAuto = !!block.autoplay;
+      const speed = block.autoplaySpeed || 3000;
+
+      React.useEffect(() => {
+        if (!isAuto || !hasImages || compact) return;
+        const iv = setInterval(() => {
+          setCurrentIndex(prev => (prev + 1) % images.length);
+        }, speed);
+        return () => clearInterval(iv);
+      }, [isAuto, speed, compact, images.length, hasImages]);
+
+      const handlePrev = (e) => {
+        e.stopPropagation();
+        setCurrentIndex(prev => (prev === 0 ? images.length - 1 : prev - 1));
+      };
+
+      const handleNext = (e) => {
+        e.stopPropagation();
+        setCurrentIndex(prev => (prev + 1) % images.length);
+      };
+
+      if (!hasImages) {
+         return (
+           <div style={{ width: '100%', padding: compact ? '20px 0' : '40px 0', border: '1px dashed #475569', borderRadius: block.borderRadius ?? 16, textAlign: 'center' }}>
+             <span style={{ color: '#94a3b8', fontSize: compact ? 10 : 14 }}>Carrossel vazio (Adicione imagens)</span>
+           </div>
+         );
+      }
+
+      const aspectRatioMap = {
+        '16/9': 9 / 16,
+        '4/3': 3 / 4,
+        '1/1': 1
+      };
+      
+      const ratio = block.aspectRatio || '16/9';
+      const containerStyle = {
+        position: 'relative',
+        width: '100%',
+        borderRadius: block.borderRadius ?? 16,
+        overflow: 'hidden',
+        backgroundColor: '#000',
+      };
+
+      if (ratio !== 'auto') {
+         containerStyle.paddingTop = `${aspectRatioMap[ratio] * 100}%`;
+      }
+
+      return (
+        <div style={{ width: '100%' }}>
+          <div style={containerStyle}>
+            {ratio !== 'auto' ? (
+              <img
+                src={images[currentIndex]?.url}
+                alt=""
+                style={{
+                  position: 'absolute',
+                  top: 0, left: 0, width: '100%', height: '100%',
+                  objectFit: block.objectFit || 'cover',
+                  transition: 'opacity 0.3s ease-in-out'
+                }}
+              />
+            ) : (
+              <img
+                src={images[currentIndex]?.url}
+                alt=""
+                style={{
+                  width: '100%',
+                  display: 'block',
+                  transition: 'opacity 0.3s ease-in-out'
+                }}
+              />
+            )}
+            
+            {block.showArrows && images.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrev}
+                  style={{
+                    position: 'absolute', left: compact ? 4 : 12, top: '50%', transform: 'translateY(-50%)',
+                    width: compact ? 24 : 40, height: compact ? 24 : 40, borderRadius: '50%',
+                    background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10
+                  }}>
+                  <svg width={compact ? 12 : 20} height={compact ? 12 : 20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <button
+                  onClick={handleNext}
+                  style={{
+                    position: 'absolute', right: compact ? 4 : 12, top: '50%', transform: 'translateY(-50%)',
+                    width: compact ? 24 : 40, height: compact ? 24 : 40, borderRadius: '50%',
+                    background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10
+                  }}>
+                  <svg width={compact ? 12 : 20} height={compact ? 12 : 20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
+              </>
+            )}
+
+            {block.showDots && images.length > 1 && (
+              <div style={{ position: 'absolute', bottom: compact ? 6 : 16, width: '100%', display: 'flex', justifyContent: 'center', gap: compact ? 4 : 8, zIndex: 10 }}>
+                {images.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); }}
+                    style={{
+                      width: compact ? 6 : 10, height: compact ? 6 : 10, borderRadius: '50%', padding: 0,
+                      background: currentIndex === i ? '#fff' : 'rgba(255,255,255,0.4)',
+                      border: 'none', cursor: 'pointer', transition: 'background 0.2s'
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     default:
       return null;
   }
