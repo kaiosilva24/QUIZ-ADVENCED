@@ -340,6 +340,7 @@ function NavItem({ icon, label, active, onClick }) {
 function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
   const host = window.location.host;
   const protocol = window.location.protocol;
+  const [loadingEditId, setLoadingEditId] = React.useState(null);
 
   const handleDelete = async (id) => {
     if (!confirm('Deletar este quiz permanentemente?')) return;
@@ -369,6 +370,8 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
   };
 
   const handleEdit = async (quiz) => {
+    if (loadingEditId !== null) return; // Previne múltiplos cliques
+    setLoadingEditId(quiz.id);
     try {
       const res = await fetch(`/api/quizzes/${quiz.id}`);
       if (!res.ok) throw new Error('Falha');
@@ -378,6 +381,7 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
         config_json: JSON.stringify(data.config || {})
       });
     } catch {
+      setLoadingEditId(null);
       alert('Erro ao carregar os dados do quiz para edição.');
     }
   };
@@ -449,7 +453,26 @@ function QuizzesView({ quizzes, fetchQuizzes, onEdit, onNew }) {
                   {saveProgressEnabled ? <ToggleRight size={18} className="text-emerald-400"/> : <ToggleLeft size={18} className="text-slate-500"/>}
                 </button>
                 <div className="w-[1px] h-7 bg-slate-700/50 mx-0.5"></div>
-                <button onClick={() => handleEdit(q)} aria-label="Editar" className="w-7 h-7 bg-slate-700 hover:bg-indigo-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Edit3 size={13}/></button>
+                <button
+                  onClick={() => handleEdit(q)}
+                  aria-label="Editar"
+                  disabled={loadingEditId !== null}
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                    loadingEditId === q.id
+                      ? 'bg-indigo-600 cursor-wait'
+                      : loadingEditId !== null
+                      ? 'bg-slate-700 opacity-50 cursor-not-allowed'
+                      : 'bg-slate-700 hover:bg-indigo-600 cursor-pointer'
+                  }`}
+                >
+                  {loadingEditId === q.id ? (
+                    <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round"/>
+                    </svg>
+                  ) : (
+                    <Edit3 size={13}/>
+                  )}
+                </button>
                 <button onClick={() => handleDuplicate(q)} aria-label="Duplicar" className="w-7 h-7 bg-slate-700 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Copy size={13}/></button>
                 <button onClick={() => handleDelete(q.id)} aria-label="Deletar" className="w-7 h-7 bg-slate-700 hover:bg-red-600 rounded-lg flex items-center justify-center transition-colors cursor-pointer"><Trash2 size={13}/></button>
               </div>
