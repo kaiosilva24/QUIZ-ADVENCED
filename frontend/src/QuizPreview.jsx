@@ -2371,6 +2371,299 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       );
     }
 
+    case 'testimonial_carousel': {
+      const testimonials = block.testimonials || [];
+      const filterButtons = block.filterButtons || [];
+      const [activeFilter, setActiveFilter] = React.useState('Todas');
+      const [carouselIdx, setCarouselIdx] = React.useState(0);
+
+      const filtered = activeFilter === 'Todas' || filterButtons.length === 0
+        ? testimonials
+        : testimonials.filter(t => (t.category || '') === activeFilter);
+
+      const total = filtered.length;
+      const safIdx = total > 0 ? Math.min(carouselIdx, total - 1) : 0;
+      const tm = filtered[safIdx] || {};
+
+      const goTo = (n) => setCarouselIdx(Math.max(0, Math.min(n, total - 1)));
+      const goNext = () => { if (safIdx < total - 1) goTo(safIdx + 1); };
+      const goPrev = () => { if (safIdx > 0) goTo(safIdx - 1); };
+
+      // Reset index when filter changes
+      React.useEffect(() => { setCarouselIdx(0); }, [activeFilter]);
+
+      const cardBg = block.cardBg || '#1e293b';
+      const cardBorder = block.cardBorder || '#334155';
+      const cs = compact ? 0.55 : 1;
+
+      // Mini VideoPlayer for testimonial (reuses VSL logic)
+      function TestiVideoPlayer({ tm }) {
+        const videoRef = React.useRef(null);
+        const iframeRef = React.useRef(null);
+        const [playing, setPlaying] = React.useState(false);
+        const [userUnmuted, setUserUnmuted] = React.useState(false);
+        const [showThumb, setShowThumb] = React.useState(true);
+        const startedRef = React.useRef(false);
+
+        const src = tm.videoSrc || '';
+        const isYT = src.includes('youtube') || src.includes('youtu.be');
+        const isVimeo = src.includes('vimeo');
+        const isEmbed = isYT || isVimeo;
+        const ar = tm.videoAspectRatio || '9/16';
+        const radius = tm.videoRounded !== false ? (compact ? 8 : 14) : 0;
+        const showUnmuteOverlay = !!(tm.videoAutoplay && tm.videoMuted && src && !userUnmuted);
+
+        const getEmbedUrl = (url) => {
+          if (!url) return '';
+          if (url.includes('youtube.com/watch?v=')) return url.replace('watch?v=', 'embed/');
+          if (url.includes('youtu.be/')) return url.replace('youtu.be/', 'www.youtube.com/embed/');
+          if (url.includes('vimeo.com/')) return url.replace('vimeo.com/', 'player.vimeo.com/video/');
+          return url;
+        };
+        const embedUrl = isEmbed
+          ? getEmbedUrl(src) + `?autoplay=${tm.videoAutoplay ? 1 : 0}&mute=${tm.videoMuted ? 1 : 0}&loop=${tm.videoAutoloop ? 1 : 0}&controls=0`
+          : '';
+
+        React.useEffect(() => {
+          if (isEmbed && src && tm.videoAutoplay && !startedRef.current) {
+            startedRef.current = true;
+            setPlaying(true);
+          }
+        }, [src, tm.videoAutoplay, isEmbed]);
+
+        const handleUnmute = (e) => {
+          if (e) { e.stopPropagation(); e.preventDefault(); }
+          if (isEmbed) {
+            if (isYT) { iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"unMute","args":""}', '*'); iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*'); }
+            if (isVimeo) { iframeRef.current?.contentWindow?.postMessage('{"method":"setVolume","value":1}', '*'); }
+          } else {
+            const v = videoRef.current; if (!v) return;
+            v.muted = false; v.currentTime = 0;
+            v.play().catch(() => {});
+          }
+          setPlaying(true); setUserUnmuted(true); setShowThumb(false);
+        };
+
+        const togglePlay = () => {
+          if (showUnmuteOverlay) { handleUnmute(); return; }
+          if (isEmbed) return;
+          const v = videoRef.current; if (!v) return;
+          if (playing) { if (!tm.videoDisablePause) { v.pause(); setPlaying(false); } }
+          else { v.play().catch(() => {}); setPlaying(true); setShowThumb(false); }
+        };
+
+        const handleCanPlay = () => {
+          const v = videoRef.current;
+          if (!v || startedRef.current || !tm.videoAutoplay || isEmbed) return;
+          startedRef.current = true; v.muted = true;
+          v.play().then(() => { setPlaying(true); setShowThumb(false); }).catch(() => {});
+        };
+
+        return (
+          <div style={{ width: '100%', borderRadius: radius, overflow: 'hidden', position: 'relative', background: '#000', cursor: src ? 'pointer' : 'default' }} onClick={togglePlay}>
+            <style>{`
+              @keyframes tmMutePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+              @keyframes tmMuteBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+              @keyframes tmRipple { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(2.6);opacity:0} }
+            `}</style>
+            <div style={{ width: '100%', aspectRatio: ar, position: 'relative', background: '#0a0a0a', overflow: 'hidden' }}>
+              {/* Placeholder */}
+              {!src && (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <svg width={compact ? 24 : 40} height={compact ? 24 : 40} viewBox="0 0 24 24" fill="none" stroke="#334155" strokeWidth="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                  <p style={{ color: '#334155', fontSize: compact ? 8 : 11 }}>Adicione o vídeo</p>
+                </div>
+              )}
+              {/* Embed */}
+              {src && isEmbed && (
+                <iframe ref={iframeRef} src={embedUrl} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', pointerEvents: 'none' }} allow="autoplay; fullscreen" allowFullScreen />
+              )}
+              {/* Native */}
+              {src && !isEmbed && (
+                <video ref={videoRef} src={src} loop={!!tm.videoAutoloop} playsInline disablePictureInPicture
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
+                  onCanPlay={handleCanPlay} />
+              )}
+              {/* Thumbnail */}
+              {src && tm.thumbnailSrc && showThumb && (
+                <div style={{ position: 'absolute', inset: 0, background: `url(${tm.thumbnailSrc}) center/cover`, pointerEvents: 'none', zIndex: 4 }} />
+              )}
+              {/* Mute overlay */}
+              {src && showUnmuteOverlay && (
+                <div onClick={handleUnmute} style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: compact ? 6 : 12, cursor: 'pointer' }}>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ position: 'absolute', width: compact ? 44 : 72, height: compact ? 44 : 72, borderRadius: '50%', border: `2px solid ${tm.videoMuteIconColor || 'rgba(0,213,230,0.4)'}`, animation: 'tmRipple 2s ease-out infinite', pointerEvents: 'none' }} />
+                    <div style={{ width: compact ? 34 : 56, height: compact ? 34 : 56, borderRadius: '50%', background: tm.videoMuteIconColor ? `linear-gradient(145deg,${tm.videoMuteIconColor},${tm.videoMuteIconColor}bb)` : 'linear-gradient(145deg,#00d5e6,#0099b0)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 ${compact ? 12 : 22}px ${tm.videoMuteIconColor || 'rgba(0,213,230,0.6)'}`, animation: 'tmMutePulse 1.6s ease-in-out infinite' }}>
+                      <svg width={compact ? 14 : 24} height={compact ? 14 : 24} viewBox="0 0 24 24" fill="white" style={{ animation: 'tmMuteBlink 1s step-end infinite' }}>
+                        <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                        <line x1="23" y1="9" x2="17" y2="15" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                        <line x1="17" y1="9" x2="23" y2="15" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div style={{ background: tm.videoMuteBgColor || 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 999, padding: compact ? '4px 12px' : '7px 18px', color: tm.videoMuteTextColor || '#fff', fontSize: compact ? 9 : 13, fontWeight: 700 }}>
+                    {tm.videoUnmuteText || '🔊 Clique para ouvir'}
+                  </div>
+                </div>
+              )}
+              {/* Play button */}
+              {src && !playing && !showUnmuteOverlay && (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 5 }}>
+                  <div style={{ width: compact ? 32 : 52, height: compact ? 32 : 52, borderRadius: '50%', background: 'rgba(0,0,0,0.65)', border: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width={compact ? 12 : 20} height={compact ? 12 : 20} viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Person name below video */}
+            {tm.personName && (
+              <div style={{ background: 'rgba(0,0,0,0.7)', padding: compact ? '3px 8px' : '6px 12px', textAlign: 'center' }}>
+                <span style={{ color: '#fff', fontSize: compact ? 8 : 12, fontWeight: 600 }}>{tm.personName}</span>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      return (
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: compact ? 8 : 14 }}>
+          {/* Badge */}
+          {block.badge && (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: compact ? 4 : 6, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 999, padding: compact ? '3px 10px' : '5px 14px' }}>
+                {block.badgeDot !== false && <span style={{ width: compact ? 6 : 8, height: compact ? 6 : 8, borderRadius: '50%', background: '#ef4444', display: 'inline-block', flexShrink: 0 }} />}
+                <span style={{ color: '#ef4444', fontSize: compact ? 8 : 11, fontWeight: 700, letterSpacing: '0.08em' }}>{block.badge}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Title + Subtitle */}
+          {block.title && (
+            <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 11 : 17, textAlign: 'center', margin: 0, lineHeight: 1.3 }}>{block.title}</p>
+          )}
+          {block.subtitle && (
+            <p style={{ color: defaultText, opacity: 0.6, fontSize: compact ? 8 : 12, textAlign: 'center', margin: 0 }}>{block.subtitle}</p>
+          )}
+
+          {/* Filter Buttons */}
+          {block.showFilterButtons !== false && filterButtons.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'nowrap', gap: compact ? 4 : 6, overflowX: 'auto', paddingBottom: 2 }}>
+              {filterButtons.map((btn) => {
+                const isActive = activeFilter === btn.label;
+                return (
+                  <button key={btn.id} onClick={() => setActiveFilter(btn.label === activeFilter && btn.label !== 'Todas' ? 'Todas' : btn.label)}
+                    style={{
+                      flexShrink: 0,
+                      display: 'flex', alignItems: 'center', gap: compact ? 3 : 5,
+                      padding: compact ? '3px 8px' : '5px 12px',
+                      borderRadius: 999,
+                      border: `1.5px solid ${isActive ? accent : 'rgba(255,255,255,0.15)'}`,
+                      background: isActive ? `${accent}20` : 'transparent',
+                      color: isActive ? accent : defaultText,
+                      fontSize: compact ? 8 : 11,
+                      fontWeight: isActive ? 700 : 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.18s',
+                    }}>
+                    {btn.emoji && <span style={{ fontSize: compact ? 10 : 14 }}>{btn.emoji}</span>}
+                    {btn.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Card */}
+          {total > 0 ? (
+            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: compact ? 12 : 18, overflow: 'hidden' }}>
+              {/* Category label */}
+              {tm.category && (
+                <div style={{ padding: compact ? '6px 10px' : '8px 14px', borderBottom: `1px solid ${cardBorder}` }}>
+                  <span style={{ fontSize: compact ? 8 : 11, fontWeight: 700, color: defaultText, opacity: 0.7, letterSpacing: '0.06em' }}>
+                    {tm.categoryEmoji} {tm.category.toUpperCase()}
+                  </span>
+                </div>
+              )}
+
+              {/* Video */}
+              <div style={{ padding: compact ? '8px 10px' : '12px 14px' }}>
+                <TestiVideoPlayer tm={tm} />
+              </div>
+
+              {/* Text content */}
+              <div style={{ padding: compact ? '0 10px 8px' : '0 14px 12px', display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8 }}>
+                {tm.title && (
+                  <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 9 : 14, margin: 0, lineHeight: 1.4 }}>{tm.title}</p>
+                )}
+                {tm.quote && (
+                  <p style={{ color: defaultText, opacity: 0.75, fontSize: compact ? 8 : 12, margin: 0, fontStyle: 'italic', lineHeight: 1.5 }}>{tm.quote}</p>
+                )}
+
+                {/* Author */}
+                {(tm.authorName || tm.authorPhoto) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 5 : 8, marginTop: compact ? 2 : 4, paddingTop: compact ? 4 : 8, borderTop: `1px solid ${cardBorder}` }}>
+                    {/* Avatar */}
+                    <div style={{ width: compact ? 20 : 32, height: compact ? 20 : 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: accent + '30', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${accent}50` }}>
+                      {tm.authorPhoto
+                        ? <img src={tm.authorPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : <span style={{ color: accent, fontWeight: 700, fontSize: compact ? 8 : 13 }}>{(tm.authorName || '?')[0].toUpperCase()}</span>
+                      }
+                    </div>
+                    <div>
+                      <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 8 : 12, margin: 0 }}>{tm.authorName}</p>
+                      {(tm.authorRole || tm.authorCity) && (
+                        <p style={{ color: defaultText, opacity: 0.55, fontSize: compact ? 7 : 10, margin: 0 }}>
+                          {[tm.authorRole, tm.authorCity].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Dot pagination */}
+              {total > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: compact ? 3 : 5, paddingBottom: compact ? 6 : 10 }}>
+                  {filtered.map((_, i) => (
+                    <button key={i} onClick={() => goTo(i)}
+                      style={{ width: i === safIdx ? (compact ? 14 : 20) : (compact ? 5 : 7), height: compact ? 5 : 7, borderRadius: 999, background: i === safIdx ? accent : 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', transition: 'all 0.2s', padding: 0 }} />
+                  ))}
+                </div>
+              )}
+
+              {/* Prev / Next buttons */}
+              {total > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: compact ? '6px 10px' : '8px 14px', borderTop: `1px solid ${cardBorder}` }}>
+                  <button onClick={goPrev} disabled={safIdx === 0}
+                    style={{ display: 'flex', alignItems: 'center', gap: compact ? 3 : 5, padding: compact ? '4px 8px' : '7px 14px', borderRadius: compact ? 6 : 10, border: `1px solid ${cardBorder}`, background: 'transparent', color: defaultText, fontSize: compact ? 8 : 12, fontWeight: 500, cursor: safIdx === 0 ? 'not-allowed' : 'pointer', opacity: safIdx === 0 ? 0.3 : 1, transition: 'all 0.15s' }}>
+                    <svg width={compact ? 8 : 12} height={compact ? 8 : 12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                    Anterior
+                  </button>
+                  <span style={{ color: defaultText, opacity: 0.5, fontSize: compact ? 8 : 11 }}>{safIdx + 1} de {total}</span>
+                  <button onClick={goNext} disabled={safIdx === total - 1}
+                    style={{ display: 'flex', alignItems: 'center', gap: compact ? 3 : 5, padding: compact ? '4px 8px' : '7px 14px', borderRadius: compact ? 6 : 10, border: `1px solid ${cardBorder}`, background: 'transparent', color: defaultText, fontSize: compact ? 8 : 12, fontWeight: 500, cursor: safIdx === total - 1 ? 'not-allowed' : 'pointer', opacity: safIdx === total - 1 ? 0.3 : 1, transition: 'all 0.15s' }}>
+                    Próximo
+                    <svg width={compact ? 8 : 12} height={compact ? 8 : 12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ padding: compact ? '12px' : '24px', textAlign: 'center', border: `1px dashed ${cardBorder}`, borderRadius: compact ? 10 : 16, color: defaultText, opacity: 0.4, fontSize: compact ? 9 : 13 }}>
+              Nenhum depoimento para "{activeFilter}"
+            </div>
+          )}
+
+          {/* Footer note */}
+          {block.footerNote && (
+            <p style={{ color: defaultText, opacity: 0.5, fontSize: compact ? 7 : 11, textAlign: 'center', margin: 0, lineHeight: 1.5, padding: compact ? '0 4px' : '0 8px' }}>
+              💡 {block.footerNote}
+            </p>
+          )}
+        </div>
+      );
+    }
+
     default:
       return null;
   }

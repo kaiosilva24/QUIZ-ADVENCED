@@ -31,6 +31,7 @@ const BLOCK_TYPES = [
   { type: 'live_counter', label: 'Ao Vivo (Oscilante)', icon: Radio,         color: '#ef4444' },
   { type: 'result',         label: 'Tela de Resultado',  icon: CheckCircle2,  color: '#22c55e' },
   { type: 'checkbox_selector', label: 'Seletor de Opções', icon: LayoutList,   color: '#a855f7' },
+  { type: 'testimonial_carousel', label: 'Carrossel Depoimentos', icon: Users, color: '#f59e0b' },
 ];
 
 function createBlock(type) {
@@ -68,6 +69,55 @@ function createBlock(type) {
         { id: 'opt_1', text: 'Opção 1', scoreTarget: '' },
         { id: 'opt_2', text: 'Opção 2', scoreTarget: '' },
         { id: 'opt_3', text: 'Opção 3', scoreTarget: '' },
+      ]
+    };
+    case 'testimonial_carousel': return { ...base,
+      badge: 'PROVA REAL',
+      badgeDot: true,
+      title: 'Veja o que muda quando você toma uma decisão',
+      subtitle: 'Depoimentos reais de alunos',
+      filterButtons: [
+        { id: 'fb_1', label: 'Todas', emoji: '' },
+        { id: 'fb_2', label: 'Financeiro', emoji: '💰' },
+        { id: 'fb_3', label: 'Saúde', emoji: '❤️' },
+      ],
+      showFilterButtons: true,
+      cardBg: '#1e293b',
+      cardBorder: '#334155',
+      footerNote: 'Cada história é diferente. Mas todas têm algo em comum: precisaram entender o que estava por trás.',
+      testimonials: [
+        {
+          id: 'tm_1',
+          category: 'Financeiro',
+          categoryEmoji: '💰',
+          videoSrc: '',
+          videoAutoplay: true,
+          videoMuted: true,
+          videoUnmuteText: '🔊 Clique para ouvir',
+          personName: 'Maria, 52 anos',
+          title: 'Transformou minha relação com o dinheiro',
+          quote: '"Eu ganhava bem e nunca sobrava nada. Depois que entendi o padrão que me fazia gastar, mudou tudo."',
+          authorName: 'Maria C.',
+          authorRole: 'Enfermeira',
+          authorCity: 'São Paulo, SP',
+          authorPhoto: '',
+        },
+        {
+          id: 'tm_2',
+          category: 'Saúde',
+          categoryEmoji: '❤️',
+          videoSrc: '',
+          videoAutoplay: true,
+          videoMuted: true,
+          videoUnmuteText: '🔊 Clique para ouvir',
+          personName: 'João, 38 anos',
+          title: 'Perdi 12kg sem academia',
+          quote: '"Tentei de tudo antes. Mas quando entendi o que me sabotava, tudo ficou mais fácil."',
+          authorName: 'João S.',
+          authorRole: 'Engenheiro',
+          authorCity: 'Belo Horizonte, MG',
+          authorPhoto: '',
+        },
       ]
     };
     default:            return base;

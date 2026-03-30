@@ -1863,6 +1863,258 @@ function CheckboxSelectorEditor({ block, onChange, steps }) {
 }
 
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TestimonialCarouselEditor
+// ─────────────────────────────────────────────────────────────────────────────
+function TestimonialCarouselEditor({ block, onChange }) {
+  const [activeTestimonial, setActiveTestimonial] = React.useState(0);
+  const testimonials = block.testimonials || [];
+  const filterButtons = block.filterButtons || [];
+
+  const updateTestimonial = (idx, patch) => {
+    const updated = testimonials.map((t, i) => i === idx ? { ...t, ...patch } : t);
+    onChange({ testimonials: updated });
+  };
+
+  const addTestimonial = () => {
+    const id = `tm_${Date.now()}`;
+    const newT = {
+      id, category: 'Categoria', categoryEmoji: '⭐',
+      videoSrc: '', videoAutoplay: true, videoMuted: true, videoUnmuteText: '🔊 Clique para ouvir',
+      videoAspectRatio: '9/16', videoRounded: true, videoAutoloop: false, videoDisablePause: false,
+      videoShowTimer: false, videoMuteIconColor: '#06b6d4', videoMuteBgColor: 'rgba(0,0,0,0.6)',
+      videoMuteTextColor: '#ffffff', videoFakeProgressColor: '#ef4444',
+      personName: 'Nome, XX anos',
+      title: 'Título do Depoimento',
+      quote: '"Depoimento do cliente aqui."',
+      authorName: 'Nome S.', authorRole: 'Profissão', authorCity: 'Cidade, UF', authorPhoto: ''
+    };
+    onChange({ testimonials: [...testimonials, newT] });
+    setActiveTestimonial(testimonials.length);
+  };
+
+  const removeTestimonial = (idx) => {
+    const updated = testimonials.filter((_, i) => i !== idx);
+    onChange({ testimonials: updated });
+    setActiveTestimonial(Math.max(0, Math.min(activeTestimonial, updated.length - 1)));
+  };
+
+  const updateFilterBtn = (idx, patch) => {
+    const updated = filterButtons.map((b, i) => i === idx ? { ...b, ...patch } : b);
+    onChange({ filterButtons: updated });
+  };
+
+  const addFilterBtn = () => {
+    onChange({ filterButtons: [...filterButtons, { id: `fb_${Date.now()}`, label: 'Nova Categoria', emoji: '⭐' }] });
+  };
+
+  const removeFilterBtn = (idx) => {
+    onChange({ filterButtons: filterButtons.filter((_, i) => i !== idx) });
+  };
+
+  const tm = testimonials[activeTestimonial] || {};
+
+  return (
+    <>
+      {/* ── CABEÇALHO ── */}
+      <Section title="Cabeçalho">
+        <Field label="Badge (ex: PROVA REAL)">
+          <Input value={block.badge || ''} onChange={v => onChange({ badge: v })} placeholder="PROVA REAL" />
+        </Field>
+        <Toggle label="Mostrar ponto vermelho no badge" value={block.badgeDot !== false} onChange={v => onChange({ badgeDot: v })} />
+        <Field label="Título">
+          <Input value={block.title || ''} onChange={v => onChange({ title: v })} placeholder="Veja o que muda..." />
+        </Field>
+        <Field label="Subtítulo">
+          <Input value={block.subtitle || ''} onChange={v => onChange({ subtitle: v })} placeholder="Depoimentos reais de alunos" />
+        </Field>
+        <Field label="Nota de Rodapé">
+          <Input value={block.footerNote || ''} onChange={v => onChange({ footerNote: v })} placeholder="Nota informativa abaixo dos botões" />
+        </Field>
+      </Section>
+
+      {/* ── BOTÕES DE FILTRO ── */}
+      <Section title="Botões de Filtro">
+        <Toggle label="Mostrar Botões de Filtro" value={block.showFilterButtons !== false} onChange={v => onChange({ showFilterButtons: v })} />
+        {block.showFilterButtons !== false && (
+          <div className="space-y-2">
+            {filterButtons.map((btn, idx) => (
+              <div key={btn.id} className="flex items-center gap-2 bg-slate-800/50 border border-slate-700/50 rounded-xl p-2">
+                <input
+                  value={btn.emoji || ''}
+                  onChange={e => updateFilterBtn(idx, { emoji: e.target.value })}
+                  placeholder="emoji"
+                  className="w-12 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-center outline-none focus:border-indigo-500"
+                />
+                <input
+                  value={btn.label || ''}
+                  onChange={e => updateFilterBtn(idx, { label: e.target.value })}
+                  placeholder="Categoria"
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500"
+                />
+                <button onClick={() => removeFilterBtn(idx)}
+                  className="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors">
+                  ×
+                </button>
+              </div>
+            ))}
+            <button onClick={addFilterBtn}
+              className="w-full py-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-500 hover:text-indigo-400 transition-all cursor-pointer">
+              + Adicionar Filtro
+            </button>
+          </div>
+        )}
+      </Section>
+
+      {/* ── APARÊNCIA DO CARD ── */}
+      <Section title="Aparência do Card">
+        <Field label="Cor de Fundo do Card"><ColorPicker value={block.cardBg || '#1e293b'} onChange={v => onChange({ cardBg: v })} /></Field>
+        <Field label="Cor da Borda do Card"><ColorPicker value={block.cardBorder || '#334155'} onChange={v => onChange({ cardBorder: v })} /></Field>
+      </Section>
+
+      {/* ── DEPOIMENTOS ── */}
+      <Section title={`Depoimentos (${testimonials.length})`}>
+        {/* Seletor de depoimento */}
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {testimonials.map((t, idx) => (
+            <button key={t.id} onClick={() => setActiveTestimonial(idx)}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTestimonial === idx
+                  ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                  : 'bg-slate-800 border border-slate-700 text-slate-400 hover:border-slate-600'
+              }`}>
+              {idx + 1}. {t.authorName || `Depoimento ${idx + 1}`}
+            </button>
+          ))}
+          <button onClick={addTestimonial}
+            className="px-3 py-1 rounded-lg text-xs bg-slate-800 border border-dashed border-slate-600 text-slate-500 hover:text-indigo-400 hover:border-indigo-500/50 cursor-pointer transition-all">
+            + Novo
+          </button>
+        </div>
+
+        {testimonials.length > 0 && (
+          <div className="space-y-4 border border-amber-500/20 rounded-xl p-3 bg-amber-500/5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-300">Editando: {tm.authorName || `Depoimento ${activeTestimonial + 1}`}</span>
+              <button onClick={() => removeTestimonial(activeTestimonial)}
+                className="text-xs text-red-400 hover:text-red-300 px-2 py-0.5 bg-red-500/10 rounded transition-colors cursor-pointer">
+                Remover
+              </button>
+            </div>
+
+            {/* Categoria */}
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Emoji da Categoria">
+                <Input value={tm.categoryEmoji || ''} onChange={v => updateTestimonial(activeTestimonial, { categoryEmoji: v })} placeholder="💰" />
+              </Field>
+              <Field label="Nome da Categoria">
+                <Input value={tm.category || ''} onChange={v => updateTestimonial(activeTestimonial, { category: v })} placeholder="Financeiro" />
+              </Field>
+            </div>
+
+            {/* ─ Vídeo ─ */}
+            <div className="border-t border-slate-700/50 pt-3 space-y-3">
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">🎬 Vídeo do Depoimento</p>
+              <Field label="URL do Vídeo (YouTube / Vimeo / MP4)">
+                <Input value={tm.videoSrc || ''} onChange={v => updateTestimonial(activeTestimonial, { videoSrc: v })} placeholder="https://..." />
+              </Field>
+              <Field label="Ou Carregar do PC (.mp4)">
+                <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 text-xs">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  {tm.videoSrc?.startsWith('data:') ? '✅ Vídeo Carregado' : 'Carregar Vídeo do PC'}
+                  <input type="file" accept="video/*" className="hidden" onChange={e => {
+                    const f = e.target.files[0]; if (!f) return;
+                    const r = new FileReader();
+                    r.onload = ev => updateTestimonial(activeTestimonial, { videoSrc: ev.target.result });
+                    r.readAsDataURL(f); e.target.value = '';
+                  }} />
+                </label>
+              </Field>
+              {tm.videoSrc && (
+                <button onClick={() => updateTestimonial(activeTestimonial, { videoSrc: '' })}
+                  className="w-full py-1.5 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg transition-colors cursor-pointer">✕ Remover Vídeo</button>
+              )}
+              <Field label="Proporção">
+                <Select value={tm.videoAspectRatio || '9/16'} onChange={v => updateTestimonial(activeTestimonial, { videoAspectRatio: v })} options={[
+                  { value: '9/16', label: '9:16 (Vertical - Shorts)' },
+                  { value: '16/9', label: '16:9 (YouTube)' },
+                  { value: '1/1', label: '1:1 (Quadrado)' },
+                  { value: '4/3', label: '4:3 (Clássico)' },
+                ]} />
+              </Field>
+              <Toggle label="Autoplay (inicia mudo)" value={tm.videoAutoplay !== false} onChange={v => updateTestimonial(activeTestimonial, { videoAutoplay: v })} />
+              <Toggle label="Iniciar Mudo" value={tm.videoMuted !== false} onChange={v => updateTestimonial(activeTestimonial, { videoMuted: v })} />
+              <Toggle label="Loop" value={!!tm.videoAutoloop} onChange={v => updateTestimonial(activeTestimonial, { videoAutoloop: v })} />
+              <Toggle label="Impedir Pausa após Play" value={!!tm.videoDisablePause} onChange={v => updateTestimonial(activeTestimonial, { videoDisablePause: v })} />
+              <Toggle label="Mostrar Timer" value={!!tm.videoShowTimer} onChange={v => updateTestimonial(activeTestimonial, { videoShowTimer: v })} />
+              <Toggle label="Bordas Arredondadas" value={tm.videoRounded !== false} onChange={v => updateTestimonial(activeTestimonial, { videoRounded: v })} />
+              <Field label="Texto do Botão de Desmutar">
+                <Input value={tm.videoUnmuteText || '🔊 Clique para ouvir'} onChange={v => updateTestimonial(activeTestimonial, { videoUnmuteText: v })} placeholder="🔊 Clique para ouvir" />
+              </Field>
+              <Field label="Cor do Ícone Mudo"><ColorPicker value={tm.videoMuteIconColor || '#06b6d4'} onChange={v => updateTestimonial(activeTestimonial, { videoMuteIconColor: v })} /></Field>
+              <Field label="Nome da Pessoa no Vídeo">
+                <Input value={tm.personName || ''} onChange={v => updateTestimonial(activeTestimonial, { personName: v })} placeholder="Maria, 52 anos" />
+              </Field>
+            </div>
+
+            {/* ─ Texto ─ */}
+            <div className="border-t border-slate-700/50 pt-3 space-y-3">
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">📝 Texto do Depoimento</p>
+              <Field label="Título">
+                <Input value={tm.title || ''} onChange={v => updateTestimonial(activeTestimonial, { title: v })} placeholder="Título impactante aqui" />
+              </Field>
+              <Field label="Citação / Depoimento">
+                <textarea
+                  value={tm.quote || ''}
+                  onChange={e => updateTestimonial(activeTestimonial, { quote: e.target.value })}
+                  placeholder='"Depoimento em itálico aqui..."'
+                  rows={3}
+                  className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500 resize-none"
+                />
+              </Field>
+            </div>
+
+            {/* ─ Autor ─ */}
+            <div className="border-t border-slate-700/50 pt-3 space-y-3">
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">👤 Autor</p>
+              <Field label="Nome">
+                <Input value={tm.authorName || ''} onChange={v => updateTestimonial(activeTestimonial, { authorName: v })} placeholder="Maria C." />
+              </Field>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Profissão">
+                  <Input value={tm.authorRole || ''} onChange={v => updateTestimonial(activeTestimonial, { authorRole: v })} placeholder="Enfermeira" />
+                </Field>
+                <Field label="Cidade">
+                  <Input value={tm.authorCity || ''} onChange={v => updateTestimonial(activeTestimonial, { authorCity: v })} placeholder="SP, Brasil" />
+                </Field>
+              </div>
+              <Field label="Foto do Perfil">
+                {tm.authorPhoto && (
+                  <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-slate-600 mb-2">
+                    <img src={tm.authorPhoto} alt="" className="w-full h-full object-cover" />
+                    <button onClick={() => updateTestimonial(activeTestimonial, { authorPhoto: '' })}
+                      className="absolute top-0 right-0 w-5 h-5 rounded-full bg-red-600 text-white text-xs flex items-center justify-center cursor-pointer">×</button>
+                  </div>
+                )}
+                <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 text-xs">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  {tm.authorPhoto ? 'Trocar Foto' : 'Carregar Foto do Perfil'}
+                  <input type="file" accept="image/*" className="hidden" onChange={e => {
+                    const f = e.target.files[0]; if (!f) return;
+                    const r = new FileReader();
+                    r.onload = ev => updateTestimonial(activeTestimonial, { authorPhoto: ev.target.result });
+                    r.readAsDataURL(f); e.target.value = '';
+                  }} />
+                </label>
+              </Field>
+            </div>
+          </div>
+        )}
+      </Section>
+    </>
+  );
+}
+
 export default function BlockEditor({ block, theme, steps, currentStepIdx, onChange }) {
   if (!block) return null;
 
@@ -1882,6 +2134,7 @@ export default function BlockEditor({ block, theme, steps, currentStepIdx, onCha
     result: ResultEditor,
     spacer: SpacerEditor,
     checkbox_selector: CheckboxSelectorEditor,
+    testimonial_carousel: TestimonialCarouselEditor,
   };
 
   const Editor = editorMap[block.type];
