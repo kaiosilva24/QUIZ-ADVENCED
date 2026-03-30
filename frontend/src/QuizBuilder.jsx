@@ -253,7 +253,9 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
   const skipPush = useRef(false);
 
   const activeQuizId = useRef(quiz.id || null);
-  const [syncStatus, setSyncStatus] = useState('saved'); // 'saved' | 'saving' | 'error'
+  const serverUpdatedAt = useRef(quiz.updated_at || null); // para optimistic locking
+  const [syncStatus, setSyncStatus] = useState('saved'); // 'saved' | 'saving' | 'error' | 'conflict'
+  const [conflictInfo, setConflictInfo] = useState(null); // { message, server_title, server_config }
   const isFirstRender = useRef(true);
   const debounceRef = useRef(null);
 
@@ -343,12 +345,23 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
         const API = '/api';
 
         if (activeQuizId.current) {
-          await fetch(`${API}/quizzes/${activeQuizId.current}`, { 
+          const res = await fetch(`${API}/quizzes/${activeQuizId.current}`, { 
             method: 'PUT', 
             headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ title: finalTitle, slug: finalSlug, config_json, is_active: 1 }) 
+            body: JSON.stringify({ title: finalTitle, slug: finalSlug, config_json, is_active: 1, client_updated_at: serverUpdatedAt.current }) 
           });
-          setSyncStatus('saved');
+          if (res.status === 409) {
+            const data = await res.json();
+            setSyncStatus('conflict');
+            setConflictInfo({ message: data.message, server_title: data.server_title, server_config: data.server_config, server_updated_at: data.server_updated_at });
+          } else if (res.ok) {
+            const data = await res.json();
+            if (data.updated_at) serverUpdatedAt.current = data.updated_at;
+            setSyncStatus('saved');
+            setConflictInfo(null);
+          } else {
+            setSyncStatus('error');
+          }
         } else {
           // POST para criar novo
           const res = await fetch(`${API}/quizzes`, { 
@@ -889,6 +902,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
               {syncStatus === 'saving' && <span className="text-slate-400 text-xs font-semibold flex items-center gap-1.5"><RefreshCw size={12} className="animate-spin" /> Salvando...</span>}
               {syncStatus === 'saved' && <span className="text-emerald-400 text-xs font-semibold flex items-center gap-1.5"><Cloud size={14} /> Salvo</span>}
               {syncStatus === 'error' && <span className="text-red-400 text-xs font-semibold flex items-center gap-1.5"><AlertCircle size={12} /> Erro ao salvar</span>}
+              {syncStatus === 'conflict' && <span className="text-amber-400 text-xs font-semibold flex items-center gap-1.5"><AlertCircle size={12} /> Conflito!</span>}
             </div>
             <button onClick={onBack}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-sm font-medium transition-all cursor-pointer">
@@ -896,6 +910,33 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
             </button>
           </div>
         </div>
+
+        {/* CONFLICT BANNER */}
+        {conflictInfo && (
+          <div className="shrink-0 flex items-center gap-3 px-5 py-3 bg-amber-500/10 border-b border-amber-500/30">
+            <AlertCircle size={16} className="text-amber-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-amber-300 text-xs font-semibold">⚠️ Conflito de edição detectado!</p>
+              <p className="text-amber-400/80 text-[11px] mt-0.5 leading-snug">Outro usuário salvou alterações enquanto você editava. Suas mudanças não foram salvas para evitar perda de dados.</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  if (confirm('Isso vai descartar suas alterações locais e carregar a versão mais recente. Continuar?')) {
+                    window.location.reload();
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition-all cursor-pointer">
+                Recarregar versão recente
+              </button>
+              <button
+                onClick={() => setConflictInfo(null)}
+                className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-medium transition-all cursor-pointer">
+                Ignorar
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Main editor area */}
         <div className="flex-1 flex overflow-hidden">

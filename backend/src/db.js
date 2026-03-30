@@ -107,9 +107,12 @@ async function runMigrations(db) {
             slug TEXT UNIQUE, -- URL base ex: /meu-quiz
             config_json TEXT NOT NULL DEFAULT '{}', -- Onde fica cores, nos e rotas
             is_active BOOLEAN DEFAULT TRUE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     `);
+    // Garante coluna updated_at em bancos antigos
+    await db.query(`ALTER TABLE quizzes ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
     
     // Tabela: Leads/Visitors Tracker
     await db.query(`

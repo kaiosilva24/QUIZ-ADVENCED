@@ -42,16 +42,33 @@ async function createQuiz(req, res) {
 
 async function updateQuiz(req, res) {
     const { id } = req.params;
-    const { title, config_json, is_active, slug } = req.body;
+    const { title, config_json, is_active, slug, client_updated_at } = req.body;
     try {
         const db = await getDB();
-        const current = await db.get('SELECT slug FROM quizzes WHERE id=$1', [id]);
+        const current = await db.get('SELECT slug, updated_at FROM quizzes WHERE id=$1', [id]);
+        
+        // Optimistic locking: se o cliente tem uma versao mais velha que o banco, rejeita
+        if (client_updated_at && current?.updated_at) {
+            const clientTs = new Date(client_updated_at).getTime();
+            const dbTs = new Date(current.updated_at).getTime();
+            if (dbTs > clientTs + 2000) { // 2s de tolerancia para clock skew
+                const fresh = await db.get('SELECT id, title, slug, config_json, updated_at FROM quizzes WHERE id=$1', [id]);
+                return res.status(409).json({
+                    error: 'conflict',
+                    message: 'Este quiz foi editado por outra pessoa. Salve sus alterações manualmente e recarregue.',
+                    server_updated_at: fresh.updated_at,
+                    server_config: JSON.parse(fresh.config_json || '{}'),
+                    server_title: fresh.title
+                });
+            }
+        }
+
         const finalSlug = slug !== undefined ? slug : current?.slug;
-        await db.run(
-            'UPDATE quizzes SET title=$1, config_json=$2, is_active=$3, slug=$4 WHERE id=$5',
+        const updated = await db.get(
+            'UPDATE quizzes SET title=$1, config_json=$2, is_active=$3, slug=$4, updated_at=NOW() WHERE id=$5 RETURNING updated_at',
             [title, config_json, is_active !== undefined ? is_active : true, finalSlug, id]
         );
-        res.json({ success: true });
+        res.json({ success: true, updated_at: updated?.updated_at });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
