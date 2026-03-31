@@ -986,6 +986,32 @@ function VideoEditor({ block, onChange }) {
           </>
         )}
       </Section>
+
+      <Section title="🖥️ Tela Cheia (Fullscreen)">
+        <Field label="Modo de Tela Cheia">
+          <Select value={block.fullscreenMode || 'none'} onChange={v => onChange({ fullscreenMode: v })} options={[
+            { value: 'none',        label: 'Desativado' },
+            { value: 'manual',      label: '🔲 Manual (botão sobre o vídeo)' },
+            { value: 'auto',        label: '▶️ Automático (entra ao chegar na etapa)' },
+            { value: 'auto_locked', label: '🔒 Automático + Travado (sem opção de sair)' },
+          ]} />
+        </Field>
+        {block.fullscreenMode === 'manual' && (
+          <p className="text-xs text-slate-400 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2">
+            Um botão <strong className="text-white">⛶ Tela Cheia</strong> aparecerá sobre o vídeo para o visitante clicar.
+          </p>
+        )}
+        {block.fullscreenMode === 'auto' && (
+          <p className="text-xs text-slate-400 bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2">
+            Ao chegar nesta etapa, o browser entra automaticamente em tela cheia. O visitante pode sair pressionando <strong className="text-white">ESC</strong>.
+          </p>
+        )}
+        {block.fullscreenMode === 'auto_locked' && (
+          <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+            ⚠️ <strong>Modo travado:</strong> entra em tela cheia ao chegar na etapa e reativa automaticamente se o visitante tentar sair. Use com cuidado.
+          </p>
+        )}
+      </Section>
     </>
   );
 }

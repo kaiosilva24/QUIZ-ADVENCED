@@ -332,6 +332,44 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const [ended, setEnded]                 = useState(false);
   const [resVisible, setResVisible]       = useState(false);
   const [hasStarted, setHasStarted]       = useState(false);
+  const [userUnmuted, setUserUnmuted]     = useState(false);
+
+  // ── Fullscreen ──────────────────────────────────────────────────────────────
+  const fullscreenMode = block.fullscreenMode || 'none';
+
+  const enterFullscreen = () => {
+    const el = document.documentElement;
+    try {
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+    } catch(e) {}
+  };
+
+  // Auto fullscreen on mount
+  useEffect(() => {
+    if (compact) return;
+    if (fullscreenMode === 'auto' || fullscreenMode === 'auto_locked') {
+      const t = setTimeout(() => enterFullscreen(), 600);
+      return () => clearTimeout(t);
+    }
+  }, [fullscreenMode, compact]);
+
+  // Lock fullscreen — re-enter if user exits
+  useEffect(() => {
+    if (compact || fullscreenMode !== 'auto_locked') return;
+    const handleFsChange = () => {
+      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      if (!isFs) setTimeout(() => enterFullscreen(), 400);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
+  }, [fullscreenMode, compact]);
+  // ── /Fullscreen ─────────────────────────────────────────────────────────────
 
   const ar       = block.aspectRatio || '16/9';
   const radius   = block.rounded ? (compact?10:16) : 0;
@@ -392,7 +430,6 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   }, [hasStarted, currentTime, ended, block.setMediaState]);
 
   // The overlay is shown when: video is configured as autoplay+muted AND user hasn't unmuted yet
-  const [userUnmuted, setUserUnmuted] = useState(false);
   // Removido o !isEmbed para permitir overlay de mute também no YouTube
   const showUnmuteOverlay = !!(block.autoplay && block.muted && src && !userUnmuted);
 
@@ -552,6 +589,38 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
         {/* Thumbnail overlay (agora funciona também em embed!) */}
         {src && block.thumbnailSrc && showThumb && (
           <div style={{ position:'absolute', inset:0, background:`url(${block.thumbnailSrc}) center/cover`, pointerEvents:'none', zIndex:4 }} />
+        )}
+
+        {/* ═══ BOTÃO DE TELA CHEIA MANUAL ═══ */}
+        {src && !compact && fullscreenMode === 'manual' && (
+          <button
+            onClick={(e) => { e.stopPropagation(); enterFullscreen(); }}
+            style={{
+              position: 'absolute', bottom: 10, right: 10, zIndex: 10,
+              background: 'rgba(0,0,0,0.65)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              borderRadius: 8,
+              padding: '6px 12px',
+              color: '#fff',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              letterSpacing: 0.3,
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background='rgba(0,0,0,0.85)'}
+            onMouseLeave={e => e.currentTarget.style.background='rgba(0,0,0,0.65)'}
+          >
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+            </svg>
+            Tela Cheia
+          </button>
         )}
 
         {/* ═══ ÍCONE MUDO CENTRALIZADO — PANDA VSL STYLE ═══ */}
