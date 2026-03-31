@@ -578,6 +578,27 @@ function HeadingEditor({ block, onChange }) {
           </>
         )}
       </Section>
+
+      <Section title="⏰ Aparecimento (Delay)">
+        <Field label="Quando mostrar este bloco">
+          <Select value={block.showDelay || 'none'} onChange={v => onChange({ showDelay: v })} options={[
+            { value: 'none',   label: 'Imediatamente' },
+            { value: 'on_end', label: 'Ao terminar o VSL ou Áudio' },
+            { value: 'custom', label: 'Após X segundos (VSL / Áudio)' },
+          ]} />
+        </Field>
+        {block.showDelay === 'custom' && (
+          <Field label={`Aparecer após: ${block.showDelaySeconds || 0}s`}>
+            <input type="range" min={0} max={600} step={1}
+              value={block.showDelaySeconds || 0}
+              onChange={e => onChange({ showDelaySeconds: Number(e.target.value) })}
+              className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+        )}
+        {block.showDelay && block.showDelay !== 'none' && (
+          <p className="text-xs text-slate-500">⚠️ Referencia o primeiro bloco de mídia (Vídeo ou Áudio WhatsApp) ativo nesta etapa.</p>
+        )}
+      </Section>
     </>
   );
 }
@@ -633,6 +654,27 @@ function TextEditor({ block, onChange }) {
               </Field>
             )}
           </>
+        )}
+      </Section>
+
+      <Section title="⏰ Aparecimento (Delay)">
+        <Field label="Quando mostrar este bloco">
+          <Select value={block.showDelay || 'none'} onChange={v => onChange({ showDelay: v })} options={[
+            { value: 'none',   label: 'Imediatamente' },
+            { value: 'on_end', label: 'Ao terminar o VSL ou Áudio' },
+            { value: 'custom', label: 'Após X segundos (VSL / Áudio)' },
+          ]} />
+        </Field>
+        {block.showDelay === 'custom' && (
+          <Field label={`Aparecer após: ${block.showDelaySeconds || 0}s`}>
+            <input type="range" min={0} max={600} step={1}
+              value={block.showDelaySeconds || 0}
+              onChange={e => onChange({ showDelaySeconds: Number(e.target.value) })}
+              className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+        )}
+        {block.showDelay && block.showDelay !== 'none' && (
+          <p className="text-xs text-slate-500">⚠️ Referencia o primeiro bloco de mídia (Vídeo ou Áudio WhatsApp) ativo nesta etapa.</p>
         )}
       </Section>
     </>
@@ -2259,14 +2301,30 @@ function ImageButtonSelectorEditor({ block, onChange, steps, currentStepIdx }) {
         )}
       </Section>
       <Section title="Aparência">
-        <Field label="Número de Colunas no PC (Lado a lado)">
-          <Select value={block.columns || 3} onChange={v => onChange({ columns: parseInt(v) || 3 })} options={[
-            { value: '1', label: '1 Coluna (Lista vertical)' },
-            { value: '2', label: '2 Colunas (Lado a lado)' },
-            { value: '3', label: '3 Colunas (Lado a lado)' },
-            { value: '4', label: '4 Colunas' },
-          ]} />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Colunas (lado a lado)">
+            <Select value={block.columns || 2} onChange={v => onChange({ columns: parseInt(v) || 2 })} options={[
+              { value: '1', label: '1' },
+              { value: '2', label: '2' },
+              { value: '3', label: '3' },
+              { value: '4', label: '4' },
+            ]} />
+          </Field>
+          <Field label="Linhas (empilhadas)">
+            <Select value={block.rows || 0} onChange={v => onChange({ rows: parseInt(v) || 0 })} options={[
+              { value: '0', label: 'Auto' },
+              { value: '1', label: '1' },
+              { value: '2', label: '2' },
+              { value: '3', label: '3' },
+              { value: '4', label: '4' },
+            ]} />
+          </Field>
+        </div>
+        {(block.columns || 2) > 0 && (block.rows || 0) > 0 && (
+          <p className="text-xs text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded-lg px-3 py-2">
+            📐 Layout: <strong>{block.columns || 2} colunas × {block.rows} linhas</strong> — ex: {(block.columns || 2) === 2 && block.rows === 2 ? '2 em cima + 2 embaixo' : `grade ${block.columns || 2}×${block.rows}`}
+          </p>
+        )}
         <Field label="Arredondamento do Card (px)"><Slider min={0} max={40} value={block.cardRadius ?? 16} onChange={v => onChange({ cardRadius: v })} /></Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Fundo"><ColorPicker value={block.cardBg || 'transparent'} onChange={v => onChange({ cardBg: v })} /></Field>

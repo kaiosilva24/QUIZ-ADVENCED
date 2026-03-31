@@ -1209,6 +1209,35 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     return null;
   };
 
+  // ── Global Delay de aparecimento ───────────────────────────────
+  const showDelayConfig = block.showDelay || 'none';
+  const [isVisible, setIsVisible] = React.useState(showDelayConfig === 'none');
+  const [localSecs, setLocalSecs] = React.useState(0);
+  const needsTimer = showDelayConfig !== 'none' && !isVisible;
+
+  React.useEffect(() => {
+    if (!needsTimer) return;
+    const iv = setInterval(() => setLocalSecs(s => s + 1), 1000);
+    return () => clearInterval(iv);
+  }, [needsTimer]);
+
+  React.useEffect(() => {
+    if (showDelayConfig === 'none') { setIsVisible(true); return; }
+    const hasMedia = steps && steps[stepIdx]?.blocks?.some(b => b.type === 'video' || b.type === 'audio');
+    if (showDelayConfig === 'on_end') {
+      if (!compact && hasMedia) setIsVisible(mediaState && mediaState.hasStarted && mediaState.ended);
+      else setIsVisible(compact ? localSecs >= 2 : true);
+      return;
+    }
+    if (showDelayConfig === 'custom') {
+      const secs = block.showDelaySeconds || 0;
+      setIsVisible(localSecs >= secs);
+    }
+  }, [showDelayConfig, block.showDelaySeconds, mediaState, compact, localSecs, steps, stepIdx]);
+
+  if (!isVisible) return null;
+  // ── Fim delay global ──────────────────────────────────────────
+
   switch (block.type) {
 
     case 'progress': {
@@ -1629,35 +1658,6 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         );
       }
       
-      // ── Delay de aparecimento ───────────────────────────────
-      const btnShowDelay = block.showDelay || 'none';
-      const [btnVisible, setBtnVisible] = React.useState(btnShowDelay === 'none');
-      const [btnLocalSecs, setBtnLocalSecs] = React.useState(0);
-      const btnNeedsTimer = btnShowDelay !== 'none' && !btnVisible;
-
-      React.useEffect(() => {
-        if (!btnNeedsTimer) return;
-        const iv = setInterval(() => setBtnLocalSecs(s => s + 1), 1000);
-        return () => clearInterval(iv);
-      }, [btnNeedsTimer]);
-
-      React.useEffect(() => {
-        if (btnShowDelay === 'none') { setBtnVisible(true); return; }
-        const hasMedia = steps && steps[stepIdx]?.blocks?.some(b => b.type === 'video' || b.type === 'audio');
-        if (btnShowDelay === 'on_end') {
-          if (!compact && hasMedia) setBtnVisible(mediaState && mediaState.hasStarted && mediaState.ended);
-          else setBtnVisible(compact ? btnLocalSecs >= 2 : true);
-          return;
-        }
-        if (btnShowDelay === 'custom') {
-          const secs = block.showDelaySeconds || 0;
-          setBtnVisible(btnLocalSecs >= secs);
-        }
-      }, [btnShowDelay, block.showDelaySeconds, mediaState, compact, btnLocalSecs, steps, stepIdx]);
-
-      if (!btnVisible) return null;
-      // ── Fim delay ──────────────────────────────────────────
-
       return (
         <>
           {animName !== 'none' && <style>{keyframes[animName]}</style>}
@@ -2696,7 +2696,8 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const cardSelectedBorder = block.cardSelectedBorder || '#6366f1';
       const txtColor = block.textColor || defaultText;
       const radius = block.cardRadius ?? 16;
-      const cols = block.columns || 3;
+      const cols = block.columns || 2;
+      const rows = block.rows || 0; // 0 = automático
 
       let selections = [];
       if (!compact && typeof window !== 'undefined') {
@@ -2746,7 +2747,12 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
       return (
         <div style={{ width: '100%' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: compact ? 8 : 16 }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+            gridTemplateRows: rows > 0 ? `repeat(${rows}, auto)` : undefined,
+            gap: compact ? 8 : 16
+          }}>
             {options.map((opt) => {
                const sel = isSelected(opt.id);
                return (
