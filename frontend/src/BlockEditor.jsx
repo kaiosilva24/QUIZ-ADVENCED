@@ -1806,6 +1806,14 @@ function CheckboxSelectorEditor({ block, onChange, steps }) {
       </Section>
 
       <Section title="Estilo dos Itens">
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <Field label={`Largura: ${block.itemWidth ?? 100}%`}>
+            <input type="range" min={30} max={100} step={1} value={block.itemWidth ?? 100} onChange={e => onChange({ itemWidth: Number(e.target.value) })} className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+          <Field label={`Altura: ${block.itemHeight ?? 12}px`}>
+            <input type="range" min={5} max={40} step={1} value={block.itemHeight ?? 12} onChange={e => onChange({ itemHeight: Number(e.target.value) })} className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+        </div>
         <Field label={`Arredondamento: ${block.itemRadius ?? 14}px`}>
           <input type="range" min={0} max={60} step={2} value={block.itemRadius ?? 14}
             onChange={e => onChange({ itemRadius: Number(e.target.value) })}
@@ -1824,40 +1832,72 @@ function CheckboxSelectorEditor({ block, onChange, steps }) {
           <Field label="Fundo Selecionado"><ColorPicker value={block.itemSelectedBg || '#6366f1'} onChange={v => onChange({ itemSelectedBg: v })} /></Field>
           <Field label="Borda Selecionada"><ColorPicker value={block.itemSelectedBorder || '#6366f1'} onChange={v => onChange({ itemSelectedBorder: v })} /></Field>
         </div>
-        <Field label="Cor do Texto"><ColorPicker value={block.itemTextColor || '#ffffff'} onChange={v => onChange({ itemTextColor: v })} /></Field>
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          <Field label="Cor do Texto"><ColorPicker value={block.itemTextColor || '#ffffff'} onChange={v => onChange({ itemTextColor: v })} /></Field>
+          <Field label="Cor Ícone (Sel.)"><ColorPicker value={block.iconSelectedColor || '#ffffff'} onChange={v => onChange({ iconSelectedColor: v })} /></Field>
+        </div>
       </Section>
 
       <Section title="Botão de Confirmação">
+        <label className="flex items-center gap-2 mb-4 p-2 bg-slate-800/60 rounded-lg cursor-pointer hover:bg-slate-800 transition-colors border border-slate-700">
+          <input type="checkbox" checked={!!block.hideConfirmUntilSelected} onChange={e => onChange({ hideConfirmUntilSelected: e.target.checked })} className="accent-indigo-500" />
+          <span className="text-sm text-slate-300">Aparecer SOMENTE após selecionar opção</span>
+        </label>
+        
         <Field label="Texto do Botão"><Input value={block.confirmText || 'Confirmar →'} onChange={v => onChange({ confirmText: v })} /></Field>
+        
+        {!block.hideConfirmUntilSelected && (
+          <>
+            <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-bold">Estado Desativado (Aguardando)</div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <Field label="Fundo"><ColorPicker value={block.confirmDisabledBg || '#1e293b'} onChange={v => onChange({ confirmDisabledBg: v })} /></Field>
+              <Field label="Borda"><ColorPicker value={block.confirmDisabledBorder || 'transparent'} onChange={v => onChange({ confirmDisabledBorder: v })} /></Field>
+              <Field label="Texto"><ColorPicker value={block.confirmDisabledTextColor || '#475569'} onChange={v => onChange({ confirmDisabledTextColor: v })} /></Field>
+            </div>
+          </>
+        )}
+        
+        <div className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-bold">Estado Ativado (Pronto)</div>
+        <div className="grid grid-cols-3 gap-3 mb-3">
+          <Field label="Fundo"><ColorPicker value={block.confirmBg || '#6366f1'} onChange={v => onChange({ confirmBg: v })} /></Field>
+          <Field label="Borda"><ColorPicker value={block.confirmBorder || 'transparent'} onChange={v => onChange({ confirmBorder: v })} /></Field>
+          <Field label="Texto"><ColorPicker value={block.confirmTextColor || '#ffffff'} onChange={v => onChange({ confirmTextColor: v })} /></Field>
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Cor de Fundo"><ColorPicker value={block.confirmBg || '#6366f1'} onChange={v => onChange({ confirmBg: v })} /></Field>
-          <Field label="Cor do Texto"><ColorPicker value={block.confirmTextColor || '#ffffff'} onChange={v => onChange({ confirmTextColor: v })} /></Field>
+          <Field label={`Largura: ${block.confirmWidth ?? 100}%`}>
+            <input type="range" min={30} max={100} step={1} value={block.confirmWidth ?? 100} onChange={e => onChange({ confirmWidth: Number(e.target.value) })} className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
+          <Field label={`Altura: ${block.confirmHeight ?? 13}px`}>
+            <input type="range" min={5} max={40} step={1} value={block.confirmHeight ?? 13} onChange={e => onChange({ confirmHeight: Number(e.target.value) })} className="w-full accent-indigo-500 cursor-pointer" />
+          </Field>
         </div>
         <Field label={`Arredondamento: ${block.confirmRadius ?? 14}px`}>
-          <input type="range" min={0} max={60} step={2} value={block.confirmRadius ?? 14}
-            onChange={e => onChange({ confirmRadius: Number(e.target.value) })}
-            className="w-full accent-indigo-500 cursor-pointer" />
+          <input type="range" min={0} max={60} step={2} value={block.confirmRadius ?? 14} onChange={e => onChange({ confirmRadius: Number(e.target.value) })} className="w-full accent-indigo-500 cursor-pointer" />
         </Field>
       </Section>
 
       <Section title="Opções de Seleção">
         <div className="space-y-3">
           {opts.map((opt, idx) => (
-            <div key={opt.id} className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 font-bold w-5 text-center">{idx + 1}</span>
-                <input
-                  value={opt.text}
-                  onChange={e => updateOpt(idx, { text: e.target.value })}
-                  placeholder="Texto da opção..."
-                  className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500"
-                />
+            <div key={opt.id} className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-3 space-y-3">
+              <div className="flex items-start gap-2">
+                <span className="text-xs text-slate-500 font-bold w-5 text-center mt-2.5">{idx + 1}</span>
+                <div className="flex-1 space-y-2">
+                  <input
+                    value={opt.text}
+                    onChange={e => updateOpt(idx, { text: e.target.value })}
+                    placeholder="Texto da opção..."
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500"
+                  />
+                  <EmojiSelect emoji={opt.emoji} unified={opt.emojiUnified} onChange={(e, u) => updateOpt(idx, { emoji: e, emojiUnified: u })} />
+                </div>
                 <button onClick={() => removeOpt(idx)}
-                  className="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors">
+                  className="w-8 h-8 mt-1 flex items-center justify-center text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
                   ×
                 </button>
               </div>
-              <div>
+              <div className="pl-7">
                 <label className="text-[10px] text-slate-500 uppercase tracking-wider">Pontuar como (Variante)</label>
                 <input
                   value={opt.scoreTarget || ''}

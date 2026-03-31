@@ -2269,7 +2269,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const canConfirm = selected.length >= (isMulti ? (block.minSelect || 1) : 1);
 
       const handleConfirm = () => {
-        if (!canConfirm || compact) return;
+        if (!canConfirm) return;
         // Accumulate scores for each selected option
         selected.forEach(optId => {
           const opt = opts.find(o => o.id === optId);
@@ -2277,7 +2277,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             // Fire score via onNavigate piggyback — we'll navigate once after scoring all
           }
         });
-        const target = block.nextStep;
+        const target = resolveNextStep(block.nextStep);
         if (onNavigate && target) {
           // Pass selected option scoreTargets as a comma list for upstream processing
           const scoreStr = selected
@@ -2303,8 +2303,9 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   display: 'flex',
                   alignItems: 'center',
                   gap: compact ? 8 : 12,
-                  width: '100%',
-                  padding: compact ? '6px 10px' : '12px 16px',
+                  width: block.itemWidth ? `${block.itemWidth}%` : '100%',
+                  alignSelf: 'center',
+                  padding: compact ? `${(block.itemHeight || 12) / 2}px 10px` : `${block.itemHeight ?? 12}px 16px`,
                   borderRadius: radius,
                   border: `2px solid ${isSel ? (block.itemSelectedBorder || '#6366f1') : (block.itemBorder || '#334155')}`,
                   background: isSel ? (block.itemSelectedBg || '#6366f1') : (block.itemBg || 'transparent'),
@@ -2323,7 +2324,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                     width: compact ? 14 : 20,
                     height: compact ? 14 : 20,
                     borderRadius: cbStyle === 'circle' ? '50%' : 4,
-                    border: `2px solid ${isSel ? '#fff' : (block.itemBorder || '#334155')}`,
+                    border: `2px solid ${isSel ? (block.iconSelectedColor || '#ffffff') : (block.itemBorder || '#334155')}`,
                     background: isSel ? 'rgba(255,255,255,0.3)' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
@@ -2331,42 +2332,46 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   }}>
                     {isSel && (
                       <svg width={compact ? 8 : 12} height={compact ? 8 : 12} viewBox="0 0 12 12" fill="none">
-                        <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M2 6l3 3 5-5" stroke={block.iconSelectedColor || '#ffffff'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     )}
                   </div>
                 )}
+                {opt.emojiUnified ? <Emoji unified={opt.emojiUnified} size={compact ? 12 : 20} /> : opt.emoji && <span>{opt.emoji}</span>}
                 <span style={{ flex: 1 }}>{opt.text}</span>
               </button>
             );
           })}
 
           {/* Confirm button */}
-          <button
-            onClick={handleConfirm}
-            disabled={!canConfirm}
-            style={{
-              marginTop: compact ? 4 : 8,
-              width: '100%',
-              padding: compact ? '6px 12px' : '13px 20px',
-              borderRadius: block.confirmRadius ?? 14,
-              background: canConfirm ? (block.confirmBg || '#6366f1') : '#1e293b',
-              color: canConfirm ? (block.confirmTextColor || '#ffffff') : '#475569',
-              fontSize: compact ? 9 : 15,
-              fontWeight: 600,
-              cursor: canConfirm ? 'pointer' : 'not-allowed',
-              border: 'none',
-              transition: 'all 0.2s ease',
-              opacity: canConfirm ? 1 : 0.6,
-            }}
-          >
-            {block.confirmText || 'Confirmar →'}
-            {isMulti && !canConfirm && (
-              <span style={{ opacity: 0.7, fontSize: compact ? 7 : 11, marginLeft: 6 }}>
-                (selecione {block.minSelect || 1}+)
-              </span>
-            )}
-          </button>
+          {(!canConfirm && block.hideConfirmUntilSelected) ? null : (
+            <button
+              onClick={handleConfirm}
+              disabled={!canConfirm}
+              style={{
+                marginTop: compact ? 4 : 8,
+                width: block.confirmWidth ? `${block.confirmWidth}%` : '100%',
+                alignSelf: 'center',
+                padding: compact ? `${(block.confirmHeight || 13) / 2}px 12px` : `${block.confirmHeight ?? 13}px 20px`,
+                borderRadius: block.confirmRadius ?? 14,
+                background: canConfirm ? (block.confirmBg || '#6366f1') : (block.confirmDisabledBg || '#1e293b'),
+                color: canConfirm ? (block.confirmTextColor || '#ffffff') : (block.confirmDisabledTextColor || '#475569'),
+                fontSize: compact ? 9 : 15,
+                fontWeight: 600,
+                cursor: canConfirm ? 'pointer' : 'not-allowed',
+                border: `2px solid ${canConfirm ? (block.confirmBorder || 'transparent') : (block.confirmDisabledBorder || 'transparent')}`,
+                transition: 'all 0.2s ease',
+                opacity: 1,
+              }}
+            >
+              {block.confirmText || 'Confirmar →'}
+              {isMulti && !canConfirm && (
+                <span style={{ opacity: 0.7, fontSize: compact ? 7 : 11, marginLeft: 6 }}>
+                  (selecione {block.minSelect || 1}+)
+                </span>
+              )}
+            </button>
+          )}
         </div>
       );
     }
