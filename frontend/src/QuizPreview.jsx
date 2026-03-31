@@ -335,6 +335,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const [userUnmuted, setUserUnmuted]     = useState(false);
 
   const containerRef = useRef(null);
+  const [isCssFullscreen, setIsCssFullscreen] = useState(false);
 
   const forceExitedFsRef = useRef(false);
 
@@ -350,22 +351,28 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const enterFullscreen = () => {
     if (forceExitedFsRef.current) return;
     const el = containerRef.current || document.documentElement;
-    const vid = videoRef.current;
     try {
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
-      else if (vid && vid.webkitEnterFullscreen) vid.webkitEnterFullscreen();
-    } catch(e) {}
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => setIsCssFullscreen(true));
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+        setIsCssFullscreen(true); // Força fallback para iOS
+      } else if (el.mozRequestFullScreen) {
+        el.mozRequestFullScreen();
+      } else {
+        setIsCssFullscreen(true);
+      }
+    } catch(e) {
+      setIsCssFullscreen(true);
+    }
   };
 
   const exitFullscreen = () => {
-    const vid = videoRef.current;
+    setIsCssFullscreen(false);
     try {
       if (document.exitFullscreen) document.exitFullscreen();
       else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
       else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
-      if (vid && vid.webkitExitFullscreen) vid.webkitExitFullscreen();
     } catch(e) {}
   };
 
@@ -587,7 +594,10 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: compact ? 8 : 16 }}>
       {/* Container do video em si mantendo o border radius original */}
-      <div ref={containerRef} style={{ width:'100%', borderRadius:radius, overflow:'hidden', position:'relative', background:'#000', boxShadow: compact?'none':'0 8px 40px rgba(0,0,0,0.6)' }}>
+      <div ref={containerRef} style={isCssFullscreen ? {
+        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 999999,
+        background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: 0
+      } : { width:'100%', borderRadius:radius, overflow:'hidden', position:'relative', background:'#000', boxShadow: compact?'none':'0 8px 40px rgba(0,0,0,0.6)' }}>
         <style>{`
         @keyframes vslMutePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
         @keyframes vslMuteBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
@@ -640,36 +650,48 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
           <div style={{ position:'absolute', inset:0, background:`url(${block.thumbnailSrc}) center/cover`, pointerEvents:'none', zIndex:4 }} />
         )}
 
-        {/* ═══ BOTÃO DE TELA CHEIA MANUAL ═══ */}
-        {src && !compact && fullscreenMode === 'manual' && (
-          <button
-            onClick={(e) => { e.stopPropagation(); enterFullscreen(); }}
-            style={{
-              position: 'absolute', bottom: 10, right: 10, zIndex: 10,
-              background: 'rgba(0,0,0,0.65)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.25)',
-              borderRadius: 8,
-              padding: '6px 12px',
-              color: '#fff',
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              letterSpacing: 0.3,
-              transition: 'background 0.2s',
-            }}
-            onMouseEnter={e => e.currentTarget.style.background='rgba(0,0,0,0.85)'}
-            onMouseLeave={e => e.currentTarget.style.background='rgba(0,0,0,0.65)'}
-          >
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-              <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-              <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
-            </svg>
-            Tela Cheia
-          </button>
+        {/* ═══ BOTÃO DE TELA CHEIA MANUAL / SAIR (CSS FULLSCREEN) ═══ */}
+        {src && !compact && (
+          <>
+            {fullscreenMode === 'manual' && !isCssFullscreen && (
+              <button
+                onClick={(e) => { e.stopPropagation(); enterFullscreen(); }}
+                style={{
+                  position: 'absolute', bottom: 10, right: 10, zIndex: 10,
+                  background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255,255,255,0.25)', borderRadius: 8, padding: '6px 12px',
+                  color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6, transition: 'background 0.2s',
+                }}
+              >
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+                Tela Cheia
+              </button>
+            )}
+            
+            {isCssFullscreen && fullscreenMode !== 'auto_locked' && (
+              <button
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  forceExitedFsRef.current = true; 
+                  exitFullscreen(); 
+                }}
+                style={{
+                  position: 'absolute', top: 16, right: 16, zIndex: 9999999,
+                  background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255,255,255,0.25)', borderRadius: '50%', padding: '8px',
+                  color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >
+                <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            )}
+          </>
         )}
 
         {/* ═══ ÍCONE MUDO CENTRALIZADO — PANDA VSL STYLE ═══ */}
