@@ -956,8 +956,9 @@ function VideoEditor({ block, onChange }) {
         </Field>
       </Section>
       <Section title="Comportamento">
-        <Toggle label="Autoplay (inicia mudo)" value={block.autoplay} onChange={v => onChange({ autoplay: v })} />
+        <Toggle label="Autoplay" value={block.autoplay} onChange={v => onChange({ autoplay: v })} />
         <Toggle label="Iniciar Mudo" value={block.muted} onChange={v => onChange({ muted: v })} />
+        <p className="text-[10px] text-slate-500 mb-3 px-1">Nota: Autoplay só funciona COM áudio se o visitante já tiver interagido com o quiz antes.</p>
         <Toggle label="Loop" value={block.loop} onChange={v => onChange({ loop: v })} />
         <Toggle label="Impedir Pausa após Play" value={block.disablePause} onChange={v => onChange({ disablePause: v })} />
         <Toggle label="Mostrar Timer" value={block.showTimer !== false} onChange={v => onChange({ showTimer: v })} />

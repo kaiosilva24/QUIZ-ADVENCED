@@ -381,15 +381,30 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   // Lock fullscreen — re-enter if user exits
   useEffect(() => {
     if (compact || fullscreenMode !== 'auto_locked') return;
+
+    const lockedEnterFs = () => {
+      if (!forceExitedFsRef.current) setTimeout(() => enterFullscreen(), 400);
+    };
+
     const handleFsChange = () => {
       const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      if (!isFs && !forceExitedFsRef.current) setTimeout(() => enterFullscreen(), 400);
+      if (!isFs) lockedEnterFs();
     };
+
     document.addEventListener('fullscreenchange', handleFsChange);
     document.addEventListener('webkitfullscreenchange', handleFsChange);
+
+    const vid = videoRef.current;
+    if (vid) {
+      vid.addEventListener('webkitendfullscreen', lockedEnterFs);
+    }
+
     return () => {
       document.removeEventListener('fullscreenchange', handleFsChange);
       document.removeEventListener('webkitfullscreenchange', handleFsChange);
+      if (vid) {
+        vid.removeEventListener('webkitendfullscreen', lockedEnterFs);
+      }
     };
   }, [fullscreenMode, compact]);
 
@@ -477,7 +492,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
     const v = videoRef.current;
     if (!v || startedRef.current || !block.autoplay || isEmbed) return;
     startedRef.current = true;
-    v.muted = true;
+    v.muted = !!block.muted; // Respeita a config do editor
     v.play().then(() => {
       setPlaying(true);
       setShowThumb(false);
