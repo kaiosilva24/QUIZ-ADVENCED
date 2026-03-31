@@ -2410,20 +2410,16 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
       const handleConfirm = () => {
         if (!canConfirm) return;
-        // Accumulate scores for each selected option
-        selected.forEach(optId => {
-          const opt = opts.find(o => o.id === optId);
-          if (opt?.scoreTarget && opt.scoreTarget.trim()) {
-            // Fire score via onNavigate piggyback — we'll navigate once after scoring all
-          }
-        });
         const target = resolveNextStep(block.nextStep);
-        if (onNavigate && target) {
-          // Pass selected option scoreTargets as a comma list for upstream processing
-          const scoreStr = selected
-            .map(id => opts.find(o => o.id === id)?.scoreTarget)
-            .filter(Boolean)
-            .join(',');
+        const scoreStr = selected
+          .map(id => opts.find(o => o.id === id)?.scoreTarget)
+          .filter(Boolean)
+          .join(',');
+        if (block.showLoading && onStartLoading && onNavigate && target) {
+          onStartLoading(block, (block.loadingDuration || 3) * 1000, () => {
+            onNavigate(target, scoreStr || 'Confirmado', false, scoreStr || null);
+          });
+        } else if (onNavigate && target) {
           onNavigate(target, scoreStr || 'Confirmado', false, scoreStr || null);
         }
       };

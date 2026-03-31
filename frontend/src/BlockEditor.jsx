@@ -1847,7 +1847,7 @@ function LiveCounterEditor({ block, onChange, steps, currentStepIdx }) {
 // ────────────────────────────────────────────────────────────────────────────
 // CheckboxSelectorEditor
 // ────────────────────────────────────────────────────────────────────────────
-function CheckboxSelectorEditor({ block, onChange, steps }) {
+function CheckboxSelectorEditor({ block, onChange, steps, theme }) {
   const opts = block.options || [];
 
   const updateOpt = (idx, patch) => {
@@ -1994,6 +1994,8 @@ function CheckboxSelectorEditor({ block, onChange, steps }) {
           </button>
         </div>
       </Section>
+
+      <LoadingScreenConfig block={block} theme={theme} onChange={onChange} loadingKey="showLoading" title="Tela de Carregamento (Opcional)" toggleLabel="⏳ Ativar ao Confirmar" />
     </>
   );
 }
