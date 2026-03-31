@@ -334,11 +334,13 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const [hasStarted, setHasStarted]       = useState(false);
   const [userUnmuted, setUserUnmuted]     = useState(false);
 
+  const containerRef = useRef(null);
+
   // ── Fullscreen ──────────────────────────────────────────────────────────────
   const fullscreenMode = block.fullscreenMode || 'none';
 
   const enterFullscreen = () => {
-    const el = document.documentElement;
+    const el = containerRef.current || document.documentElement;
     try {
       if (el.requestFullscreen) el.requestFullscreen();
       else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
@@ -538,7 +540,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: compact ? 8 : 16 }}>
       {/* Container do video em si mantendo o border radius original */}
-      <div style={{ width:'100%', borderRadius:radius, overflow:'hidden', position:'relative', background:'#000', boxShadow: compact?'none':'0 8px 40px rgba(0,0,0,0.6)' }}>
+      <div ref={containerRef} style={{ width:'100%', borderRadius:radius, overflow:'hidden', position:'relative', background:'#000', boxShadow: compact?'none':'0 8px 40px rgba(0,0,0,0.6)' }}>
         <style>{`
         @keyframes vslMutePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
         @keyframes vslMuteBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
