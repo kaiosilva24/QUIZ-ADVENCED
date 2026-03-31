@@ -336,15 +336,36 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
 
   const containerRef = useRef(null);
 
+  const forceExitedFsRef = useRef(false);
+
+  const src      = block.src || '';
+  const isYT     = src.includes('youtube') || src.includes('youtu.be');
+  const isVimeo  = src.includes('vimeo');
+  const isEmbed  = isYT || isVimeo;
+
   // ── Fullscreen ──────────────────────────────────────────────────────────────
   const fullscreenMode = block.fullscreenMode || 'none';
+  const exitFullscreenBeforeEnd = block.exitFullscreenBeforeEnd || 0;
 
   const enterFullscreen = () => {
+    if (forceExitedFsRef.current) return;
     const el = containerRef.current || document.documentElement;
+    const vid = videoRef.current;
     try {
       if (el.requestFullscreen) el.requestFullscreen();
       else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
       else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+      else if (vid && vid.webkitEnterFullscreen) vid.webkitEnterFullscreen();
+    } catch(e) {}
+  };
+
+  const exitFullscreen = () => {
+    const vid = videoRef.current;
+    try {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+      if (vid && vid.webkitExitFullscreen) vid.webkitExitFullscreen();
     } catch(e) {}
   };
 
@@ -362,7 +383,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
     if (compact || fullscreenMode !== 'auto_locked') return;
     const handleFsChange = () => {
       const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      if (!isFs) setTimeout(() => enterFullscreen(), 400);
+      if (!isFs && !forceExitedFsRef.current) setTimeout(() => enterFullscreen(), 400);
     };
     document.addEventListener('fullscreenchange', handleFsChange);
     document.addEventListener('webkitfullscreenchange', handleFsChange);
@@ -371,14 +392,25 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
       document.removeEventListener('webkitfullscreenchange', handleFsChange);
     };
   }, [fullscreenMode, compact]);
+
+  // Sair da tela cheia X segundos antes
+  useEffect(() => {
+    if (compact || fullscreenMode === 'none' || exitFullscreenBeforeEnd <= 0) return;
+    // Precisamos do duration real ou fakeDuration para saber quando acaba
+    const dur = isEmbed ? (block.fakeDuration || 120) : duration;
+    if (dur > 0 && currentTime > 0) {
+      if (currentTime >= dur - exitFullscreenBeforeEnd) {
+        if (!forceExitedFsRef.current) {
+          forceExitedFsRef.current = true;
+          exitFullscreen();
+        }
+      }
+    }
+  }, [currentTime, duration, isEmbed, block.fakeDuration, exitFullscreenBeforeEnd, fullscreenMode, compact]);
   // ── /Fullscreen ─────────────────────────────────────────────────────────────
 
   const ar       = block.aspectRatio || '16/9';
   const radius   = block.rounded ? (compact?10:16) : 0;
-  const src      = block.src || '';
-  const isYT     = src.includes('youtube') || src.includes('youtu.be');
-  const isVimeo  = src.includes('vimeo');
-  const isEmbed  = isYT || isVimeo;
 
   // Controles nativos sempre ocultos por padrão (conforme pedido)
   const isControlsHidden = true;

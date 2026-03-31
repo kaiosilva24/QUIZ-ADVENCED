@@ -1011,6 +1011,17 @@ function VideoEditor({ block, onChange }) {
             ⚠️ <strong>Modo travado:</strong> entra em tela cheia ao chegar na etapa e reativa automaticamente se o visitante tentar sair. Use com cuidado.
           </p>
         )}
+        {block.fullscreenMode !== 'none' && (
+          <Field label="Sair X segundos antes de acabar:">
+            <input type="number" min={0} value={block.exitFullscreenBeforeEnd || 0}
+              onChange={e => onChange({ exitFullscreenBeforeEnd: Number(e.target.value) })}
+              className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Útil para voltar à tela normal a tempo de mostrar botões/elementos abaixo do vídeo antes dele acabar.
+            </p>
+          </Field>
+        )}
       </Section>
     </>
   );
