@@ -641,16 +641,26 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
     if (!isEmbed || !playing) return;
     const dur = block.fakeDuration || 120;
     const interval = setInterval(() => {
-      setCurrentTime(prev => {
-        const next = prev + 1;
-        currentTimeRef.current = next;       // keep ref in sync for other effects
-        trackTimeRef.current(next, dur);      // call via ref — avoids resetting interval
-        return next;
-      });
+      const next = (currentTimeRef.current || 0) + 1;
+      currentTimeRef.current = next;
+      trackTimeRef.current(next, dur);
+
+      // ✔ Update progress bar DOM directly — ZERO React re-render
+      if (progressBarRef.current && dur > 0) {
+        progressBarRef.current.style.width = `${Math.min((next / dur) * 100, 100)}%`;
+      }
+      // ✔ Update timer DOM directly — ZERO React re-render
+      if (timerDisplayRef.current && dur > 0) {
+        const dispDur = block.useFakeDuration ? (block.fakeDuration || 120) : dur;
+        const dispT   = block.useFakeDuration ? ((next / dur) * dispDur) : next;
+        timerDisplayRef.current.textContent = `${fmt(dispT)} / ${fmt(dispDur)}`;
+      }
+      // ✔ Minimal state update only for overlay/resDelay logic (cheap string compare)
+      setCurrentTime(next);
     }, 1000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEmbed, playing, block.fakeDuration]); // trackTime intentionally read via ref
+  }, [isEmbed, playing, block.fakeDuration]);
 
   // Se for embed, usamos fakeDuration ou 120s como fallback para não quebrar a barra
   const activeDuration = isEmbed ? (block.fakeDuration || 120) : duration;
@@ -691,7 +701,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
           <iframe 
             ref={iframeRef}
             src={embedUrl}
-            style={{ position:'absolute', inset:0, width:'100%', height:'100%', border:'none', pointerEvents: isControlsHidden ? 'none' : 'auto' }}
+            style={{ position:'absolute', inset:0, width:'100%', height:'100%', border:'none', pointerEvents: isControlsHidden ? 'none' : 'auto', willChange:'transform' }}
             allow="autoplay; fullscreen" allowFullScreen />
         )}
 
@@ -700,7 +710,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
           <video
             ref={videoRef}
             src={src}
-            style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', pointerEvents:'none' }}
+            style={{ width:'100%', height:'100%', objectFit:'cover', display:'block', pointerEvents:'none', willChange:'transform' }}
             loop={block.loop}
             playsInline
             disablePictureInPicture
@@ -748,8 +758,8 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
                 onClick={(e) => { e.stopPropagation(); enterFullscreen(); }}
                 style={{
                   position: 'absolute', bottom: 10, right: 10, zIndex: 10,
-                  background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255,255,255,0.25)', borderRadius: 8, padding: '6px 12px',
+                  background: 'rgba(0,0,0,0.82)',
+                  border: '1px solid rgba(255,255,255,0.18)', borderRadius: 8, padding: '6px 12px',
                   color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: 6, transition: 'background 0.2s',
                 }}
@@ -771,8 +781,8 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
                 }}
                 style={{
                   position: 'absolute', top: 16, right: 16, zIndex: 9999999,
-                  background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255,255,255,0.25)', borderRadius: '50%', padding: '8px',
+                  background: 'rgba(0,0,0,0.82)',
+                  border: '1px solid rgba(255,255,255,0.18)', borderRadius: '50%', padding: '8px',
                   color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}
               >
@@ -842,9 +852,8 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
 
             {/* Texto clicável abaixo */}
             <div style={{
-              background: block.muteBgColor || 'rgba(0,0,0,0.6)',
-              backdropFilter:'blur(8px)',
-              border:'1px solid rgba(255,255,255,0.2)',
+              background: block.muteBgColor || 'rgba(0,0,0,0.82)',
+              border:'1px solid rgba(255,255,255,0.15)',
               borderRadius:'999px',
               padding:compact?'5px 14px':'8px 22px',
               color: block.muteTextColor || '#fff',
@@ -861,7 +870,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
         {/* Botão Play Overlay (parado, sem overlay mudo) */}
         {block.showPlayBtn !== false && src && !playing && !showUnmuteOverlay && (
           <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none', zIndex:5 }}>
-            <div style={{ width:compact?40:68, height:compact?40:68, borderRadius:'50%', background:'rgba(0,0,0,0.65)', backdropFilter:'blur(8px)', border:'2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 30px rgba(255,255,255,0.15)' }}>
+            <div style={{ width:compact?40:68, height:compact?40:68, borderRadius:'50%', background:'rgba(0,0,0,0.75)', border:'2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 30px rgba(255,255,255,0.15)' }}>
               <svg width={compact?16:28} height={compact?16:28} viewBox="0 0 24 24" fill="white">
                 <polygon points="5,3 19,12 5,21"/>
               </svg>
@@ -896,12 +905,11 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
                  <div key={idx} style={{ 
                     animation: isExiting ? 'hookExit 0.3s forwards ease-in' : 'hookEnter 0.4s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     textAlign: 'center',
-                    background: 'rgba(0,0,0,0.7)', 
+                    background: 'rgba(0,0,0,0.82)', 
                     color: block.overlayTextColor || '#ffffff', 
                     padding: compact ? '8px 16px' : '20px 40px', 
                     borderRadius: compact ? 12 : 24,
-                    backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255,255,255,0.15)',
+                    border: '1px solid rgba(255,255,255,0.12)',
                     fontSize: fSize,
                     fontWeight: 800,
                     lineHeight: 1.3,
