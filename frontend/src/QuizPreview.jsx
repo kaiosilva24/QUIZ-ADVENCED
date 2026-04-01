@@ -2638,7 +2638,15 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         const [hasLoaded, setHasLoaded] = React.useState(false);
 
         React.useEffect(() => {
-          if (isActive) setHasLoaded(true);
+          if (isActive) {
+             setHasLoaded(true);
+          } else {
+             // Destroy iframe when not active to prevent Panda Video sync-play bugs and heavy CPU stuttering
+             setHasLoaded(false);
+             setPlaying(false);
+             setShowThumb(true);
+             startedRef.current = false;
+          }
         }, [isActive]);
 
         const src = tm.videoSrc || '';
@@ -2689,35 +2697,39 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           ? rawUrl + (rawUrl.includes('?') ? '&' : '?') + `autoplay=0&mute=${tm.videoMuted ? 1 : 0}&loop=${tm.videoAutoloop ? 1 : 0}&controls=0`
           : '';
 
+        // ── Autoplay when slide becomes active ──────────────────────────
         React.useEffect(() => {
-          if (isEmbed && src && tm.videoAutoplay && isActive && !startedRef.current) {
-            startedRef.current = true;
-            // Force play programmatically via togglePlay logic instead of native URL param to prevent all iframes autoplaying on mount
-            const paramQ = embedUrl.split('?')[1] || '';
-            const urlParams = new URLSearchParams(paramQ);
-             if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-             if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
-             if (isPandaEmbed) {
-                 iframeRef.current?.contentWindow?.postMessage('play', '*');
-                 iframeRef.current?.contentWindow?.postMessage('{"action":"play"}', '*');
-                 iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
-                 if (embedUrl) {
-                     iframeRef.current.src = embedUrl.replace('autoplay=0', 'autoplay=true&muted=false');
-                 }
-             }
-             setPlaying(true);
+          if (!isEmbed || !src || !tm.videoAutoplay || !isActive || !hasLoaded) return;
+          if (startedRef.current) return;
+          startedRef.current = true;
+
+          const timer = setTimeout(() => {
+            if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+            if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
+            if (isPandaEmbed && embedUrl) {
+              // PandaVideo: reload src with autoplay to guarantee play
+              iframeRef.current.src = embedUrl.replace('autoplay=0', 'autoplay=1&muted=1');
+            }
+            setPlaying(true);
+          }, 400); // Small delay so the iframe can load its DOM
+          return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [isActive, hasLoaded]); // ← do NOT add `playing` here — it would create a re-render loop
+
+        // ── Pause + reset when slide becomes inactive ────────────────────
+        React.useEffect(() => {
+          if (isActive) return;
+          // Slide went away: pause playback and reset for next display
+          if (isEmbed) {
+            if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+            if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"pause"}', '*');
+            // For Panda: iframe is already destroyed by the hasLoaded effect above
+          } else {
+            videoRef.current?.pause();
           }
-          // Pause when no longer active
-          if (!isActive && playing) {
-             setPlaying(false);
-             if (isEmbed) {
-                if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-                if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"pause"}', '*');
-             } else {
-                videoRef.current?.pause();
-             }
-          }
-        }, [src, tm.videoAutoplay, isEmbed, isActive, playing]);
+          setPlaying(false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [isActive]);
 
         const handleUnmute = (e) => {
           if (e) { e.stopPropagation(); e.preventDefault(); }
