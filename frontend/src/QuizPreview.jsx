@@ -375,16 +375,37 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   };
 
   const exitFullscreen = () => {
-    // Defer by one animation frame so the browser finishes the fullscreen
-    // layout transition before React triggers its own re-render.
-    // Without this, React recalculates layout synchronously right on top of
-    // the browser's native fullscreen-exit animation → visible freeze/flash.
-    requestAnimationFrame(() => setIsCssFullscreen(false));
     try {
       if (document.exitFullscreen) document.exitFullscreen();
       else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
       else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
     } catch(e) {}
+
+    // Wait one frame for the browser's native fullscreen-exit animation to finish,
+    // then update React state. After the state update, force a GPU repaint by
+    // reading a layout property — this is the programmatic equivalent of the user
+    // "scrolling slightly" to unfreeze the composited video layer.
+    requestAnimationFrame(() => {
+      setIsCssFullscreen(false);
+      requestAnimationFrame(() => {
+        const el = containerRef.current;
+        if (el) {
+          // Reading offsetHeight forces the browser to flush its layout queue
+          // and re-composite the element into the normal page flow.
+          // eslint-disable-next-line no-unused-expressions
+          el.offsetHeight;
+          // A micro-transform forces the GPU to redraw the compositing layer
+          el.style.transform = 'translateZ(0)';
+          requestAnimationFrame(() => { el.style.transform = ''; });
+        }
+        // Also force the video element itself to repaint (catches Panda/iframe cases)
+        const vid = videoRef.current;
+        if (vid) {
+          vid.style.transform = 'translateZ(0)';
+          requestAnimationFrame(() => { vid.style.transform = ''; });
+        }
+      });
+    });
   };
 
   // Auto fullscreen on mount
