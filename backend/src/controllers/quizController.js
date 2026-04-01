@@ -3,6 +3,9 @@ const { getDB } = require('../db');
 const { clearRouterCache } = require('./routerController');
 const { clearRoundRobinCache } = require('./roundRobinController');
 
+const memQuizCache = new Map();
+const QUIZ_CACHE_TTL = 10 * 60 * 1000;
+
 async function getQuizzes(req, res) {
     try {
         const db = await getDB();
@@ -75,6 +78,7 @@ async function updateQuiz(req, res) {
         // Invalidate in-memory caches instantly across all APIs
         clearRouterCache();
         clearRoundRobinCache();
+        memQuizCache.clear();
         
         res.json({ success: true, updated_at: updated?.updated_at });
     } catch (error) {
@@ -95,12 +99,26 @@ async function deleteQuiz(req, res) {
 
 async function getQuizById(req, res) {
     const { id } = req.params;
+    
+    // Fast Path: bypass DB for returning visitors
+    const cached = memQuizCache.get(id);
+    if (cached && (Date.now() - cached.time < QUIZ_CACHE_TTL)) {
+        res.setHeader('Content-Type', 'application/json');
+        return res.json(cached.data);
+    }
+
     try {
         const db = await getDB();
         const quiz = await db.get('SELECT id, title, slug, config_json FROM quizzes WHERE id = $1 AND is_active = TRUE', [id]);
-        console.log('[API] GET /api/quizzes/' + id + ' ->', quiz ? 'FOUND' : 'NOT FOUND');
+        
         if (!quiz) return res.status(404).json({ error: 'Quiz não encontrado' });
-        res.json({ quiz_id: quiz.id, id: quiz.id, title: quiz.title, slug: quiz.slug, config: JSON.parse(quiz.config_json || '{}') });
+        
+        const responseData = { quiz_id: quiz.id, id: quiz.id, title: quiz.title, slug: quiz.slug, config: JSON.parse(quiz.config_json || '{}') };
+        
+        memQuizCache.set(id, { time: Date.now(), data: responseData });
+        
+        res.setHeader('Content-Type', 'application/json');
+        res.json(responseData);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
