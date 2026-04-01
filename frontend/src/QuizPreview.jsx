@@ -390,26 +390,15 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const fullscreenMode = block.fullscreenMode || 'none';
   const exitFullscreenBeforeEnd = block.exitFullscreenBeforeEnd || 0;
 
-  // Detect mobile once (stable reference)
-  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
   const enterFullscreen = () => {
     if (forceExitedFsRef.current) return;
-    // On mobile: always use CSS-only fullscreen.
-    // Native requestFullscreen() on Android Chrome switches the video between
-    // hardware overlay and the normal compositor, causing a stall on exit on
-    // low-end GPUs (Helio G80 etc.). CSS-only keeps the element in normal flow.
-    if (isMobile) {
-      setIsCssFullscreen(true);
-      return;
-    }
     const el = containerRef.current || document.documentElement;
     try {
       if (el.requestFullscreen) {
         el.requestFullscreen().catch(() => setIsCssFullscreen(true));
       } else if (el.webkitRequestFullscreen) {
         el.webkitRequestFullscreen();
-        setIsCssFullscreen(true);
+        setIsCssFullscreen(true); // Força fallback para iOS
       } else if (el.mozRequestFullScreen) {
         el.mozRequestFullScreen();
       } else {
