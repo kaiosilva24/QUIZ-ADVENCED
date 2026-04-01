@@ -364,6 +364,10 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const timerDisplayRef    = useRef(null);
   // Throttle React state to once/sec (onTimeUpdate fires ~4x/sec on most browsers)
   const lastStateUpdateRef = useRef(0);
+  // Flag to block ALL onTimeUpdate work during fullscreen layout transition.
+  // On low-end GPUs (A32 Helio G80) video decoding + layout recalc compete for
+  // GPU resources — pausing both during the transition prevents the visible freeze.
+  const isTransitioningRef = useRef(false);
 
   const containerRef = useRef(null);
   const [isCssFullscreen, setIsCssFullscreen] = useState(false);
@@ -402,38 +406,50 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   };
 
   const exitFullscreen = () => {
+    // ── Transition guard: block onTimeUpdate callbacks during layout recalc ──
+    // On slow GPUs (e.g. Helio G80), continuing to decode video + update the
+    // DOM while the browser simultaneously reflows the whole page layout causes
+    // a visible freeze. We pause the video for ~200ms to give the CPU/GPU a
+    // clean window for the layout recalculation, then resume.
+    isTransitioningRef.current = true;
+
+    const wasPlaying = !isEmbed && videoRef.current && !videoRef.current.paused;
+    if (wasPlaying) videoRef.current.pause();
+
     try {
       if (document.exitFullscreen) document.exitFullscreen();
       else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
       else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
     } catch(e) {}
 
-    // Wait one frame for the browser's native fullscreen-exit animation to finish,
-    // then update React state. After the state update, force a GPU repaint by
-    // reading a layout property — this is the programmatic equivalent of the user
-    // "scrolling slightly" to unfreeze the composited video layer.
     requestAnimationFrame(() => {
       setIsCssFullscreen(false);
-      requestAnimationFrame(() => {
+
+      // Give the browser 200ms to finish the layout recalculation before
+      // resuming video decoding and re-enabling onTimeUpdate.
+      setTimeout(() => {
         const el = containerRef.current;
         if (el) {
-          // Reading offsetHeight forces the browser to flush its layout queue
-          // and re-composite the element into the normal page flow.
+          // Force layout flush + GPU layer repaint
           // eslint-disable-next-line no-unused-expressions
           el.offsetHeight;
-          // A micro-transform forces the GPU to redraw the compositing layer
           el.style.transform = 'translateZ(0)';
-          requestAnimationFrame(() => { el.style.transform = ''; });
+          requestAnimationFrame(() => {
+            el.style.transform = '';
+            // Resume video AFTER the repaint frame — GPU is now idle
+            if (wasPlaying && videoRef.current) {
+              videoRef.current.play().catch(() => {});
+            }
+            isTransitioningRef.current = false;
+          });
+        } else {
+          if (wasPlaying && videoRef.current) videoRef.current.play().catch(() => {});
+          isTransitioningRef.current = false;
         }
-        // Also force the video element itself to repaint (catches Panda/iframe cases)
-        const vid = videoRef.current;
-        if (vid) {
-          vid.style.transform = 'translateZ(0)';
-          requestAnimationFrame(() => { vid.style.transform = ''; });
-        }
-      });
+      }, 200);
     });
   };
+
 
   // Auto fullscreen on mount
   useEffect(() => {
@@ -716,6 +732,11 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
             disablePictureInPicture
             onCanPlay={handleCanPlay}
             onTimeUpdate={e => {
+              // Skip ALL work during fullscreen layout transition.
+              // The video is paused by exitFullscreen() so this fires rarely,
+              // but the guard prevents any stray events from competing with recalc.
+              if (isTransitioningRef.current) return;
+
               const t   = e.target.currentTime;
               const dur = e.target.duration || 0;
               currentTimeRef.current = t;
