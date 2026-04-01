@@ -1050,6 +1050,63 @@ function VideoEditor({ block, onChange }) {
           </Field>
         )}
       </Section>
+
+      <Section title="🧠 Textos sobre o Vídeo (Hooks)">
+        <p className="text-xs text-slate-500 leading-relaxed mb-3 px-1">
+          Adicione textos curtos e focados para aparecerem e sumirem durante o vídeo (inclusive em Tela Cheia). Útil para prender a atenção do lead!
+        </p>
+        <Toggle label="Habilitar Textos (Hooks)" value={!!block.enableTextOverlay} onChange={v => onChange({ enableTextOverlay: v })} />
+        
+        {block.enableTextOverlay && (
+          <div className="mt-4 p-3 bg-slate-900 border border-slate-700/50 rounded-xl space-y-4">
+            {(block.overlayTexts || []).map((t, idx) => (
+              <div key={idx} className="relative bg-slate-800 border border-slate-600 rounded-xl p-3">
+                <button onClick={() => onChange({ overlayTexts: block.overlayTexts.filter((_, i) => i !== idx) })} className="absolute top-2 right-2 text-slate-500 hover:text-red-400">
+                  <Trash2 size={14} />
+                </button>
+                <div className="pt-2 space-y-3">
+                  <Field label={`Texto ${idx + 1}`}>
+                    <textarea 
+                      value={t.text || ''} 
+                      onChange={e => {
+                        const newArr = [...block.overlayTexts];
+                        newArr[idx] = { ...newArr[idx], text: e.target.value };
+                        onChange({ overlayTexts: newArr });
+                      }}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-sm text-white resize-none outline-none focus:border-indigo-500"
+                      rows={2}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Inicia no seg:">
+                      <input type="number" min={0} value={t.start || 0}
+                        onChange={e => {
+                          const newArr = [...block.overlayTexts];
+                          newArr[idx] = { ...newArr[idx], start: Number(e.target.value) };
+                          onChange({ overlayTexts: newArr });
+                        }}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
+                    </Field>
+                    <Field label="Duração (seg):">
+                      <input type="number" min={1} value={t.duration || 3}
+                        onChange={e => {
+                          const newArr = [...block.overlayTexts];
+                          newArr[idx] = { ...newArr[idx], duration: Number(e.target.value) };
+                          onChange({ overlayTexts: newArr });
+                        }}
+                        className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
+                    </Field>
+                  </div>
+                </div>
+              </div>
+            ))}
+            <button onClick={() => onChange({ overlayTexts: [...(block.overlayTexts || []), { text: 'Novo gancho...', start: 0, duration: 3 }] })} 
+              className="w-full py-2 flex items-center justify-center gap-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-400 hover:text-indigo-400 transition-all cursor-pointer">
+              <Plus size={14} /> Adicionar Texto Flutuante
+            </button>
+          </div>
+        )}
+      </Section>
     </>
   );
 }

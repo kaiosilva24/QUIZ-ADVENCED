@@ -597,7 +597,6 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: compact ? 8 : 16 }}>
-      {/* Container do video em si mantendo o border radius original */}
       <div ref={containerRef} style={isCssFullscreen ? {
         position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 999999,
         background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: 0
@@ -606,6 +605,8 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
         @keyframes vslMutePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
         @keyframes vslMuteBlink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
         @keyframes vslRipple    { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(2.6);opacity:0} }
+        @keyframes hookEnter    { 0%{opacity:0; transform: translateY(20px) scale(0.95)} 100%{opacity:1; transform: translateY(0) scale(1)} }
+        @keyframes hookExit     { 0%{opacity:1; transform: translateY(0) scale(1)} 100%{opacity:0; transform: translateY(-20px) scale(0.95)} }
       `}</style>
       {/* Vídeo com aspect ratio */}
       <div style={{ width:'100%', aspectRatio:ar, position:'relative', background:'#0a0a0a', overflow:'hidden', cursor: src ? 'pointer' : 'default' }}
@@ -780,6 +781,44 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
                 <polygon points="5,3 19,12 5,21"/>
               </svg>
             </div>
+          </div>
+        )}
+
+        {/* ═══ TEXTS OVERLAYS (HOOKS) ═══ */}
+        {src && block.enableTextOverlay && (block.overlayTexts || []).length > 0 && (
+          <div style={{ position:'absolute', inset:0, zIndex: 8, pointerEvents:'none', display:'flex', alignItems:'center', justifyContent:'center', padding: compact ? '12px' : '40px' }}>
+            {block.overlayTexts.map((t, idx) => {
+               const start = t.start || 0;
+               const dur = t.duration || 3;
+               const end = start + dur;
+               const isVisible = currentTime >= start && currentTime < end;
+               
+               // Soft exit 0.3s before end
+               const isExiting = currentTime >= end - 0.3 && currentTime < end;
+
+               if (!isVisible) return null;
+               
+               return (
+                 <div key={idx} style={{ 
+                    animation: isExiting ? 'hookExit 0.3s forwards ease-in' : 'hookEnter 0.4s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    textAlign: 'center',
+                    background: 'rgba(0,0,0,0.7)', 
+                    color: '#fff', 
+                    padding: compact ? '8px 16px' : '20px 40px', 
+                    borderRadius: compact ? 12 : 24,
+                    backdropFilter: 'blur(12px)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    fontSize: compact ? 14 : Math.min(32, 16 + (t.text?.length < 30 ? 12 : 0)), // Dynamic font size based on text length
+                    fontWeight: 800,
+                    lineHeight: 1.3,
+                    textShadow: '0 2px 10px rgba(0,0,0,0.8)',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+                    maxWidth: '90%'
+                 }}>
+                   {t.text}
+                 </div>
+               );
+            })}
           </div>
         )}
 
