@@ -375,7 +375,11 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   };
 
   const exitFullscreen = () => {
-    setIsCssFullscreen(false);
+    // Defer by one animation frame so the browser finishes the fullscreen
+    // layout transition before React triggers its own re-render.
+    // Without this, React recalculates layout synchronously right on top of
+    // the browser's native fullscreen-exit animation → visible freeze/flash.
+    requestAnimationFrame(() => setIsCssFullscreen(false));
     try {
       if (document.exitFullscreen) document.exitFullscreen();
       else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
@@ -654,8 +658,10 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
             disablePictureInPicture
             onCanPlay={handleCanPlay}
             onTimeUpdate={e => {
-              setCurrentTime(e.target.currentTime);
-              trackTime(e.target.currentTime, e.target.duration);
+              const t = e.target.currentTime;
+              currentTimeRef.current = t;       // keep ref in sync for fullscreen-exit polling
+              setCurrentTime(t);
+              trackTimeRef.current(t, e.target.duration);
             }}
             onLoadedMetadata={e => setDuration(e.target.duration)}
             onEnded={() => { setPlaying(false); setEnded(true); triggerFinalPing(videoRef.current?.duration); }}
