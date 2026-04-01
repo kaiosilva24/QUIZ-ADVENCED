@@ -124,10 +124,15 @@ async function getQuizById(req, res) {
     }
 }
 
+function warmQuizCache(id, data) {
+    memQuizCache.set(id, { time: Date.now(), data: data });
+}
+
 module.exports = {
     getQuizzes: getQuizzes,
     createQuiz,
     updateQuiz,
     deleteQuiz,
-    getQuizById
+    getQuizById,
+    warmQuizCache
 };

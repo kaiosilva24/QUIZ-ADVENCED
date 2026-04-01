@@ -50,7 +50,12 @@ function clearRouterCache() {
     routeCache.clear();
 }
 
+function warmRouterCache(slug, data) {
+    routeCache.set(slug, { time: Date.now(), data: data });
+}
+
 module.exports = {
     handleQuizRouting,
-    clearRouterCache
+    clearRouterCache,
+    warmRouterCache
 };

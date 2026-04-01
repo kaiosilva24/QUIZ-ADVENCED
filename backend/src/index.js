@@ -8,8 +8,9 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// GZIP DEVE vir ANTES de cors para comprimir todas as respostas
+app.use(compression({ level: 6 }));
 app.use(cors({ origin: '*', credentials: true }));
-app.use(compression()); // Shrink 20MB duplicate base64 down to 1MB!
 app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cookieParser());
@@ -82,10 +83,35 @@ app.get('/{*path}', (req, res, next) => {
 
 const { getDB } = require('./db');
 
+// ─── Cache Warm-up: pré-carrega todos os quizzes ativos na RAM ao iniciar ──────
+async function warmUpCache() {
+    try {
+        const db = await getDB();
+        const quizzes = await db.all('SELECT id, title, slug, config_json FROM quizzes WHERE is_active = TRUE ORDER BY id');
+        const { warmRouterCache } = require('./controllers/routerController');
+        const { warmQuizCache } = require('./controllers/quizController');
+        let count = 0;
+        for (const quiz of quizzes) {
+            const config = JSON.parse(quiz.config_json || '{}');
+            const data = { quiz_id: quiz.id, id: quiz.id, title: quiz.title, slug: quiz.slug, config };
+            warmQuizCache(String(quiz.id), data);
+            if (quiz.slug) warmRouterCache(quiz.slug, { quiz_id: quiz.id, config });
+            // também registra o slug quiz-{id}
+            warmRouterCache(`quiz-${quiz.id}`, { quiz_id: quiz.id, config });
+            count++;
+        }
+        console.log(`[CACHE] Warm-up concluído: ${count} quiz(zes) em RAM.`);
+    } catch (e) {
+        console.warn('[CACHE] Warm-up falhou (não crítico):', e.message);
+    }
+}
+
 app.listen(PORT, async () => {
     try {
         await getDB();
         console.log(`[SERVER] Running on http://localhost:${PORT}`);
+        // Warm-up async — não bloqueia o servidor de aceitar requests
+        warmUpCache();
     } catch (error) {
         console.error('[SERVER] Startup failed:', error);
     }
