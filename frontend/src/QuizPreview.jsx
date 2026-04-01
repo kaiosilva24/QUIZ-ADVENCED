@@ -442,6 +442,11 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
               videoRef.current.play().catch(() => {});
             }
             isTransitioningRef.current = false;
+            
+            // --- THE "MECHIDA" HACK ---
+            window.scrollBy(0, 1);
+            setTimeout(() => window.scrollBy(0, -1), 20);
+            
             // Extra frame delay before hiding overlay so first video frame is painted
             requestAnimationFrame(() => setFsExiting(false));
           });
@@ -496,6 +501,15 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
                   videoRef.current.play().catch(() => {});
                 }
                 isTransitioningRef.current = false;
+                
+                // --- THE "MECHIDA" HACK ---
+                // The user noticed that scrolling slightly unfreezes the video.
+                // This indicates a known Android Chrome compositor bug where the
+                // hardware layer loses sync on exit. A 1px programmatic scroll
+                // forces the exact OS-level repaint needed to repair the stream.
+                window.scrollBy(0, 1);
+                setTimeout(() => window.scrollBy(0, -1), 20);
+
                 requestAnimationFrame(() => setFsExiting(false));
               });
             } else {
