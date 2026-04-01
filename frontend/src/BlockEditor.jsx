@@ -12,6 +12,34 @@ import { Placeholder } from '@tiptap/extension-placeholder';
 import Cropper from 'react-easy-crop';
 import getCroppedImg from './utils/cropImage';
 
+// ─── Helper: Comprime imagem antes de salvar como base64 ─────────────────────
+// Garante que nenhuma imagem passe de 800px de largura e qualidade 0.82
+// Evita erro 413 (Payload Too Large) ao salvar o quiz
+function compressImage(file, maxWidth = 1200, quality = 0.82) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round(height * (maxWidth / width));
+          width = maxWidth;
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+
 function Field({ label, children }) {
   return (
     <div className="space-y-1.5">
@@ -773,11 +801,10 @@ function ImageUploaderUI({ src, alt, onChangeSrc, onChangeAlt, labelPrefix }) {
         <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 hover:bg-slate-800/60 text-xs">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           {src?.startsWith('data:image') ? '✅ Trocar Imagem do PC' : 'Carregar Imagem do Computador'}
-          <input type="file" accept="image/*" className="hidden" onChange={e => {
+          <input type="file" accept="image/*" className="hidden" onChange={async e => {
             const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => setTempImage(ev.target.result);
-            reader.readAsDataURL(file);
+            const compressed = await compressImage(file);
+            setTempImage(compressed);
             e.target.value = '';
           }} />
         </label>
@@ -886,11 +913,10 @@ function AudioEditor({ block, onChange }) {
         <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 hover:bg-slate-800/60 text-xs">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           {block.avatarSrc ? 'Trocar Foto do Perfil' : 'Carregar Foto do PC'}
-          <input type="file" accept="image/*" className="hidden" onChange={e => {
+          <input type="file" accept="image/*" className="hidden" onChange={async e => {
             const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = ev => onChange({ avatarSrc: ev.target.result });
-            reader.readAsDataURL(file);
+            const compressed = await compressImage(file);
+            onChange({ avatarSrc: compressed });
           }} />
         </label>
 
@@ -2568,10 +2594,11 @@ function ImageCarouselEditor({ block, onChange }) {
                 <label className="flex items-center justify-center gap-2 w-full mt-2 py-2 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer bg-slate-900/50 text-xs">
                   <ImagePlus size={14} />
                   {img.url ? 'Trocar Imagem' : 'Carregar Imagem'}
-                  <input type="file" accept="image/*" className="hidden" onChange={e => {
+                  <input type="file" accept="image/*" className="hidden" onChange={async e => {
                     const f = e.target.files[0]; if (!f) return;
-                    const r = new FileReader(); r.onload = ev => updateImage(idx, { url: ev.target.result });
-                    r.readAsDataURL(f); e.target.value = '';
+                    const compressed = await compressImage(f);
+                    updateImage(idx, { url: compressed });
+                    e.target.value = '';
                   }} />
                 </label>
                 {img.url && (
