@@ -2580,6 +2580,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         const [userUnmuted, setUserUnmuted] = React.useState(false);
         const [showThumb, setShowThumb] = React.useState(true);
         const startedRef = React.useRef(false);
+        const [hasLoaded, setHasLoaded] = React.useState(false);
+
+        React.useEffect(() => {
+          if (isActive) setHasLoaded(true);
+        }, [isActive]);
 
         const src = tm.videoSrc || '';
         const isYT = src.includes('youtube') || src.includes('youtu.be');
@@ -2596,21 +2601,24 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
         const getEmbedUrl = (url) => {
           if (!url) return '';
-          if (url.includes('youtube.com/watch?v=')) return url.replace('watch?v=', 'embed/');
-          if (url.includes('youtu.be/')) return url.replace('youtu.be/', 'www.youtube.com/embed/');
-          if (url.includes('vimeo.com/')) return url.replace('vimeo.com/', 'player.vimeo.com/video/');
-          return url;
+          let u = url.replace(/(&|\?)autoplay=(true|1|false|0)/gi, '');
+          if (u.includes('youtube.com/watch?v=')) return u.replace('watch?v=', 'embed/');
+          if (u.includes('youtu.be/')) return u.replace('youtu.be/', 'www.youtube.com/embed/');
+          if (u.includes('vimeo.com/')) return u.replace('vimeo.com/', 'player.vimeo.com/video/');
+          return u;
         };
-        const embedUrl = isEmbed
-          ? getEmbedUrl(src) + `?autoplay=0&mute=${tm.videoMuted ? 1 : 0}&loop=${tm.videoAutoloop ? 1 : 0}&controls=0`
+        const rawUrl = isEmbed ? getEmbedUrl(src) : '';
+        const embedUrl = rawUrl
+          ? rawUrl + (rawUrl.includes('?') ? '&' : '?') + `autoplay=0&mute=${tm.videoMuted ? 1 : 0}&loop=${tm.videoAutoloop ? 1 : 0}&controls=0`
           : '';
 
         React.useEffect(() => {
           if (isEmbed && src && tm.videoAutoplay && isActive && !startedRef.current) {
             startedRef.current = true;
             // Force play programmatically via togglePlay logic instead of native URL param to prevent all iframes autoplaying on mount
-            const urlParams = new URLSearchParams(embedUrl.split('?')[1] || '');
-            if (isPanda && embedUrl && !urlParams.get('autoplay')) {
+            const paramQ = embedUrl.split('?')[1] || '';
+            const urlParams = new URLSearchParams(paramQ);
+            if (isPanda && embedUrl) {
                iframeRef.current.src = embedUrl.replace('autoplay=0', 'autoplay=true&muted=' + (tm.videoMuted ? 'true' : 'false'));
             } else {
                if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
@@ -2701,11 +2709,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                 </div>
               )}
               {/* Embed */}
-              {src && isEmbed && (
+              {src && isEmbed && hasLoaded && (
                 <iframe ref={iframeRef} src={embedUrl} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', pointerEvents: playing ? 'auto' : 'none' }} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
               )}
               {/* Native */}
-              {src && !isEmbed && (
+              {src && !isEmbed && hasLoaded && (
                 <video ref={videoRef} src={src} loop={!!tm.videoAutoloop} playsInline disablePictureInPicture
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
                   onCanPlay={handleCanPlay}
