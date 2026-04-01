@@ -1,7 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Emoji } from 'emoji-picker-react';
-import { customList } from 'country-codes-list';
-import 'flag-icons/css/flag-icons.min.css';
+
+import countries from './countries.json';
+
+function NativeEmoji({ unified, size }) {
+  if (!unified) return null;
+  const emojiStr = String.fromCodePoint(...unified.split('-').map(u => parseInt(u, 16)));
+  return <span style={{ fontSize: size, lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{emojiStr}</span>;
+}
 
 function getFlagEmoji(countryCode) {
   if (!countryCode) return '';
@@ -9,11 +14,10 @@ function getFlagEmoji(countryCode) {
   return String.fromCodePoint(...codePoints);
 }
 
-const countryDialCodes = customList('countryCode', '{countryCallingCode}');
-const countryChoices = Object.keys(countryDialCodes).map(code => ({
-  code,
-  dial: `+${countryDialCodes[code]}`,
-  emoji: getFlagEmoji(code)
+const countryChoices = countries.map(c => ({
+  code: c.code,
+  dial: c.dial,
+  emoji: getFlagEmoji(c.code)
 })).sort((a,b) => a.code.localeCompare(b.code));
 
 // Injects a Google Font link once
@@ -811,7 +815,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
             
             {(block.resEmojiUnified || (block.resEmoji ?? '🎉')) ? (
               <div style={{ display: 'flex', fontSize: compact ? 24 : 48 }}>
-                {block.resEmojiUnified ? <Emoji unified={block.resEmojiUnified} size={compact ? 36 : 72} /> : (block.resEmoji ?? '🎉')}
+                {block.resEmojiUnified ? <NativeEmoji unified={block.resEmojiUnified} size={compact ? 36 : 72} /> : (block.resEmoji ?? '🎉')}
               </div>
             ) : null}
             
@@ -1424,7 +1428,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           display: 'flex', flexDirection: 'column', alignItems: block.align || 'center', gap: compact ? 4 : 8
         }}>
           {block.emojiUnified ? (
-            <Emoji unified={block.emojiUnified} size={compact ? 24 : 32} />
+            <NativeEmoji unified={block.emojiUnified} size={compact ? 24 : 32} />
           ) : block.emoji ? (
             <span style={{ fontSize: compact ? 24 : 32 }}>{block.emoji}</span>
           ) : null}
@@ -1778,12 +1782,12 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             }
           }}
         >
-          {pos === 'left_inside' && (block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 16 : 20} /> : block.emoji && <span>{block.emoji}</span>)}
-          {pos === 'top_large' && (block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 24 : 36} /> : block.emoji && <span style={{fontSize: compact ? 24 : 36, lineHeight: 1}}>{block.emoji}</span>)}
+          {pos === 'left_inside' && (block.emojiUnified ? <NativeEmoji unified={block.emojiUnified} size={compact ? 16 : 20} /> : block.emoji && <span>{block.emoji}</span>)}
+          {pos === 'top_large' && (block.emojiUnified ? <NativeEmoji unified={block.emojiUnified} size={compact ? 24 : 36} /> : block.emoji && <span style={{fontSize: compact ? 24 : 36, lineHeight: 1}}>{block.emoji}</span>)}
           
           <span style={{flex: pos === 'top_large' ? 'initial' : 1}}>{block.text || 'Avançar'}</span>
           
-          {pos === 'right_inside' && (block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 16 : 20} /> : block.emoji && <span>{block.emoji}</span>)}
+          {pos === 'right_inside' && (block.emojiUnified ? <NativeEmoji unified={block.emojiUnified} size={compact ? 16 : 20} /> : block.emoji && <span>{block.emoji}</span>)}
         </button>
       );
       let content = BaseButton;
@@ -1791,7 +1795,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         content = (
           <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 8 : 12, width: block.fullWidth ? '100%' : 'auto' }}>
             <div style={{ fontSize: compact ? 20 : 28, flexShrink: 0, display: 'flex' }}>
-              {block.emojiUnified ? <Emoji unified={block.emojiUnified} size={compact ? 20 : 28} /> : block.emoji}
+              {block.emojiUnified ? <NativeEmoji unified={block.emojiUnified} size={compact ? 20 : 28} /> : block.emoji}
             </div>
             <div style={{ flex: 1 }}>{BaseButton}</div>
           </div>
@@ -2284,7 +2288,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
           {(finalEmojiUnified || finalEmoji) ? (
             <div style={{ display: 'flex', fontSize: compact ? 24 : 48 }}>
-              {finalEmojiUnified ? <Emoji unified={finalEmojiUnified} size={compact ? 36 : 72} /> : finalEmoji}
+              {finalEmojiUnified ? <NativeEmoji unified={finalEmojiUnified} size={compact ? 36 : 72} /> : finalEmoji}
             </div>
           ) : null}
           
@@ -2373,12 +2377,12 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                     animation: animCSS,
                     ...glassStyle
                   }}>
-                {pos === 'left_inside' && (block.buttonEmojiUnified ? <Emoji unified={block.buttonEmojiUnified} size={compact ? 16 : 20} /> : block.buttonEmoji && <span>{block.buttonEmoji}</span>)}
-                {pos === 'top_large' && (block.buttonEmojiUnified ? <Emoji unified={block.buttonEmojiUnified} size={compact ? 24 : 36} /> : block.buttonEmoji && <span style={{fontSize: compact ? 24 : 36, lineHeight: 1}}>{block.buttonEmoji}</span>)}
+                {pos === 'left_inside' && (block.buttonEmojiUnified ? <NativeEmoji unified={block.buttonEmojiUnified} size={compact ? 16 : 20} /> : block.buttonEmoji && <span>{block.buttonEmoji}</span>)}
+                {pos === 'top_large' && (block.buttonEmojiUnified ? <NativeEmoji unified={block.buttonEmojiUnified} size={compact ? 24 : 36} /> : block.buttonEmoji && <span style={{fontSize: compact ? 24 : 36, lineHeight: 1}}>{block.buttonEmoji}</span>)}
                 
                 <span style={{flex: pos === 'top_large' ? 'initial' : 1}}>{finalButtonText}</span>
                 
-                {pos === 'right_inside' && (block.buttonEmojiUnified ? <Emoji unified={block.buttonEmojiUnified} size={compact ? 16 : 20} /> : block.buttonEmoji && <span>{block.buttonEmoji}</span>)}
+                {pos === 'right_inside' && (block.buttonEmojiUnified ? <NativeEmoji unified={block.buttonEmojiUnified} size={compact ? 16 : 20} /> : block.buttonEmoji && <span>{block.buttonEmoji}</span>)}
               </button>
               </>
             );
@@ -2473,7 +2477,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                     )}
                   </div>
                 )}
-                {opt.emojiUnified ? <Emoji unified={opt.emojiUnified} size={compact ? 12 : 20} /> : opt.emoji && <span>{opt.emoji}</span>}
+                {opt.emojiUnified ? <NativeEmoji unified={opt.emojiUnified} size={compact ? 12 : 20} /> : opt.emoji && <span>{opt.emoji}</span>}
                 <span style={{ flex: 1 }}>{opt.text}</span>
               </button>
             );
