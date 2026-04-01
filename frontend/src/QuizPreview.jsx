@@ -2650,7 +2650,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
               )}
               {/* Embed */}
               {src && isEmbed && (
-                <iframe ref={iframeRef} src={embedUrl} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', pointerEvents: 'none' }} allow="autoplay; fullscreen" allowFullScreen />
+                <iframe ref={iframeRef} src={embedUrl} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', pointerEvents: 'auto' }} allow="autoplay; fullscreen" allowFullScreen />
               )}
               {/* Native */}
               {src && !isEmbed && (
@@ -2660,11 +2660,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   onEnded={() => setPlaying(false)} />
               )}
               {/* Thumbnail */}
-              {src && tm.thumbnailSrc && showThumb && (
+              {src && !isEmbed && tm.thumbnailSrc && showThumb && (
                 <div style={{ position: 'absolute', inset: 0, background: `url(${tm.thumbnailSrc}) center/cover`, pointerEvents: 'none', zIndex: 4 }} />
               )}
-              {/* Mute overlay */}
-              {src && showUnmuteOverlay && (
+              {/* Mute overlay (Native Only) */}
+              {src && !isEmbed && showUnmuteOverlay && (
                 <div onClick={handleUnmute} style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: compact ? 6 : 12, cursor: 'pointer' }}>
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ position: 'absolute', width: compact ? 44 : 72, height: compact ? 44 : 72, borderRadius: '50%', border: `2px solid ${tm.videoMuteIconColor || 'rgba(0,213,230,0.4)'}`, animation: 'tmRipple 2s ease-out infinite', pointerEvents: 'none' }} />
@@ -2681,8 +2681,8 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   </div>
                 </div>
               )}
-              {/* Play button */}
-              {src && !playing && !showUnmuteOverlay && (
+              {/* Play button (Native Only) */}
+              {src && !isEmbed && !playing && !showUnmuteOverlay && (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 5 }}>
                   <div style={{ width: compact ? 32 : 52, height: compact ? 32 : 52, borderRadius: '50%', background: 'rgba(0,0,0,0.65)', border: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <svg width={compact ? 12 : 20} height={compact ? 12 : 20} viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
