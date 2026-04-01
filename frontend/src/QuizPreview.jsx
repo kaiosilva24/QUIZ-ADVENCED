@@ -464,6 +464,58 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
     }
   }, [fullscreenMode, compact]);
 
+  // ── Native Fullscreen Exit Interceptor ────────────────────────────────────
+  // If the user uses the Android "Back" swipe or system native UI to exit
+  // fullscreen, it completely bypassed our exitFullscreen() function. This
+  // interceptor catches the native OS event and instantly applies the
+  // GPU-pause + overlay workaround to prevent the A32 from freezing.
+  useEffect(() => {
+    const handleNativeFsChange = () => {
+      const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      // If we just exited native fullscreen
+      if (!isFs) {
+        // If the CSS fallback was also active, clear it now
+        setIsCssFullscreen(false);
+        
+        // If we are NOT already handling a manual exit transition
+        if (!isTransitioningRef.current) {
+          isTransitioningRef.current = true;
+          const wasPlaying = !isEmbed && videoRef.current && !videoRef.current.paused;
+          if (wasPlaying) videoRef.current.pause();
+          
+          setFsExiting(true);
+          
+          setTimeout(() => {
+            const el = containerRef.current;
+            if (el) {
+              el.offsetHeight; // layout flush
+              el.style.transform = 'translateZ(0)';
+              requestAnimationFrame(() => {
+                el.style.transform = '';
+                if (wasPlaying && videoRef.current) {
+                  videoRef.current.play().catch(() => {});
+                }
+                isTransitioningRef.current = false;
+                requestAnimationFrame(() => setFsExiting(false));
+              });
+            } else {
+              if (wasPlaying && videoRef.current) videoRef.current.play().catch(() => {});
+              isTransitioningRef.current = false;
+              setFsExiting(false);
+            }
+          }, 280);
+        }
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleNativeFsChange);
+    document.addEventListener('webkitfullscreenchange', handleNativeFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleNativeFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleNativeFsChange);
+    };
+  }, [isEmbed]);
+
   // Lock fullscreen — re-enter if user exits
   useEffect(() => {
     if (compact || fullscreenMode !== 'auto_locked') return;
