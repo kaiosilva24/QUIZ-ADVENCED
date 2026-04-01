@@ -1,12 +1,12 @@
 const { getDB } = require('../db');
 
 const routeCache = new Map();
-const CACHE_TTL = 30000; // 30 seconds cache
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
 
 async function handleQuizRouting(req, res) {
     const slug = req.params.slug;
 
-    // Fast-path: RAM Cache
+    // Fast-path: RAM Cache (bypassa o DB instantaneamente)
     const cached = routeCache.get(slug);
     if (cached && (Date.now() - cached.time < CACHE_TTL)) {
         res.setHeader('Content-Type', 'application/json');
@@ -42,11 +42,15 @@ async function handleQuizRouting(req, res) {
         return res.json(responseData);
 
     } catch (error) {
-        console.error('[Roteador] Erro no roteamento por slug:', error);
         return res.status(500).json({ error: 'Erro interno no Roteador' });
     }
 }
 
+function clearRouterCache() {
+    routeCache.clear();
+}
+
 module.exports = {
-    handleQuizRouting
+    handleQuizRouting,
+    clearRouterCache
 };

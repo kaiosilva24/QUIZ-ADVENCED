@@ -1,4 +1,7 @@
+const crypto = require('crypto');
 const { getDB } = require('../db');
+const { clearRouterCache } = require('./routerController');
+const { clearRoundRobinCache } = require('./roundRobinController');
 
 async function getQuizzes(req, res) {
     try {
@@ -68,6 +71,11 @@ async function updateQuiz(req, res) {
             'UPDATE quizzes SET title=$1, config_json=$2, is_active=$3, slug=$4, updated_at=NOW() WHERE id=$5 RETURNING updated_at',
             [title, config_json, is_active !== undefined ? is_active : true, finalSlug, id]
         );
+        
+        // Invalidate in-memory caches instantly across all APIs
+        clearRouterCache();
+        clearRoundRobinCache();
+        
         res.json({ success: true, updated_at: updated?.updated_at });
     } catch (error) {
         res.status(500).json({ error: error.message });
