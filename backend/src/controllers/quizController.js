@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { getDB } = require('../db');
 const { clearRouterCache } = require('./routerController');
 const { clearRoundRobinCache } = require('./roundRobinController');
+const { deepCompressObj } = require('../utils/imageUtils');
 
 const memQuizCache = new Map();
 const QUIZ_CACHE_TTL = 10 * 60 * 1000;
@@ -25,16 +26,22 @@ async function getQuizzes(req, res) {
 }
 
 async function createQuiz(req, res) {
-    const { title, config_json, slug } = req.body;
+    let { title, config_json, slug } = req.body;
     try {
         const db = await getDB();
         
-        // Se a pessoa não mandou um slug, a gente cria um a partir do titulo
         let finalSlug = slug;
         if (!finalSlug && title) {
             finalSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         }
         if (!finalSlug) finalSlug = 'quiz-' + Date.now();
+
+        // Compressão profunda caso o front tenha enviado base64 gigantes (logo, fundos, etc)
+        if (config_json && typeof config_json === 'string') {
+           const parsed = JSON.parse(config_json);
+           await deepCompressObj(parsed);
+           config_json = JSON.stringify(parsed);
+        }
 
         const row = await db.get(
             'INSERT INTO quizzes (title, slug, config_json) VALUES ($1, $2, $3) RETURNING id',
@@ -70,9 +77,22 @@ async function updateQuiz(req, res) {
         }
 
         const finalSlug = slug !== undefined ? slug : current?.slug;
+        
+        // Compressão profunda para blindar o banco de imagens gigantes do BlockEditor
+        let finalConfigJson = config_json;
+        if (finalConfigJson && typeof finalConfigJson === 'string') {
+             try {
+                 const parsed = JSON.parse(finalConfigJson);
+                 await deepCompressObj(parsed);
+                 finalConfigJson = JSON.stringify(parsed);
+             } catch(e) {
+                 console.error('[COMPRESSOR] Parse error block in quiz update', e.message);
+             }
+        }
+        
         const updated = await db.get(
             'UPDATE quizzes SET title=$1, config_json=$2, is_active=$3, slug=$4, updated_at=NOW() WHERE id=$5 RETURNING updated_at',
-            [title, config_json, is_active !== undefined ? is_active : true, finalSlug, id]
+            [title, finalConfigJson, is_active !== undefined ? is_active : true, finalSlug, id]
         );
         
         // Invalidate in-memory caches instantly across all APIs
