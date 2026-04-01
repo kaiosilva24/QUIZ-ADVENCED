@@ -1009,7 +1009,16 @@ function VideoEditor({ block, onChange }) {
                 className="w-full bg-slate-800/60 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-indigo-500"
               />
             </Field>
-            <Field label="Cor da Barra de Progresso"><ColorPicker value={block.fakeProgressColor || '#ef4444'} onChange={v => onChange({ fakeProgressColor: v })} /></Field>
+            <Field label="Cor da Barra (Preenchida)"><ColorPicker value={block.fakeProgressColor || '#ef4444'} onChange={v => onChange({ fakeProgressColor: v })} /></Field>
+            <Field label="Cor de Fundo (Barra vazia)"><ColorPicker value={block.fakeProgressBgColor || 'rgba(255,255,255,0.15)'} onChange={v => onChange({ fakeProgressBgColor: v })} /></Field>
+            <Field label="Espessura da Barra">
+               <Select value={block.fakeProgressHeight || 'md'} onChange={v => onChange({ fakeProgressHeight: v })} options={[
+                  { value: 'sm', label: 'Fina' },
+                  { value: 'md', label: 'Padrão' },
+                  { value: 'lg', label: 'Grossa' },
+                  { value: 'xl', label: 'Super Grossa' }
+               ]} />
+            </Field>
           </>
         )}
       </Section>

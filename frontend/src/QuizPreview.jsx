@@ -840,11 +840,18 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
         )}
 
         {/* Barra de progresso VSL customizada — mostra mesmo antes do vídeo tocar */}
-        {src && isControlsHidden && (activeDuration > 0 || block.useFakeDuration) && (
-          <div style={{ position:'absolute', bottom:0, left:0, right:0, height:compact?2:3, background:'rgba(255,255,255,0.15)', zIndex:6 }}>
-            <div style={{ height:'100%', width:`${progress*100}%`, background: block.fakeProgressColor || '#e63946', transition:'width 0.5s linear' }} />
-          </div>
-        )}
+        {src && isControlsHidden && (activeDuration > 0 || block.useFakeDuration) && (() => {
+           let barH = compact ? 2 : 3;
+           if (block.fakeProgressHeight === 'sm') barH = compact ? 1 : 2;
+           if (block.fakeProgressHeight === 'lg') barH = compact ? 4 : 8;
+           if (block.fakeProgressHeight === 'xl') barH = compact ? 6 : 12;
+           
+           return (
+             <div style={{ position:'absolute', bottom:0, left:0, right:0, height:barH, background:block.fakeProgressBgColor || 'rgba(255,255,255,0.15)', zIndex:6 }}>
+               <div style={{ height:'100%', width:`${progress*100}%`, background: block.fakeProgressColor || '#e63946', transition:'width 0.5s linear' }} />
+             </div>
+           );
+        })()}
       </div>
     </div>
 
