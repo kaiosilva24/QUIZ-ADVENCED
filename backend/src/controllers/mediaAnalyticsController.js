@@ -2,6 +2,15 @@ const { getDB } = require('../db');
 
 // Rastreamento de pulsos (Heartbeat) de áudio e vídeo
 async function trackMediaPulse(req, res) {
+    // Silently ignore aborted requests (user closed tab / navigated away).
+    // These appear as BadRequestError: request aborted and are 100% expected.
+    req.on('aborted', () => { /* do nothing — not a real error */ });
+    req.on('close', () => {
+        if (!res.headersSent) {
+            // Request closed before we responded — normal with sendBeacon on slow connections
+        }
+    });
+
     const { quiz_id, step_id, block_id, visitor_id, media_type, watched_seconds, duration } = req.body;
     if (!quiz_id || !block_id || !visitor_id || !Array.isArray(watched_seconds)) {
         return res.status(400).json({ error: 'Faltando parâmetros obrigatórios' });

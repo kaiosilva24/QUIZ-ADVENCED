@@ -81,6 +81,24 @@ app.get('/{*path}', (req, res, next) => {
     res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
+// ─── Global error handler ─────────────────────────────────────────────────────
+// Suppress "BadRequestError: request aborted" — this happens when the user
+// closes the tab while a request body is still being parsed (e.g., analytics
+// pings during video playback). It is 100% expected and not a real error.
+app.use((err, req, res, next) => {
+    if (
+        err.type === 'request.aborted' ||
+        err.message === 'request aborted' ||
+        err.status === 400 && err.body === undefined
+    ) {
+        // Silent: don't respond and don't log
+        return;
+    }
+    console.error('[SERVER] Unhandled error:', err.message);
+    if (!res.headersSent) res.status(500).json({ error: 'Internal server error' });
+});
+
+
 const { getDB } = require('./db');
 
 // ─── Cache Warm-up: pré-carrega todos os quizzes ativos na RAM ao iniciar ──────

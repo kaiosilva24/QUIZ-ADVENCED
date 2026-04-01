@@ -89,7 +89,28 @@ function useMediaTelemetry(mediaType, blockId, quizId, visitorId, stepId, compac
 
   function triggerFinalPing(duration) {
     if (compact || !quizId || !visitorId) return;
-    pingTelemetry(duration);
+    const payload = JSON.stringify({
+      quiz_id: quizId,
+      step_id: stepId,
+      block_id: blockId,
+      visitor_id: visitorId,
+      media_type: mediaType,
+      watched_seconds: Array.from(watchedSecondsRef.current),
+      duration: Math.floor(duration || 0)
+    });
+    watchedSecondsRef.current.clear();
+    // sendBeacon survives page unload and is NEVER aborted by the browser.
+    // This eliminates BadRequestError: request aborted on the server.
+    if (navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: 'application/json' });
+      navigator.sendBeacon('/api/analytics/media/pulse', blob);
+    } else {
+      // Fallback for older browsers
+      fetch('/api/analytics/media/pulse', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload,
+        keepalive: true
+      }).catch(() => {});
+    }
   }
 
   return { handleTimeUpdate, triggerFinalPing };

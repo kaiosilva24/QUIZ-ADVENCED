@@ -18,9 +18,12 @@ async function getDB() {
                 idleTimeoutMillis: 60000,
             });
 
-            // Força todas as conexões do pool a usarem o schema correto
-            pool.on('connect', client => {
-                client.query('SET search_path TO quiz_system, public').catch(e => console.error('[DB] Schema falhou:', e.message));
+            // Força todas as conexões do pool a usarem o schema correto.
+            // NOTE: This runs before the client is released to the pool,
+            // so there is no risk of concurrent queries on the same client.
+            pool.on('connect', (client) => {
+                client.query('SET search_path TO quiz_system, public')
+                    .catch(e => console.error('[DB] Schema set failed:', e.message));
             });
 
             // Test connection
