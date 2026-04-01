@@ -3289,6 +3289,132 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       );
     }
 
+    case 'animated_text_carousel': {
+      const items = block.items || [];
+      const [currentIndex, setCurrentIndex] = React.useState(0);
+      const [phase, setPhase] = React.useState('in'); // 'in', 'view', 'out'
+      const transitionSpeed = block.transitionSpeed || 0.5;
+
+      React.useEffect(() => {
+        if (!items.length) return;
+        let timer;
+        if (phase === 'in') {
+           timer = setTimeout(() => setPhase('view'), transitionSpeed * 1000);
+        } else if (phase === 'view') {
+           const duration = (items[currentIndex]?.duration || 3) * 1000;
+           timer = setTimeout(() => setPhase('out'), duration);
+        } else if (phase === 'out') {
+           timer = setTimeout(() => {
+             if (currentIndex < items.length - 1) {
+               setCurrentIndex(prev => prev + 1);
+               setPhase('in');
+             } else if (block.loop) {
+               setCurrentIndex(0);
+               setPhase('in');
+             }
+           }, transitionSpeed * 1000);
+        }
+        return () => clearTimeout(timer);
+      }, [phase, currentIndex, items, block.loop, transitionSpeed]);
+
+      if (!items.length) {
+         return (
+           <div style={{ width: '100%', padding: compact ? '20px 0' : '40px 0', border: '1px dashed #475569', borderRadius: 16, textAlign: 'center' }}>
+             <span style={{ color: '#94a3b8', fontSize: compact ? 10 : 14 }}>Carrossel vazio (Adicione textos)</span>
+           </div>
+         );
+      }
+
+      const getAnimationKeyframes = () => `
+        @keyframes customFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes customFadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideOutLeft { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(-50px); } }
+
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(50px); } }
+
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideOutUp { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-50px); } }
+
+        @keyframes slideInDown { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideOutDown { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(50px); } }
+
+        @keyframes zoomInEffect { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        @keyframes zoomOutEffect { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.2); } }
+      `;
+
+      const animInName = block.animationIn === 'slideInLeft' ? 'slideInLeft' :
+                         block.animationIn === 'slideInRight' ? 'slideInRight' :
+                         block.animationIn === 'slideInUp' ? 'slideInUp' :
+                         block.animationIn === 'slideInDown' ? 'slideInDown' :
+                         block.animationIn === 'zoomIn' ? 'zoomInEffect' : 'customFadeIn';
+
+      const animOutName = block.animationOut === 'slideOutLeft' ? 'slideOutLeft' :
+                          block.animationOut === 'slideOutRight' ? 'slideOutRight' :
+                          block.animationOut === 'slideOutUp' ? 'slideOutUp' :
+                          block.animationOut === 'slideOutDown' ? 'slideOutDown' :
+                          block.animationOut === 'zoomOut' ? 'zoomOutEffect' : 'customFadeOut';
+
+      const animationValue = phase === 'in' 
+          ? `${animInName} ${transitionSpeed}s forwards`
+          : phase === 'out' ? `${animOutName} ${transitionSpeed}s forwards`
+          : 'none';
+
+      const sizeMap = {
+        sm: compact ? 10 : 14,
+        base: compact ? 12 : 18,
+        lg: compact ? 16 : 24,
+        xl: compact ? 20 : 32,
+        '2xl': compact ? 24 : 48,
+        '3xl': compact ? 30 : 64,
+      };
+
+      const currentText = items[currentIndex]?.text || '';
+
+      return (
+        <div style={{ width: '100%', position: 'relative' }}>
+          <style>{getAnimationKeyframes()}</style>
+          <div style={{ 
+            width: '100%', 
+            minHeight: compact ? 40 : 80,
+            display: 'flex', 
+            justifyContent: block.textAlign === 'left' ? 'flex-start' : block.textAlign === 'right' ? 'flex-end' : 'center',
+            alignItems: 'center',
+            textAlign: block.textAlign || 'center',
+            overflow: 'hidden',
+          }}>
+            {(phase === 'in' || phase === 'view') && (
+              <span style={{ 
+                color: block.textColor || '#ffffff', 
+                fontSize: sizeMap[block.textSize] || sizeMap['lg'],
+                fontWeight: block.bold ? 800 : 400,
+                fontFamily: block.fontFamily || 'inherit',
+                whiteSpace: 'pre-wrap',
+                animation: phase === 'in' ? animationValue : 'none',
+                opacity: phase === 'view' ? 1 : 0
+              }}>
+                {currentText}
+              </span>
+            )}
+            {phase === 'out' && (
+              <span style={{ 
+                color: block.textColor || '#ffffff', 
+                fontSize: sizeMap[block.textSize] || sizeMap['lg'],
+                fontWeight: block.bold ? 800 : 400,
+                fontFamily: block.fontFamily || 'inherit',
+                whiteSpace: 'pre-wrap',
+                animation: animationValue,
+              }}>
+                {currentText}
+              </span>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     default:
       return null;
   }

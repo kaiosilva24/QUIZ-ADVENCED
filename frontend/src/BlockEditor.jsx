@@ -2627,6 +2627,128 @@ function ImageCarouselEditor({ block, onChange }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// AnimatedTextCarouselEditor
+// ─────────────────────────────────────────────────────────────────────────────
+function AnimatedTextCarouselEditor({ block, onChange }) {
+  const items = block.items || [];
+
+  const addItem = () => {
+    onChange({ items: [...items, { id: `atc_${Date.now()}`, text: 'Novo texto...', duration: 3 }] });
+  };
+  const updateItem = (idx, patch) => {
+    const newItems = [...items];
+    newItems[idx] = { ...newItems[idx], ...patch };
+    onChange({ items: newItems });
+  };
+  const removeItem = (idx) => {
+    onChange({ items: items.filter((_, i) => i !== idx) });
+  };
+
+  return (
+    <>
+      <Section title="Textos de Motivação">
+        <div className="space-y-4">
+          {items.map((item, idx) => (
+            <div key={item.id} className="relative bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+              <button onClick={() => removeItem(idx)} className="absolute top-2 right-2 text-slate-500 hover:text-red-400">
+                <Trash2 size={14} />
+              </button>
+              <div className="pt-2 space-y-3">
+                <Field label={`Texto ${idx + 1}`}>
+                  <textarea 
+                    value={item.text} 
+                    onChange={e => updateItem(idx, { text: e.target.value })} 
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white resize-none outline-none focus:border-indigo-500"
+                    rows={2}
+                  />
+                </Field>
+                <Field label="Duração na tela (Segundos)">
+                  <Slider min={1} max={15} value={item.duration || 3} onChange={v => updateItem(idx, { duration: v })} />
+                </Field>
+              </div>
+            </div>
+          ))}
+          <button onClick={addItem} className="w-full py-2 flex items-center justify-center gap-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-500 hover:text-indigo-400 transition-all cursor-pointer">
+            <Plus size={14} /> Adicionar Texto
+          </button>
+        </div>
+      </Section>
+      <Section title="Estilo Geral">
+        <Field label="Tamanho da Fonte">
+          <Select value={block.textSize || 'lg'} onChange={v => onChange({ textSize: v })} options={[
+             { value: 'sm', label: 'Pequeno (sm)' },
+             { value: 'base', label: 'Médio (base)' },
+             { value: 'lg', label: 'Grande (lg)' },
+             { value: 'xl', label: 'Gigante (xl)' },
+             { value: '2xl', label: 'Extra (2xl)' },
+             { value: '3xl', label: 'Colossal (3xl)' },
+          ]} />
+        </Field>
+        <div className="grid grid-cols-2 gap-4 mt-2">
+          <Field label="Cor do Texto">
+            <ColorPicker value={block.textColor || '#ffffff'} onChange={v => onChange({ textColor: v })} />
+          </Field>
+          <Field label="Alinhamento">
+            <Select value={block.textAlign || 'center'} onChange={v => onChange({ textAlign: v })} options={[
+              { value: 'left', label: 'Esquerda' },
+              { value: 'center', label: 'Centro' },
+              { value: 'right', label: 'Direita' },
+            ]} />
+          </Field>
+        </div>
+        <Field label="Família da Fonte">
+          <Select value={block.fontFamily || ''} onChange={v => onChange({ fontFamily: v })} options={[
+            { value: '', label: 'Padrão do Quiz (Inter)' },
+            { value: 'Arial, sans-serif', label: 'Arial' },
+            { value: 'Georgia, serif', label: 'Georgia' },
+            { value: 'Courier New, monospace', label: 'Courier New' },
+            { value: '"Times New Roman", Times, serif', label: 'Times New Roman' },
+            { value: 'Impact, sans-serif', label: 'Impact' },
+          ]} />
+        </Field>
+        <Field label="Negrito">
+          <Toggle label="Ativar texto forte" value={!!block.bold} onChange={v => onChange({ bold: v })} />
+        </Field>
+      </Section>
+      <Section title="Efeitos de Transição">
+        <Field label="Entrada (Surgimento)">
+          <Select value={block.animationIn || 'fadeIn'} onChange={v => onChange({ animationIn: v })} options={[
+            { value: 'fadeIn', label: 'Surgir (Fade In)' },
+            { value: 'slideInLeft', label: 'Deslizar Esquerda (Slide In Left)' },
+            { value: 'slideInRight', label: 'Deslizar Direita (Slide In Right)' },
+            { value: 'slideInUp', label: 'Deslizar de Baixo (Slide In Up)' },
+            { value: 'slideInDown', label: 'Deslizar de Cima (Slide In Down)' },
+            { value: 'zoomIn', label: 'Aproximar (Zoom In)' },
+          ]} />
+        </Field>
+        <Field label="Saída (Desaparecimento)">
+          <Select value={block.animationOut || 'fadeOut'} onChange={v => onChange({ animationOut: v })} options={[
+            { value: 'fadeOut', label: 'Desaparecer (Fade Out)' },
+            { value: 'slideOutLeft', label: 'Sair para Esquerda (Slide Out Left)' },
+            { value: 'slideOutRight', label: 'Sair para Direita (Slide Out Right)' },
+            { value: 'slideOutUp', label: 'Sair para Cima (Slide Out Up)' },
+            { value: 'slideOutDown', label: 'Sair para Baixo (Slide Out Down)' },
+            { value: 'zoomOut', label: 'Afastar (Zoom Out)' },
+          ]} />
+        </Field>
+        <Field label="Velocidade da Transição">
+          <Select value={String(block.transitionSpeed || '0.5')} onChange={v => onChange({ transitionSpeed: Number(v) })} options={[
+            { value: '0.2', label: '0.2s - Flash (Muito rápido)' },
+            { value: '0.5', label: '0.5s - Suave (Padrão)' },
+            { value: '0.8', label: '0.8s - Elegante' },
+            { value: '1', label: '1.0s - Lento' },
+            { value: '1.5', label: '1.5s - Muito Lento' },
+          ]} />
+        </Field>
+        <Field label="Rodar em Loop">
+          <Toggle label="Reiniciar após o último texto" value={!!block.loop} onChange={v => onChange({ loop: v })} />
+        </Field>
+      </Section>
+    </>
+  );
+}
+
 export default function BlockEditor({ block, theme, steps, currentStepIdx, onChange }) {
   if (!block) return null;
 
@@ -2650,6 +2772,7 @@ export default function BlockEditor({ block, theme, steps, currentStepIdx, onCha
     image_button_selector: ImageButtonSelectorEditor,
     animated_metrics: AnimatedMetricsEditor,
     image_carousel: ImageCarouselEditor,
+    animated_text_carousel: AnimatedTextCarouselEditor,
   };
 
   const Editor = editorMap[block.type];

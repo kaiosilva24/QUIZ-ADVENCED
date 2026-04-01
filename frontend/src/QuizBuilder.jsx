@@ -35,6 +35,7 @@ const BLOCK_TYPES = [
   { type: 'image_button_selector', label: 'Botões c/ Imagem', icon: ImagePlus, color: '#10b981' },
   { type: 'animated_metrics', label: 'Métricas Animadas', icon: BarChart3, color: '#ec4899' },
   { type: 'image_carousel', label: 'Carrossel Imagens', icon: Images, color: '#f59e0b' },
+  { type: 'animated_text_carousel', label: 'Textos Animados', icon: Type, color: '#0ea5e9' },
 ];
 
 function createBlock(type) {
@@ -162,6 +163,21 @@ function createBlock(type) {
       images: [
         { id: 'img_1', url: '' },
       ]
+    };
+    case 'animated_text_carousel': return { ...base,
+      items: [
+        { id: 'atc_1', text: 'Estamos personalizando sua experiência...', duration: 3 },
+        { id: 'atc_2', text: 'Você está prestes a descobrir algo incrível!', duration: 3 },
+      ],
+      textColor: '#ffffff',
+      textSize: 'lg',
+      fontFamily: '',
+      textAlign: 'center',
+      animationIn: 'fadeIn',
+      animationOut: 'fadeOut',
+      transitionSpeed: 0.5,
+      loop: true,
+      bold: true
     };
     default:            return base;
   }
