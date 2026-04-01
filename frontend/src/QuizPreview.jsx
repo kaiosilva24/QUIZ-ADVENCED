@@ -2763,7 +2763,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                 )}
 
                 {/* Author */}
-                {(tm.authorName || tm.authorPhoto) && (
+                {tm.showAuthor !== false && (tm.authorName || tm.authorPhoto) && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 5 : 8, marginTop: compact ? 2 : 4, paddingTop: compact ? 4 : 8, borderTop: `1px solid ${cardBorder}` }}>
                     {/* Avatar */}
                     <div style={{ width: compact ? 20 : 32, height: compact ? 20 : 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: accent + '30', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${accent}50` }}>

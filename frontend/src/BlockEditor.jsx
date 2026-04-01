@@ -2251,37 +2251,45 @@ function TestimonialCarouselEditor({ block, onChange }) {
 
             {/* ─ Autor ─ */}
             <div className="border-t border-slate-700/50 pt-3 space-y-3">
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">👤 Autor</p>
-              <Field label="Nome">
-                <Input value={tm.authorName || ''} onChange={v => updateTestimonial(activeTestimonial, { authorName: v })} placeholder="Maria C." />
-              </Field>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Profissão">
-                  <Input value={tm.authorRole || ''} onChange={v => updateTestimonial(activeTestimonial, { authorRole: v })} placeholder="Enfermeira" />
-                </Field>
-                <Field label="Cidade">
-                  <Input value={tm.authorCity || ''} onChange={v => updateTestimonial(activeTestimonial, { authorCity: v })} placeholder="SP, Brasil" />
-                </Field>
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">👤 Autor</p>
+                <Toggle label="Exibir" value={tm.showAuthor !== false} onChange={v => updateTestimonial(activeTestimonial, { showAuthor: v })} />
               </div>
-              <Field label="Foto do Perfil">
-                {tm.authorPhoto && (
-                  <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-slate-600 mb-2">
-                    <img src={tm.authorPhoto} alt="" className="w-full h-full object-cover" />
-                    <button onClick={() => updateTestimonial(activeTestimonial, { authorPhoto: '' })}
-                      className="absolute top-0 right-0 w-5 h-5 rounded-full bg-red-600 text-white text-xs flex items-center justify-center cursor-pointer">×</button>
+              
+              {tm.showAuthor !== false && (
+                <>
+                  <Field label="Nome">
+                    <Input value={tm.authorName || ''} onChange={v => updateTestimonial(activeTestimonial, { authorName: v })} placeholder="Maria C." />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label="Profissão">
+                      <Input value={tm.authorRole || ''} onChange={v => updateTestimonial(activeTestimonial, { authorRole: v })} placeholder="Enfermeira" />
+                    </Field>
+                    <Field label="Cidade">
+                      <Input value={tm.authorCity || ''} onChange={v => updateTestimonial(activeTestimonial, { authorCity: v })} placeholder="SP, Brasil" />
+                    </Field>
                   </div>
-                )}
-                <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 text-xs">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                  {tm.authorPhoto ? 'Trocar Foto' : 'Carregar Foto do Perfil'}
-                  <input type="file" accept="image/*" className="hidden" onChange={e => {
-                    const f = e.target.files[0]; if (!f) return;
-                    const r = new FileReader();
-                    r.onload = ev => updateTestimonial(activeTestimonial, { authorPhoto: ev.target.result });
-                    r.readAsDataURL(f); e.target.value = '';
-                  }} />
-                </label>
-              </Field>
+                  <Field label="Foto do Perfil">
+                    {tm.authorPhoto && (
+                      <div className="relative w-14 h-14 rounded-full overflow-hidden border-2 border-slate-600 mb-2">
+                        <img src={tm.authorPhoto} alt="" className="w-full h-full object-cover" />
+                        <button onClick={() => updateTestimonial(activeTestimonial, { authorPhoto: '' })}
+                          className="absolute top-0 right-0 w-5 h-5 rounded-full bg-red-600 text-white text-xs flex items-center justify-center cursor-pointer">×</button>
+                      </div>
+                    )}
+                    <label className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-dashed border-slate-600 hover:border-indigo-500/50 text-slate-500 hover:text-indigo-400 transition-all cursor-pointer bg-slate-800/30 text-xs">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      {tm.authorPhoto ? 'Trocar Foto' : 'Carregar Foto do Perfil'}
+                      <input type="file" accept="image/*" className="hidden" onChange={e => {
+                        const f = e.target.files[0]; if (!f) return;
+                        const r = new FileReader();
+                        r.onload = ev => updateTestimonial(activeTestimonial, { authorPhoto: ev.target.result });
+                        r.readAsDataURL(f); e.target.value = '';
+                      }} />
+                    </label>
+                  </Field>
+                </>
+              )}
             </div>
           </div>
         )}
