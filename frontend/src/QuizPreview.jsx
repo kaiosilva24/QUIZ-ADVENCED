@@ -371,6 +371,10 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
 
   const containerRef = useRef(null);
   const [isCssFullscreen, setIsCssFullscreen] = useState(false);
+  // Overlay shown during fullscreen exit to hide the visual freeze frame
+  const [fsExiting, setFsExiting] = useState(false);
+  // Remember if video was playing so we can resume after transition
+  const wasPlayingRef = useRef(false);
 
   const forceExitedFsRef = useRef(false);
   // Refs to read latest value inside intervals/effects WITHOUT adding to deps arrays
@@ -386,15 +390,26 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const fullscreenMode = block.fullscreenMode || 'none';
   const exitFullscreenBeforeEnd = block.exitFullscreenBeforeEnd || 0;
 
+  // Detect mobile once (stable reference)
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   const enterFullscreen = () => {
     if (forceExitedFsRef.current) return;
+    // On mobile: always use CSS-only fullscreen.
+    // Native requestFullscreen() on Android Chrome switches the video between
+    // hardware overlay and the normal compositor, causing a stall on exit on
+    // low-end GPUs (Helio G80 etc.). CSS-only keeps the element in normal flow.
+    if (isMobile) {
+      setIsCssFullscreen(true);
+      return;
+    }
     const el = containerRef.current || document.documentElement;
     try {
       if (el.requestFullscreen) {
         el.requestFullscreen().catch(() => setIsCssFullscreen(true));
       } else if (el.webkitRequestFullscreen) {
         el.webkitRequestFullscreen();
-        setIsCssFullscreen(true); // Força fallback para iOS
+        setIsCssFullscreen(true);
       } else if (el.mozRequestFullScreen) {
         el.mozRequestFullScreen();
       } else {
@@ -406,47 +421,47 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   };
 
   const exitFullscreen = () => {
-    // ── Transition guard: block onTimeUpdate callbacks during layout recalc ──
-    // On slow GPUs (e.g. Helio G80), continuing to decode video + update the
-    // DOM while the browser simultaneously reflows the whole page layout causes
-    // a visible freeze. We pause the video for ~200ms to give the CPU/GPU a
-    // clean window for the layout recalculation, then resume.
     isTransitioningRef.current = true;
+    wasPlayingRef.current = !isEmbed && videoRef.current && !videoRef.current.paused;
+    if (wasPlayingRef.current) videoRef.current.pause();
 
-    const wasPlaying = !isEmbed && videoRef.current && !videoRef.current.paused;
-    if (wasPlaying) videoRef.current.pause();
+    // Show a dark overlay to hide the freeze frame during layout transition.
+    // On low-end GPUs the browser needs ~300ms to re-composite all layers
+    // after the CSS fullscreen style changes. The overlay makes this invisible.
+    setFsExiting(true);
 
+    // Exit native fullscreen if active (desktop)
     try {
-      if (document.exitFullscreen) document.exitFullscreen();
-      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+      if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen();
+      else if (document.webkitExitFullscreen && document.webkitFullscreenElement) document.webkitExitFullscreen();
     } catch(e) {}
 
+    // Change React state on next frame (lets the overlay render first)
     requestAnimationFrame(() => {
       setIsCssFullscreen(false);
 
-      // Give the browser 200ms to finish the layout recalculation before
-      // resuming video decoding and re-enabling onTimeUpdate.
+      // Wait for layout to completely settle, then resume
       setTimeout(() => {
         const el = containerRef.current;
         if (el) {
-          // Force layout flush + GPU layer repaint
-          // eslint-disable-next-line no-unused-expressions
-          el.offsetHeight;
+          el.offsetHeight; // flush layout queue
           el.style.transform = 'translateZ(0)';
           requestAnimationFrame(() => {
             el.style.transform = '';
-            // Resume video AFTER the repaint frame — GPU is now idle
-            if (wasPlaying && videoRef.current) {
+            // Resume video, then hide overlay on the NEXT frame after video starts
+            if (wasPlayingRef.current && videoRef.current) {
               videoRef.current.play().catch(() => {});
             }
             isTransitioningRef.current = false;
+            // Extra frame delay before hiding overlay so first video frame is painted
+            requestAnimationFrame(() => setFsExiting(false));
           });
         } else {
-          if (wasPlaying && videoRef.current) videoRef.current.play().catch(() => {});
+          if (wasPlayingRef.current && videoRef.current) videoRef.current.play().catch(() => {});
           isTransitioningRef.current = false;
+          setFsExiting(false);
         }
-      }, 200);
+      }, 280);
     });
   };
 
@@ -701,6 +716,19 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
       {/* Vídeo com aspect ratio */}
       <div style={{ width:'100%', aspectRatio:ar, position:'relative', background:'#0a0a0a', overflow:'hidden', cursor: src ? 'pointer' : 'default' }}
            onClick={togglePlay}>
+
+        {/* ─── Fullscreen exit transition overlay ───────────────────────────────
+            Covers the freeze frame that occurs on low-end GPUs (Helio G80, etc.)
+            while the browser re-composites layers after CSS fullscreen style change.
+            Fades out once the first video frame is painted after resume. */}
+        {fsExiting && (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 99999,
+            background: '#000',
+            transition: 'opacity 0.25s ease-out',
+            pointerEvents: 'none',
+          }} />
+        )}
 
         {/* Placeholder */}
         {!src && (
