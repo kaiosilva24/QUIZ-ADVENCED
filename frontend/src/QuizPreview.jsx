@@ -2555,7 +2555,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const cs = compact ? 0.55 : 1;
 
       // Mini VideoPlayer for testimonial (reuses VSL logic)
-      function TestiVideoPlayer({ tm, playingRef }) {
+      function TestiVideoPlayer({ tm, playingRef, isActive }) {
         const videoRef = React.useRef(null);
         const iframeRef = React.useRef(null);
         const [playing, setPlaying] = React.useState(false);
@@ -2566,7 +2566,8 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         const src = tm.videoSrc || '';
         const isYT = src.includes('youtube') || src.includes('youtu.be');
         const isVimeo = src.includes('vimeo');
-        const isEmbed = isYT || isVimeo;
+        const isPanda = src.includes('pandavideo');
+        const isEmbed = isYT || isVimeo || isPanda;
         const ar = tm.videoAspectRatio || '9/16';
         const radius = tm.videoRounded !== false ? (compact ? 8 : 14) : 0;
         const showUnmuteOverlay = !!(tm.videoAutoplay && tm.videoMuted && src && !userUnmuted);
@@ -2587,11 +2588,22 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           : '';
 
         React.useEffect(() => {
-          if (isEmbed && src && tm.videoAutoplay && !startedRef.current) {
+          if (isEmbed && src && tm.videoAutoplay && isActive && !startedRef.current) {
             startedRef.current = true;
             setPlaying(true);
+            // Panda needs explicit message to play sometimes, but autoplay URL param handles most
           }
-        }, [src, tm.videoAutoplay, isEmbed]);
+          // Pause when no longer active
+          if (!isActive && playing) {
+             setPlaying(false);
+             if (isEmbed) {
+                if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"pause"}', '*');
+             } else {
+                videoRef.current?.pause();
+             }
+          }
+        }, [src, tm.videoAutoplay, isEmbed, isActive, playing]);
 
         const handleUnmute = (e) => {
           if (e) { e.stopPropagation(); e.preventDefault(); }
@@ -2739,50 +2751,58 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           {/* Card */}
           {total > 0 ? (
             <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: compact ? 12 : 18, overflow: 'hidden' }}>
-              {/* Category label */}
-              {tm.category && (
-                <div style={{ padding: compact ? '6px 10px' : '8px 14px', borderBottom: `1px solid ${cardBorder}` }}>
-                  <span style={{ fontSize: compact ? 8 : 11, fontWeight: 700, color: defaultText, opacity: 0.7, letterSpacing: '0.06em' }}>
-                    {tm.categoryEmoji} {tm.category.toUpperCase()}
-                  </span>
-                </div>
-              )}
+              {/* Map Slides to DOM to prevent iframe CPU block mounting stutter */}
+              {filtered.map((t, idx) => {
+                const isActive = idx === safIdx;
+                return (
+                  <div key={idx} style={{ display: isActive ? 'block' : 'none' }}>
+                    {/* Category label */}
+                    {t.category && (
+                      <div style={{ padding: compact ? '6px 10px' : '8px 14px', borderBottom: `1px solid ${cardBorder}` }}>
+                        <span style={{ fontSize: compact ? 8 : 11, fontWeight: 700, color: defaultText, opacity: 0.7, letterSpacing: '0.06em' }}>
+                          {t.categoryEmoji} {t.category.toUpperCase()}
+                        </span>
+                      </div>
+                    )}
 
-              {/* Video */}
-              <div style={{ padding: compact ? '8px 10px' : '12px 14px' }}>
-                <TestiVideoPlayer tm={tm} playingRef={isVideoPlayingRef} />
-              </div>
-
-              {/* Text content */}
-              <div style={{ padding: compact ? '0 10px 8px' : '0 14px 12px', display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8 }}>
-                {tm.title && (
-                  <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 9 : 14, margin: 0, lineHeight: 1.4 }}>{tm.title}</p>
-                )}
-                {tm.quote && (
-                  <p style={{ color: defaultText, opacity: 0.75, fontSize: compact ? 8 : 12, margin: 0, fontStyle: 'italic', lineHeight: 1.5 }}>{tm.quote}</p>
-                )}
-
-                {/* Author */}
-                {tm.showAuthor !== false && (tm.authorName || tm.authorPhoto) && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 5 : 8, marginTop: compact ? 2 : 4, paddingTop: compact ? 4 : 8, borderTop: `1px solid ${cardBorder}` }}>
-                    {/* Avatar */}
-                    <div style={{ width: compact ? 20 : 32, height: compact ? 20 : 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: accent + '30', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${accent}50` }}>
-                      {tm.authorPhoto
-                        ? <img src={tm.authorPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : <span style={{ color: accent, fontWeight: 700, fontSize: compact ? 8 : 13 }}>{(tm.authorName || '?')[0].toUpperCase()}</span>
-                      }
+                    {/* Video */}
+                    <div style={{ padding: compact ? '8px 10px' : '12px 14px' }}>
+                      <TestiVideoPlayer tm={t} playingRef={isActive ? isVideoPlayingRef : undefined} isActive={isActive} />
                     </div>
-                    <div>
-                      <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 8 : 12, margin: 0 }}>{tm.authorName}</p>
-                      {(tm.authorRole || tm.authorCity) && (
-                        <p style={{ color: defaultText, opacity: 0.55, fontSize: compact ? 7 : 10, margin: 0 }}>
-                          {[tm.authorRole, tm.authorCity].filter(Boolean).join(' · ')}
-                        </p>
+
+                    {/* Text content */}
+                    <div style={{ padding: compact ? '0 10px 8px' : '0 14px 12px', display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8 }}>
+                      {t.title && (
+                        <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 9 : 14, margin: 0, lineHeight: 1.4 }}>{t.title}</p>
+                      )}
+                      {t.quote && (
+                        <p style={{ color: defaultText, opacity: 0.75, fontSize: compact ? 8 : 12, margin: 0, fontStyle: 'italic', lineHeight: 1.5 }}>{t.quote}</p>
+                      )}
+
+                      {/* Author */}
+                      {t.showAuthor !== false && (t.authorName || t.authorPhoto) && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 5 : 8, marginTop: compact ? 2 : 4, paddingTop: compact ? 4 : 8, borderTop: `1px solid ${cardBorder}` }}>
+                          {/* Avatar */}
+                          <div style={{ width: compact ? 20 : 32, height: compact ? 20 : 32, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, background: accent + '30', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${accent}50` }}>
+                            {t.authorPhoto
+                              ? <img src={t.authorPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : <span style={{ color: accent, fontWeight: 700, fontSize: compact ? 8 : 13 }}>{(t.authorName || '?')[0].toUpperCase()}</span>
+                            }
+                          </div>
+                          <div>
+                            <p style={{ color: defaultText, fontWeight: 700, fontSize: compact ? 8 : 12, margin: 0 }}>{t.authorName}</p>
+                            {(t.authorRole || t.authorCity) && (
+                              <p style={{ color: defaultText, opacity: 0.55, fontSize: compact ? 7 : 10, margin: 0 }}>
+                                {[t.authorRole, t.authorCity].filter(Boolean).join(' · ')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
-                )}
-              </div>
+                );
+              })}
 
               {/* Dot pagination */}
               {total > 1 && (
