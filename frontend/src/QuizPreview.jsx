@@ -359,6 +359,12 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const [hasStarted, setHasStarted]       = useState(false);
   const [userUnmuted, setUserUnmuted]     = useState(false);
 
+  // Direct DOM refs — updated without React re-render for zero-jank progress/timer
+  const progressBarRef     = useRef(null);
+  const timerDisplayRef    = useRef(null);
+  // Throttle React state to once/sec (onTimeUpdate fires ~4x/sec on most browsers)
+  const lastStateUpdateRef = useRef(0);
+
   const containerRef = useRef(null);
   const [isCssFullscreen, setIsCssFullscreen] = useState(false);
 
@@ -700,10 +706,29 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
             disablePictureInPicture
             onCanPlay={handleCanPlay}
             onTimeUpdate={e => {
-              const t = e.target.currentTime;
-              currentTimeRef.current = t;       // keep ref in sync for fullscreen-exit polling
-              setCurrentTime(t);
-              trackTimeRef.current(t, e.target.duration);
+              const t   = e.target.currentTime;
+              const dur = e.target.duration || 0;
+              currentTimeRef.current = t;
+              trackTimeRef.current(t, dur);
+
+              // ✔ Update progress bar directly — ZERO React re-render
+              if (progressBarRef.current && dur > 0) {
+                progressBarRef.current.style.width = `${(t / dur) * 100}%`;
+              }
+
+              // ✔ Update timer text directly — ZERO React re-render
+              if (timerDisplayRef.current && dur > 0) {
+                const dispDur = block.useFakeDuration ? (block.fakeDuration || 120) : dur;
+                const dispT   = block.useFakeDuration ? ((t / dur) * dispDur) : t;
+                timerDisplayRef.current.textContent = `${fmt(dispT)} / ${fmt(dispDur)}`;
+              }
+
+              // ✔ Throttle React state to once per second (enough for overlays & resDelay)
+              const now = Date.now();
+              if (now - lastStateUpdateRef.current >= 1000) {
+                lastStateUpdateRef.current = now;
+                setCurrentTime(t);
+              }
             }}
             onLoadedMetadata={e => setDuration(e.target.duration)}
             onEnded={() => { setPlaying(false); setEnded(true); triggerFinalPing(videoRef.current?.duration); }}
@@ -894,7 +919,10 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
         {/* Timer VSL (fake duration se ativado)
             Mostra mesmo sem o vídeo tocar, usando fakeDuration como fallback */}
         {block.showTimer !== false && src && (activeDuration > 0 || block.useFakeDuration) && (
-          <div style={{ position:'absolute', bottom:compact?6:10, right:compact?6:10, background:'rgba(0,0,0,0.75)', borderRadius:4, padding:compact?'2px 5px':'3px 8px', fontSize:compact?8:11, color:'#fff', fontFamily:'monospace', zIndex:6 }}>
+          <div
+            ref={timerDisplayRef}
+            style={{ position:'absolute', bottom:compact?6:10, right:compact?6:10, background:'rgba(0,0,0,0.75)', borderRadius:4, padding:compact?'2px 5px':'3px 8px', fontSize:compact?8:11, color:'#fff', fontFamily:'monospace', zIndex:6 }}
+          >
             {fmt(displayCurrentTime)} / {fmt(displayDuration)}
           </div>
         )}
@@ -908,7 +936,8 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
            
            return (
              <div style={{ position:'absolute', bottom:0, left:0, right:0, height:barH, background:block.fakeProgressBgColor || 'rgba(255,255,255,0.15)', zIndex:6 }}>
-               <div style={{ height:'100%', width:`${progress*100}%`, background: block.fakeProgressColor || '#e63946', transition:'width 0.5s linear' }} />
+               {/* ref lets onTimeUpdate update width directly — no React re-render */}
+               <div ref={progressBarRef} style={{ height:'100%', width:`${progress*100}%`, background: block.fakeProgressColor || '#e63946', transition:'none' }} />
              </div>
            );
         })()}
