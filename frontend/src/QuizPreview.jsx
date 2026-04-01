@@ -342,6 +342,9 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   const [isCssFullscreen, setIsCssFullscreen] = useState(false);
 
   const forceExitedFsRef = useRef(false);
+  // Refs to read latest value inside intervals/effects WITHOUT adding to deps arrays
+  const currentTimeRef = useRef(0);
+  const trackTimeRef   = useRef(trackTime);
 
   const src      = block.src || '';
   const isYT     = src.includes('youtube') || src.includes('youtu.be');
@@ -466,28 +469,35 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
     setDuration(0); setEnded(false); setResVisible(false); setHasStarted(false);
   }, [src]);
 
-  // Embedded Result Array delay logic
+  // Keep trackTimeRef current
+  useEffect(() => { trackTimeRef.current = trackTime; }, [trackTime]);
+
+  // Embedded Result Array delay logic — does NOT depend on currentTime (reads ref)
   useEffect(() => {
     if (!block.showResultConfig) { setResVisible(false); return; }
-    // In compact (editor preview) mode: always show so creator can see/edit the result screen
     if (compact) { setResVisible(true); return; }
     if (!hasStarted) { setResVisible(false); return; }
-    
+
     const delay = block.resDelay || 'none';
     if (delay === 'none') { setResVisible(true); return; }
     if (delay === 'on_end') { setResVisible(ended); return; }
     if (delay === 'custom') {
       const secs = block.resDelaySeconds || 0;
-      if (currentTime >= secs) { setResVisible(true); }
+      const iv = setInterval(() => {
+        if (currentTimeRef.current >= secs) { setResVisible(true); clearInterval(iv); }
+      }, 500);
+      return () => clearInterval(iv);
     }
-  }, [block.showResultConfig, block.resDelay, block.resDelaySeconds, ended, currentTime, hasStarted, compact]);
+  }, [block.showResultConfig, block.resDelay, block.resDelaySeconds, ended, hasStarted, compact]);
 
-  // Sync to QuizPreview context
+  // Sync to QuizPreview context — poll via interval so currentTime in deps isn't needed
   useEffect(() => {
-    if (block.setMediaState) {
-      block.setMediaState({ hasStarted, currentTime, ended });
-    }
-  }, [hasStarted, currentTime, ended, block.setMediaState]);
+    if (!block.setMediaState) return;
+    const iv = setInterval(() => {
+      block.setMediaState({ hasStarted, currentTime: currentTimeRef.current, ended });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [hasStarted, ended, block.setMediaState]);
 
   // The overlay is shown when: video is configured as autoplay+muted AND user hasn't unmuted yet
   // Removido o !isEmbed para permitir overlay de mute também no YouTube
@@ -571,22 +581,20 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
   };
 
   // Simula o progresso do tempo para embeds já que não temos onTimeUpdate direto
-  // Usa o useEffect para disparar trackTime e alimentar o backend de analytics
   useEffect(() => {
     if (!isEmbed || !playing) return;
-    // O activeDuration só é derivado depois, então pegamos direto daqui.
     const dur = block.fakeDuration || 120;
-    
     const interval = setInterval(() => {
       setCurrentTime(prev => {
         const next = prev + 1;
-        // Envia o pixel de retenção a cada segundo para gráficos Panda/Vimeo
-        trackTime(next, dur);
+        currentTimeRef.current = next;       // keep ref in sync for other effects
+        trackTimeRef.current(next, dur);      // call via ref — avoids resetting interval
         return next;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isEmbed, playing, block.fakeDuration, trackTime]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEmbed, playing, block.fakeDuration]); // trackTime intentionally read via ref
 
   // Se for embed, usamos fakeDuration ou 120s como fallback para não quebrar a barra
   const activeDuration = isEmbed ? (block.fakeDuration || 120) : duration;
