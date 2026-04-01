@@ -1,5 +1,8 @@
 const { getDB } = require('../db');
 
+const rrCache = new Map();
+const CACHE_TTL = 30000;
+
 // GET /api/roundrobin — Retorna config atual (lista de IDs e index)
 async function getRoundRobin(req, res) {
   try {
@@ -30,6 +33,8 @@ async function updateRoundRobin(req, res) {
       'UPDATE round_robin SET quiz_ids = $1, is_active = $2, current_index = 0 WHERE id = (SELECT id FROM round_robin ORDER BY id LIMIT 1)',
       [quizIdsJson, is_active !== undefined ? is_active : true]
     );
+    // Limpar cache ao atualizar
+    rrCache.clear();
     res.json({ success: true });
   } catch (err) {
     console.error('[RoundRobin] PUT error:', err);
@@ -55,18 +60,27 @@ async function getNextRoundRobinQuiz(req, res) {
     const nextIdx = (idx + 1) % quizIds.length;
     const quizId = parseInt(quizIds[idx], 10); // garante que é inteiro
 
-    await db.run('UPDATE round_robin SET current_index = $1 WHERE id = $2', [nextIdx, rr.id]);
+    // Fire and forget (nao bloqueia a requisição!)
+    db.run('UPDATE round_robin SET current_index = $1 WHERE id = $2', [nextIdx, rr.id]).catch(e => console.error(e));
+
+    // Cache lookup do Quiz JSON
+    const cached = rrCache.get(quizId);
+    if (cached && (Date.now() - cached.time < CACHE_TTL)) {
+      return res.json(cached.data);
+    }
 
     const quiz = await db.get('SELECT * FROM quizzes WHERE id = $1 AND is_active = TRUE', [quizId]);
-    console.log('[RR] Buscando quiz id', quizId, '->', quiz ? quiz.title : 'NOT FOUND');
     if (!quiz) {
-      return res.status(404).json({ error: `Quiz id ${quizId} n\u00e3o encontrado ou inativo` });
+      return res.status(404).json({ error: `Quiz id ${quizId} não encontrado ou inativo` });
     }
 
     let config = {};
     try { config = JSON.parse(quiz.config_json || '{}'); } catch {}
 
-    res.json({ id: quiz.id, quiz_id: quiz.id, title: quiz.title, slug: quiz.slug, config });
+    const responseData = { id: quiz.id, quiz_id: quiz.id, title: quiz.title, slug: quiz.slug, config };
+    rrCache.set(quizId, { time: Date.now(), data: responseData });
+
+    res.json(responseData);
   } catch (err) {
     console.error('[RoundRobin] NEXT error:', err);
     res.status(500).json({ error: err.message });

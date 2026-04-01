@@ -288,7 +288,12 @@ function QuizRouter() {
     }
   };
 
-  if (loading) return null; // Transição silenciosa, sem texto de carregamento
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100%', backgroundColor: '#020617' }}>
+      <div style={{ width: 40, height: 40, border: '4px solid rgba(99, 102, 241, 0.2)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'globalSpin 1s linear infinite' }} />
+      <style>{`@keyframes globalSpin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 
   if (error === 'NO_QUIZ_CONFIGURED') return (
     <div style={{minHeight:'100vh',background:'#020617',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',color:'white',textAlign:'center',padding:24}}>

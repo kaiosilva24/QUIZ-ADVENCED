@@ -5,10 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>frontend</title>
-    <script type="module" crossorigin src="/assets/index-BCNAbhdq.js"></script>
+    <script type="module" crossorigin src="/assets/index-CLQHRpvb.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-FmpxOz1g.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <style>
+        body { margin: 0; background-color: #020617; }
+        .global-loader { display: flex; align-items: center; justify-content: center; height: 100vh; width: 100%; flex-direction: column; gap: 1rem; font-family: sans-serif; }
+        .global-spinner { width: 40px; height: 40px; border: 4px solid rgba(99, 102, 241, 0.2); border-top-color: #6366f1; border-radius: 50%; animation: globalSpin 1s linear infinite; }
+        @keyframes globalSpin { to { transform: rotate(360deg); } }
+      </style>
+      <div class="global-loader">
+        <div class="global-spinner"></div>
+      </div>
+    </div>
   </body>
 </html>
