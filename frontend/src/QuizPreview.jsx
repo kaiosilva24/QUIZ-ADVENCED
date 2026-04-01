@@ -422,20 +422,24 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
     };
   }, [fullscreenMode, compact]);
 
-  // Sair da tela cheia X segundos antes
+  // Sair da tela cheia X segundos antes — poll via interval so currentTime is NOT a dep
   useEffect(() => {
     if (compact || fullscreenMode === 'none' || exitFullscreenBeforeEnd <= 0) return;
-    // Precisamos do duration real ou fakeDuration para saber quando acaba
-    const dur = isEmbed ? (block.fakeDuration || 120) : duration;
-    if (dur > 0 && currentTime > 0) {
-      if (currentTime >= dur - exitFullscreenBeforeEnd) {
+    const iv = setInterval(() => {
+      const ct = currentTimeRef.current;
+      const dur = isEmbed ? (block.fakeDuration || 120) : (videoRef.current?.duration || 0);
+      if (dur > 0 && ct > 0 && ct >= dur - exitFullscreenBeforeEnd) {
         if (!forceExitedFsRef.current) {
           forceExitedFsRef.current = true;
           exitFullscreen();
         }
+        clearInterval(iv);
       }
-    }
-  }, [currentTime, duration, isEmbed, block.fakeDuration, exitFullscreenBeforeEnd, fullscreenMode, compact]);
+    }, 500);
+    return () => clearInterval(iv);
+  // currentTime intentionally omitted — read via ref inside the interval
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compact, fullscreenMode, exitFullscreenBeforeEnd, isEmbed, block.fakeDuration]);
   // ── /Fullscreen ─────────────────────────────────────────────────────────────
 
   const ar       = block.aspectRatio || '16/9';
@@ -1092,7 +1096,13 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
   const overlayOpacity = theme.overlayOpacity ?? 0.45;
 
   // Global media state for VSL sync
-  const [mediaState, setMediaState] = React.useState({ hasStarted: false, ended: false, currentTime: 0 });
+  // IMPORTANT: useRef instead of useState so updates from the video player
+  // do NOT trigger a full re-render of the page on every tick.
+  const mediaStateRef = React.useRef({ hasStarted: false, ended: false, currentTime: 0 });
+  const setMediaState = React.useCallback((next) => {
+    mediaStateRef.current = { ...mediaStateRef.current, ...next };
+  }, []);
+  const mediaState = mediaStateRef.current;
 
   // Full-screen loading overlay state
   const [loadingBlock, setLoadingBlock] = React.useState(null);
@@ -1432,15 +1442,25 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
     if (showDelayConfig === 'none') { setIsVisible(true); return; }
     const hasMedia = steps && steps[stepIdx]?.blocks?.some(b => b.type === 'video' || b.type === 'audio');
     if (showDelayConfig === 'on_end') {
-      if (!compact && hasMedia) setIsVisible(mediaState && mediaState.hasStarted && mediaState.ended);
-      else setIsVisible(compact ? localSecs >= 2 : true);
+      if (!compact && hasMedia) {
+        // Poll the ref so we don't depend on mediaState state object
+        const iv = setInterval(() => {
+          const ms = mediaStateRef?.current;
+          if (ms?.hasStarted && ms?.ended) { setIsVisible(true); clearInterval(iv); }
+        }, 500);
+        return () => clearInterval(iv);
+      } else {
+        setIsVisible(compact ? localSecs >= 2 : true);
+      }
       return;
     }
     if (showDelayConfig === 'custom') {
       const secs = block.showDelaySeconds || 0;
       setIsVisible(localSecs >= secs);
     }
-  }, [showDelayConfig, block.showDelaySeconds, mediaState, compact, localSecs, steps, stepIdx]);
+  // mediaStateRef intentionally omitted — it's a ref, changes don't trigger re-render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showDelayConfig, block.showDelaySeconds, compact, localSecs, steps, stepIdx]);
 
   if (!isVisible) return null;
   // ── Fim delay global ──────────────────────────────────────────
