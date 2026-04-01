@@ -1066,6 +1066,22 @@ function VideoEditor({ block, onChange }) {
                 { value: 'bottom', label: '🔽 Inferior (Base)' },
               ]} />
             </Field>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Tamanho da Fonte">
+                <Select value={block.overlayTextSize || 'xl'} onChange={v => onChange({ overlayTextSize: v })} options={[
+                  { value: 'sm', label: 'Pequeno (sm)' },
+                  { value: 'base', label: 'Normal (base)' },
+                  { value: 'lg', label: 'Grande (lg)' },
+                  { value: 'xl', label: 'Extra Grande (xl)' },
+                  { value: '2xl', label: 'Gigante (2xl)' },
+                  { value: '3xl', label: 'Colossal (3xl)' },
+                ]} />
+              </Field>
+              <Field label="Cor do Texto">
+                <ColorPicker value={block.overlayTextColor || '#ffffff'} onChange={v => onChange({ overlayTextColor: v })} />
+              </Field>
+            </div>
             
             {(block.overlayTexts || []).map((t, idx) => (
               <div key={idx} className="relative bg-slate-800 border border-slate-600 rounded-xl p-3">

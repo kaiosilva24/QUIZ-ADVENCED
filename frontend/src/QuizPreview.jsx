@@ -798,17 +798,26 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
 
                if (!isVisible) return null;
                
+               const txtSz = block.overlayTextSize || 'xl';
+               let fSize = compact ? 14 : 32;
+               if (txtSz === 'sm') fSize = compact ? 10 : 14;
+               else if (txtSz === 'base') fSize = compact ? 12 : 18;
+               else if (txtSz === 'lg') fSize = compact ? 16 : 24;
+               else if (txtSz === 'xl') fSize = compact ? 20 : 32;
+               else if (txtSz === '2xl') fSize = compact ? 24 : 48;
+               else if (txtSz === '3xl') fSize = compact ? 30 : 64;
+               
                return (
                  <div key={idx} style={{ 
                     animation: isExiting ? 'hookExit 0.3s forwards ease-in' : 'hookEnter 0.4s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     textAlign: 'center',
                     background: 'rgba(0,0,0,0.7)', 
-                    color: '#fff', 
+                    color: block.overlayTextColor || '#ffffff', 
                     padding: compact ? '8px 16px' : '20px 40px', 
                     borderRadius: compact ? 12 : 24,
                     backdropFilter: 'blur(12px)',
                     border: '1px solid rgba(255,255,255,0.15)',
-                    fontSize: compact ? 14 : Math.min(32, 16 + (t.text?.length < 30 ? 12 : 0)), // Dynamic font size based on text length
+                    fontSize: fSize,
                     fontWeight: 800,
                     lineHeight: 1.3,
                     textShadow: '0 2px 10px rgba(0,0,0,0.8)',
