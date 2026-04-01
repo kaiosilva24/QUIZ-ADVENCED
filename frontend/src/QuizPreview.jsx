@@ -2589,8 +2589,30 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         const src = tm.videoSrc || '';
         const isYT = src.includes('youtube') || src.includes('youtu.be');
         const isVimeo = src.includes('vimeo');
-        const isPanda = src.includes('pandavideo');
-        const isEmbed = isYT || isVimeo || isPanda;
+        const isPandaEmbed = src.includes('pandavideo') && src.includes('/embed/');
+        const isEmbed = isYT || isVimeo || isPandaEmbed;
+        
+        const [currentTime, setCurrentTime] = React.useState(0);
+        const [duration, setDuration] = React.useState(0);
+
+        React.useEffect(() => {
+          if (!isEmbed || !playing) return;
+          const interval = setInterval(() => {
+            setCurrentTime(prev => prev + 1);
+          }, 1000);
+          return () => clearInterval(interval);
+        }, [isEmbed, playing]);
+
+        const activeDuration = isEmbed ? (tm.videoFakeDuration || 120) : duration;
+        const progress = activeDuration > 0 ? currentTime / activeDuration : 0;
+        const displayDuration = tm.videoUseFakeDuration ? (tm.videoFakeDuration || 120) : activeDuration;
+        const displayCurrentTime = tm.videoUseFakeDuration ? (progress * displayDuration) : currentTime;
+
+        const fmt = (s) => {
+          if (!s || isNaN(s)) return '0:00';
+          const m = Math.floor(s/60);
+          return `${m}:${Math.floor(s%60).toString().padStart(2,'0')}`;
+        };
         const ar = tm.videoAspectRatio || '9/16';
         const radius = tm.videoRounded !== false ? (compact ? 8 : 14) : 0;
         const showUnmuteOverlay = !!(tm.videoAutoplay && tm.videoMuted && src && !userUnmuted);
@@ -2618,17 +2640,17 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             // Force play programmatically via togglePlay logic instead of native URL param to prevent all iframes autoplaying on mount
             const paramQ = embedUrl.split('?')[1] || '';
             const urlParams = new URLSearchParams(paramQ);
-            if (isPanda && embedUrl) {
-               iframeRef.current.src = embedUrl.replace('autoplay=0', 'autoplay=true&muted=' + (tm.videoMuted ? 'true' : 'false'));
-            } else {
-               if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-               if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
-               if (isPanda) {
-                   iframeRef.current?.contentWindow?.postMessage('play', '*');
-                   iframeRef.current?.contentWindow?.postMessage('{"action":"play"}', '*');
-               }
-            }
-            setPlaying(true);
+             if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+             if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
+             if (isPandaEmbed) {
+                 iframeRef.current?.contentWindow?.postMessage('play', '*');
+                 iframeRef.current?.contentWindow?.postMessage('{"action":"play"}', '*');
+                 iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
+                 if (embedUrl) {
+                     iframeRef.current.src = embedUrl.replace('autoplay=0', 'autoplay=true&muted=false');
+                 }
+             }
+             setPlaying(true);
           }
           // Pause when no longer active
           if (!isActive && playing) {
@@ -2647,7 +2669,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           if (isEmbed) {
             if (isYT) { iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"unMute","args":""}', '*'); iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*'); }
             if (isVimeo) { iframeRef.current?.contentWindow?.postMessage('{"method":"setVolume","value":1}', '*'); }
-            if (isPanda) {
+            if (isPandaEmbed) {
                // Ensure Panda can play - fallback to src reload if postMessage fails inside user's Panda config
                iframeRef.current?.contentWindow?.postMessage('play', '*');
                iframeRef.current?.contentWindow?.postMessage('{"action":"play"}', '*');
@@ -2669,7 +2691,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
              setPlaying(true); setShowThumb(false);
              if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
              if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
-             if (isPanda) {
+             if (isPandaEmbed) {
                  iframeRef.current?.contentWindow?.postMessage('play', '*');
                  iframeRef.current?.contentWindow?.postMessage('{"action":"play"}', '*');
                  iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
@@ -2717,6 +2739,8 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                 <video ref={videoRef} src={src} loop={!!tm.videoAutoloop} playsInline disablePictureInPicture
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
                   onCanPlay={handleCanPlay}
+                  onTimeUpdate={e => setCurrentTime(e.target.currentTime)}
+                  onLoadedMetadata={e => setDuration(e.target.duration)}
                   onEnded={() => setPlaying(false)} />
               )}
               {/* Thumbnail */}
@@ -2742,11 +2766,23 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                 </div>
               )}
               {/* Play button (For All) */}
-              {src && !playing && !showUnmuteOverlay && (
+              {tm.videoShowPlayBtn !== false && src && !playing && !showUnmuteOverlay && (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 5 }}>
                   <div style={{ width: compact ? 32 : 52, height: compact ? 32 : 52, borderRadius: '50%', background: 'rgba(0,0,0,0.65)', border: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <svg width={compact ? 12 : 20} height={compact ? 12 : 20} viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
                   </div>
+                </div>
+              )}
+              {/* Timer */}
+              {tm.videoShowTimer !== false && src && (activeDuration > 0 || tm.videoUseFakeDuration) && (
+                <div style={{ position:'absolute', bottom:compact?6:10, right:compact?6:10, background:'rgba(0,0,0,0.75)', borderRadius:4, padding:compact?'2px 5px':'3px 8px', fontSize:compact?8:11, color:'#fff', fontFamily:'monospace', zIndex:6 }}>
+                  {fmt(displayCurrentTime)} / {fmt(displayDuration)}
+                </div>
+              )}
+              {/* Progress Bar */}
+              {src && (activeDuration > 0 || tm.videoUseFakeDuration) && (
+                <div style={{ position:'absolute', bottom:0, left:0, right:0, height:compact?2:3, background:'rgba(255,255,255,0.15)', zIndex:6 }}>
+                  <div style={{ height:'100%', width:`${progress*100}%`, background: tm.videoFakeProgressColor || '#e63946', transition:'width 0.5s linear' }} />
                 </div>
               )}
             </div>
