@@ -2537,6 +2537,24 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       // Reset index when filter changes
       React.useEffect(() => { setCarouselIdx(0); }, [activeFilter]);
 
+      // Touch / Swipe logic
+      const touchStartX = React.useRef(0);
+      const touchEndX = React.useRef(0);
+      const handleTouchStart = (e) => {
+        touchStartX.current = e.touches[0].clientX;
+        touchEndX.current = e.touches[0].clientX;
+      };
+      const handleTouchMove = (e) => {
+        touchEndX.current = e.touches[0].clientX;
+      };
+      const handleTouchEnd = () => {
+        const diff = touchStartX.current - touchEndX.current;
+        if (Math.abs(diff) > 50) { // minimum threshold for swipe
+          if (diff > 0 && safIdx < total - 1) goNext();
+          else if (diff < 0 && safIdx > 0) goPrev();
+        }
+      };
+
       const isVideoPlayingRef = React.useRef(false);
       const delay = block.autoplayDelay || 0;
 
@@ -2584,14 +2602,25 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           return url;
         };
         const embedUrl = isEmbed
-          ? getEmbedUrl(src) + `?autoplay=${tm.videoAutoplay ? 1 : 0}&mute=${tm.videoMuted ? 1 : 0}&loop=${tm.videoAutoloop ? 1 : 0}&controls=0`
+          ? getEmbedUrl(src) + `?autoplay=0&mute=${tm.videoMuted ? 1 : 0}&loop=${tm.videoAutoloop ? 1 : 0}&controls=0`
           : '';
 
         React.useEffect(() => {
           if (isEmbed && src && tm.videoAutoplay && isActive && !startedRef.current) {
             startedRef.current = true;
+            // Force play programmatically via togglePlay logic instead of native URL param to prevent all iframes autoplaying on mount
+            const urlParams = new URLSearchParams(embedUrl.split('?')[1] || '');
+            if (isPanda && embedUrl && !urlParams.get('autoplay')) {
+               iframeRef.current.src = embedUrl.replace('autoplay=0', 'autoplay=true&muted=' + (tm.videoMuted ? 'true' : 'false'));
+            } else {
+               if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+               if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
+               if (isPanda) {
+                   iframeRef.current?.contentWindow?.postMessage('play', '*');
+                   iframeRef.current?.contentWindow?.postMessage('{"action":"play"}', '*');
+               }
+            }
             setPlaying(true);
-            // Panda needs explicit message to play sometimes, but autoplay URL param handles most
           }
           // Pause when no longer active
           if (!isActive && playing) {
@@ -2610,6 +2639,12 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           if (isEmbed) {
             if (isYT) { iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"unMute","args":""}', '*'); iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*'); }
             if (isVimeo) { iframeRef.current?.contentWindow?.postMessage('{"method":"setVolume","value":1}', '*'); }
+            if (isPanda) {
+               // Ensure Panda can play - fallback to src reload if postMessage fails inside user's Panda config
+               iframeRef.current?.contentWindow?.postMessage('play', '*');
+               iframeRef.current?.contentWindow?.postMessage('{"action":"play"}', '*');
+               iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
+            }
           } else {
             const v = videoRef.current; if (!v) return;
             v.muted = false; v.currentTime = 0;
@@ -2620,7 +2655,24 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
         const togglePlay = () => {
           if (showUnmuteOverlay) { handleUnmute(); return; }
-          if (isEmbed) return;
+          if (playing && isEmbed) return; // Se for embed e já tiver tocando, o clique vai direto pro iframe via pointerEvents='auto'
+          
+          if (isEmbed) {
+             setPlaying(true); setShowThumb(false);
+             if (isYT) iframeRef.current?.contentWindow?.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+             if (isVimeo) iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
+             if (isPanda) {
+                 iframeRef.current?.contentWindow?.postMessage('play', '*');
+                 iframeRef.current?.contentWindow?.postMessage('{"action":"play"}', '*');
+                 iframeRef.current?.contentWindow?.postMessage('{"method":"play"}', '*');
+                 // Força o play na marra alterando o source se o panda for imune aos postMessages mais comuns
+                 if (embedUrl) {
+                     iframeRef.current.src = embedUrl.replace('autoplay=0', 'autoplay=true&muted=false');
+                 }
+             }
+             return;
+          }
+          
           const v = videoRef.current; if (!v) return;
           if (playing) { if (!tm.videoDisablePause) { v.pause(); setPlaying(false); } }
           else { v.play().catch(() => {}); setPlaying(true); setShowThumb(false); }
@@ -2650,7 +2702,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
               )}
               {/* Embed */}
               {src && isEmbed && (
-                <iframe ref={iframeRef} src={embedUrl} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', pointerEvents: 'auto' }} allow="autoplay; fullscreen" allowFullScreen />
+                <iframe ref={iframeRef} src={embedUrl} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', pointerEvents: playing ? 'auto' : 'none' }} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
               )}
               {/* Native */}
               {src && !isEmbed && (
@@ -2660,11 +2712,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   onEnded={() => setPlaying(false)} />
               )}
               {/* Thumbnail */}
-              {src && !isEmbed && tm.thumbnailSrc && showThumb && (
+              {src && tm.thumbnailSrc && showThumb && (
                 <div style={{ position: 'absolute', inset: 0, background: `url(${tm.thumbnailSrc}) center/cover`, pointerEvents: 'none', zIndex: 4 }} />
               )}
-              {/* Mute overlay (Native Only) */}
-              {src && !isEmbed && showUnmuteOverlay && (
+              {/* Mute overlay (For All) */}
+              {src && showUnmuteOverlay && (
                 <div onClick={handleUnmute} style={{ position: 'absolute', inset: 0, zIndex: 5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: compact ? 6 : 12, cursor: 'pointer' }}>
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ position: 'absolute', width: compact ? 44 : 72, height: compact ? 44 : 72, borderRadius: '50%', border: `2px solid ${tm.videoMuteIconColor || 'rgba(0,213,230,0.4)'}`, animation: 'tmRipple 2s ease-out infinite', pointerEvents: 'none' }} />
@@ -2681,8 +2733,8 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   </div>
                 </div>
               )}
-              {/* Play button (Native Only) */}
-              {src && !isEmbed && !playing && !showUnmuteOverlay && (
+              {/* Play button (For All) */}
+              {src && !playing && !showUnmuteOverlay && (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 5 }}>
                   <div style={{ width: compact ? 32 : 52, height: compact ? 32 : 52, borderRadius: '50%', background: 'rgba(0,0,0,0.65)', border: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <svg width={compact ? 12 : 20} height={compact ? 12 : 20} viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
@@ -2750,7 +2802,8 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
           {/* Card */}
           {total > 0 ? (
-            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: compact ? 12 : 18, overflow: 'hidden' }}>
+            <div style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: compact ? 12 : 18, overflow: 'hidden' }}
+                 onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
               {/* Map Slides to DOM to prevent iframe CPU block mounting stutter */}
               {filtered.map((t, idx) => {
                 const isActive = idx === safIdx;
