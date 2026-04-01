@@ -786,7 +786,7 @@ function VideoBlockPlayer({ block, compact, quizId, visitorId, stepId, theme }) 
 
         {/* ═══ TEXTS OVERLAYS (HOOKS) ═══ */}
         {src && block.enableTextOverlay && (block.overlayTexts || []).length > 0 && (
-          <div style={{ position:'absolute', inset:0, zIndex: 8, pointerEvents:'none', display:'flex', alignItems:'center', justifyContent:'center', padding: compact ? '12px' : '40px' }}>
+          <div style={{ position:'absolute', inset:0, zIndex: 8, pointerEvents:'none', display:'flex', alignItems: block.overlayPosition === 'top' ? 'flex-start' : block.overlayPosition === 'bottom' ? 'flex-end' : 'center', justifyContent:'center', padding: compact ? '12px' : '40px' }}>
             {block.overlayTexts.map((t, idx) => {
                const start = t.start || 0;
                const dur = t.duration || 3;

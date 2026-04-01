@@ -1059,6 +1059,14 @@ function VideoEditor({ block, onChange }) {
         
         {block.enableTextOverlay && (
           <div className="mt-4 p-3 bg-slate-900 border border-slate-700/50 rounded-xl space-y-4">
+            <Field label="Posição Vertical dos Textos">
+              <Select value={block.overlayPosition || 'center'} onChange={v => onChange({ overlayPosition: v })} options={[
+                { value: 'top', label: '🔼 Superior (Topo)' },
+                { value: 'center', label: '⏹️ Meio (Centro)' },
+                { value: 'bottom', label: '🔽 Inferior (Base)' },
+              ]} />
+            </Field>
+            
             {(block.overlayTexts || []).map((t, idx) => (
               <div key={idx} className="relative bg-slate-800 border border-slate-600 rounded-xl p-3">
                 <button onClick={() => onChange({ overlayTexts: block.overlayTexts.filter((_, i) => i !== idx) })} className="absolute top-2 right-2 text-slate-500 hover:text-red-400">
