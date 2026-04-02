@@ -3437,6 +3437,88 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       );
     }
 
+    case 'faq': {
+      const items = block.items || [];
+      const [openItems, setOpenItems] = React.useState({});
+
+      const toggleItem = (id) => {
+         setOpenItems(prev => ({ ...prev, [id]: !prev[id] }));
+      };
+
+      const qColor = block.qColor || '#1e293b';
+      const qSize = block.qSize ?? 14;
+      const qWeight = block.qWeight ?? 600;
+      const aColor = block.aColor || '#64748b';
+      const aSize = block.aSize ?? 13;
+      const aWeight = block.aWeight ?? 400;
+      const dividerColor = block.dividerColor || '#e2e8f0';
+      const dividerThickness = block.dividerThickness ?? 1;
+      const iconType = block.iconType || 'chevron';
+      const iconColor = block.iconColor || '#cbd5e1';
+      const bg = block.bg || 'transparent';
+      const boxRadius = block.boxRadius ?? 0;
+      const boxPadding = block.boxPadding ?? 16;
+
+      return (
+        <div style={{
+          width: '100%',
+          background: bg,
+          borderRadius: boxRadius,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          {items.map((item, idx) => {
+            const isOpen = !!openItems[item.id];
+            const isLast = idx === items.length - 1;
+            return (
+              <div key={item.id} style={{
+                borderBottom: isLast ? 'none' : `${dividerThickness}px solid ${dividerColor}`,
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <button
+                  onClick={() => toggleItem(item.id)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: compact ? `${boxPadding - 4}px 0px` : `${boxPadding}px 0px`,
+                    cursor: 'pointer',
+                    background: 'transparent',
+                    border: 'none',
+                    textAlign: 'left'
+                  }}
+                >
+                  <span style={{ color: qColor, fontSize: compact ? qSize - 2 : qSize, fontWeight: qWeight, paddingRight: 16 }}>{item.question || ''}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: iconColor }}>
+                     {iconType === 'chevron' ? (
+                       <ChevronLeft size={compact ? 18 : 20} style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
+                     ) : (
+                       isOpen ? <Minus size={compact ? 18 : 20} /> : <Plus size={compact ? 18 : 20} />
+                     )}
+                  </div>
+                </button>
+                {isOpen && (
+                   <div style={{ 
+                     padding: compact ? `0 0 ${boxPadding - 4}px 0` : `0 0 ${boxPadding}px 0`, 
+                     color: aColor, 
+                     fontSize: compact ? aSize - 2 : aSize, 
+                     fontWeight: aWeight,
+                     lineHeight: 1.5 
+                   }}>
+                      {item.answer || ''}
+                   </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
     case 'animated_metrics': {
       const [animationProgress, setAnimationProgress] = React.useState(0);
       

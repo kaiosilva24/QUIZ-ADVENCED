@@ -3034,6 +3034,90 @@ function ButtonGridEditor({ block, onChange, steps, currentStepIdx }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FaqEditor
+// ─────────────────────────────────────────────────────────────────────────────
+function FaqEditor({ block, onChange }) {
+  const items = block.items || [];
+
+  const addItem = () => {
+    onChange({ items: [...items, { id: `f_${Date.now()}`, question: 'Nova pergunta?', answer: 'Sua resposta aqui...' }] });
+  };
+
+  const updateItem = (idx, patch) => {
+    const newItems = [...items];
+    newItems[idx] = { ...newItems[idx], ...patch };
+    onChange({ items: newItems });
+  };
+
+  const removeItem = (idx) => {
+    onChange({ items: items.filter((_, i) => i !== idx) });
+  };
+
+  return (
+    <>
+      <Section title="Perguntas e Respostas">
+        <div className="space-y-3">
+          {items.map((item, idx) => (
+            <div key={item.id} className="relative bg-slate-800/50 border border-slate-700/50 rounded-xl p-3 flex flex-col gap-3">
+               <button onClick={() => removeItem(idx)} className="absolute top-2 right-2 text-slate-500 hover:text-red-400 z-10 cursor-pointer">
+                <Trash2 size={14} />
+              </button>
+              <div className="mt-2 pr-6">
+                <Field label="Pergunta">
+                  <Input value={item.question || ''} onChange={v => updateItem(idx, { question: v })} placeholder="Ex: Quanto tempo demora?" />
+                </Field>
+              </div>
+              <Field label="Resposta">
+                <textarea 
+                  value={item.answer || ''} 
+                  onChange={e => updateItem(idx, { answer: e.target.value })} 
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-white resize-none outline-none focus:border-indigo-500"
+                  rows={2}
+                  placeholder="Sua resposta aqui..."
+                />
+              </Field>
+            </div>
+          ))}
+          <button onClick={addItem} className="w-full py-2 flex items-center justify-center gap-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-500 hover:text-indigo-400 transition-all cursor-pointer">
+            <Plus size={14} /> Adicionar Pergunta
+          </button>
+        </div>
+      </Section>
+      <Section title="Estilos e Cores">
+        <p className="text-[10px] font-bold mt-2 mb-2 text-slate-500 uppercase tracking-wider">Perguntas</p>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Cor da Fonte"><ColorPicker value={block.qColor || '#1e293b'} onChange={v => onChange({ qColor: v })} /></Field>
+          <Field label="Tamanho da Fonte (px)"><Input type="number" value={block.qSize ?? 14} onChange={v => onChange({ qSize: parseInt(v) })} /></Field>
+        </div>
+        <p className="text-[10px] font-bold mt-4 mb-2 text-slate-500 uppercase tracking-wider">Respostas</p>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Cor da Fonte"><ColorPicker value={block.aColor || '#64748b'} onChange={v => onChange({ aColor: v })} /></Field>
+          <Field label="Tamanho da Fonte (px)"><Input type="number" value={block.aSize ?? 13} onChange={v => onChange({ aSize: parseInt(v) })} /></Field>
+        </div>
+        <p className="text-[10px] font-bold mt-4 mb-2 text-slate-500 uppercase tracking-wider">Design Global</p>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Cor das Divisórias"><ColorPicker value={block.dividerColor || '#e2e8f0'} onChange={v => onChange({ dividerColor: v })} /></Field>
+          <Field label="Tamanho da Linha (px)"><Input type="number" value={block.dividerThickness ?? 1} onChange={v => onChange({ dividerThickness: parseInt(v) })} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Fundo da Caixa"><ColorPicker value={block.bg || 'transparent'} onChange={v => onChange({ bg: v })} /></Field>
+          <Field label="Arredondamento (px)"><Input type="number" value={block.boxRadius ?? 0} onChange={v => onChange({ boxRadius: parseInt(v) })} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Ícone de Expansão">
+             <Select value={block.iconType || 'chevron'} onChange={v => onChange({ iconType: v })} options={[
+              { value: 'chevron', label: 'Seta (Chevron)' },
+              { value: 'plus', label: 'Mais/Menos (+/-)' },
+            ]} />
+          </Field>
+          <Field label="Cor do Ícone"><ColorPicker value={block.iconColor || '#cbd5e1'} onChange={v => onChange({ iconColor: v })} /></Field>
+        </div>
+      </Section>
+    </>
+  );
+}
+
 export default function BlockEditor({ block, theme, steps, currentStepIdx, onChange }) {
   if (!block) return null;
 
@@ -3059,6 +3143,7 @@ export default function BlockEditor({ block, theme, steps, currentStepIdx, onCha
     image_carousel: ImageCarouselEditor,
     animated_text_carousel: AnimatedTextCarouselEditor,
     button_grid: ButtonGridEditor,
+    faq: FaqEditor,
   };
 
   const Editor = editorMap[block.type];

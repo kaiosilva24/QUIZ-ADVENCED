@@ -10,7 +10,7 @@ import {
   GripVertical, Plus, Trash2, ChevronLeft, Save, Eye, EyeOff,
   Type, Image, MousePointerClick, AlignLeft, ToggleLeft, Minus,
   CheckCircle2, Users, Layers, Palette, Settings, ArrowRight, Music, Video, Copy, MoveVertical, Timer,
-  Undo2, Redo2, Radio, RefreshCw, AlertCircle, Cloud, LayoutList, ImagePlus, BarChart3, Images
+  Undo2, Redo2, Radio, RefreshCw, AlertCircle, Cloud, LayoutList, ImagePlus, BarChart3, Images, HelpCircle
 } from 'lucide-react';
 import QuizPreview from './QuizPreview';
 import BlockEditor from './BlockEditor';
@@ -37,6 +37,7 @@ const BLOCK_TYPES = [
   { type: 'image_carousel', label: 'Carrossel Imagens', icon: Images, color: '#f59e0b' },
   { type: 'animated_text_carousel', label: 'Textos Animados', icon: Type, color: '#0ea5e9' },
   { type: 'button_grid', label: 'Grade de Botões', icon: LayoutList, color: '#3b82f6' },
+  { type: 'faq', label: 'FAQ (Perguntas)', icon: HelpCircle, color: '#f43f5e' },
 ];
 
 function createBlock(type) {
@@ -214,6 +215,24 @@ function createBlock(type) {
         { id: 'opt_9', text: '09', scoreTarget: '' },
         { id: 'opt_10', text: '10', scoreTarget: '' },
       ]
+    };
+    case 'faq': return { ...base,
+      items: [
+        { id: 'f1', question: 'Preciso aparecer nos vídeos?', answer: 'Não. Você pode criar conteúdo sem nunca mostrar o rosto.' },
+        { id: 'f2', question: 'Funciona para iniciantes?', answer: 'Com certeza! Nosso método foi criado pensando exatamente em quem está começando do zero.' },
+        { id: 'f3', question: 'Por quanto tempo tenho acesso?', answer: 'O acesso é vitalício. Você pode acessar quando e onde quiser.' }
+      ],
+      qColor: '#1e293b',
+      qSize: 14,
+      qWeight: 600,
+      aColor: '#64748b',
+      aSize: 13,
+      aWeight: 400,
+      iconType: 'chevron', // chevron or plus
+      iconColor: '#cbd5e1',
+      dividerColor: '#e2e8f0',
+      bg: 'transparent',
+      boxPadding: 16,
     };
     default:            return base;
   }
