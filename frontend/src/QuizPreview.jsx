@@ -3495,9 +3495,20 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   <span style={{ color: qColor, fontSize: compact ? qSize - 2 : qSize, fontWeight: qWeight, paddingRight: 16 }}>{item.question || ''}</span>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: iconColor }}>
                      {iconType === 'chevron' ? (
-                       <ChevronLeft size={compact ? 18 : 20} style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
+                       <svg width={compact ? 18 : 20} height={compact ? 18 : 20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isOpen ? 'rotate(90deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }}>
+                         <polyline points="15 18 9 12 15 6"></polyline>
+                       </svg>
                      ) : (
-                       isOpen ? <Minus size={compact ? 18 : 20} /> : <Plus size={compact ? 18 : 20} />
+                       isOpen ? (
+                         <svg width={compact ? 18 : 20} height={compact ? 18 : 20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                           <line x1="5" y1="12" x2="19" y2="12"></line>
+                         </svg>
+                       ) : (
+                         <svg width={compact ? 18 : 20} height={compact ? 18 : 20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                           <line x1="12" y1="5" x2="12" y2="19"></line>
+                           <line x1="5" y1="12" x2="19" y2="12"></line>
+                         </svg>
+                       )
                      )}
                   </div>
                 </button>
