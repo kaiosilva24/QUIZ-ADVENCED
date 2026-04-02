@@ -4026,7 +4026,32 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       }
 
       return (
-        <div style={{ width: '100%' }}>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: compact ? 12 : 20 }}>
+          {(block.title || block.text) && (
+            <div style={{ textAlign: block.textAlign || 'center', padding: '0 8px' }}>
+              {block.title && (
+                <div style={{
+                  color: block.titleColor || '#ffffff',
+                  fontSize: compact ? Math.max(16, Math.round((block.titleSize || 24) * 0.7)) : (block.titleSize || 24),
+                  fontWeight: block.titleWeight === 'normal' ? 400 : block.titleWeight === 'semibold' ? 600 : block.titleWeight === 'extrabold' ? 900 : 700,
+                  marginBottom: block.text ? (compact ? 4 : 8) : 0,
+                  lineHeight: 1.2,
+                }}>
+                  {block.title}
+                </div>
+              )}
+              {block.text && (
+                <div style={{
+                  color: block.textColor || '#cbd5e1',
+                  fontSize: compact ? Math.max(12, Math.round((block.textSize || 16) * 0.8)) : (block.textSize || 16),
+                  lineHeight: 1.5,
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {block.text}
+                </div>
+              )}
+            </div>
+          )}
           <div style={containerStyle}>
             {ratio !== 'auto' ? (
               <img

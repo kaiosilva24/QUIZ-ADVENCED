@@ -2692,6 +2692,47 @@ function ImageCarouselEditor({ block, onChange }) {
 
   return (
     <>
+      <Section title="Título e Texto (Opcional)">
+        <Field label="Título">
+          <Input value={block.title || ''} onChange={v => onChange({ title: v })} placeholder="Ex: Galeria de Fotos" />
+        </Field>
+        <div className="mt-3">
+          <Field label="Texto Abaixo / Descrição">
+            <textarea
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-indigo-500"
+              rows={2}
+              value={block.text || ''}
+              onChange={e => onChange({ text: e.target.value })}
+              placeholder="Digite um texto descritivo..."
+            />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Cor do Título"><ColorPicker value={block.titleColor || '#ffffff'} onChange={v => onChange({ titleColor: v })} /></Field>
+          <Field label="Tamanho Título (px)"><Input type="number" value={block.titleSize || 24} onChange={v => onChange({ titleSize: parseInt(v) })} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Cor do Texto"><ColorPicker value={block.textColor || '#cbd5e1'} onChange={v => onChange({ textColor: v })} /></Field>
+          <Field label="Tamanho Texto (px)"><Input type="number" value={block.textSize || 16} onChange={v => onChange({ textSize: parseInt(v) })} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Espessura do Título">
+            <Select value={block.titleWeight || 'bold'} onChange={v => onChange({ titleWeight: v })} options={[
+              { value: 'normal', label: 'Normal' },
+              { value: 'semibold', label: 'Semi-Negrito' },
+              { value: 'bold', label: 'Negrito' },
+              { value: 'extrabold', label: 'Extra Negrito' }
+            ]} />
+          </Field>
+          <Field label="Alinhamento">
+             <Select value={block.textAlign || 'center'} onChange={v => onChange({ textAlign: v })} options={[
+               { value: 'left', label: 'Esquerda' },
+               { value: 'center', label: 'Centro' },
+               { value: 'right', label: 'Direita' }
+             ]} />
+          </Field>
+        </div>
+      </Section>
       <Section title="Exibição e Comportamento">
         <Field label="Formato (Aspect Ratio)">
           <Select value={block.aspectRatio || '16/9'} onChange={v => onChange({ aspectRatio: v })} options={[
