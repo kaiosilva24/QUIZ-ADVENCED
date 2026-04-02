@@ -3609,7 +3609,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             {model === 'offer_card' && (
                <div style={{ width: '100%', borderRadius: radius, overflow: 'hidden', border: `1px solid ${border}` }}>
                   {headerText && (
-                     <div style={{ padding: compact ? '10px 12px' : '14px 24px', background: headerBg, color: headerColor, textAlign: 'center', fontSize: compact ? 13 : 16, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1, wordBreak: 'break-word' }}>
+                     <div style={{ padding: compact ? '10px 12px' : '14px 24px', background: headerBg, color: headerColor, textAlign: 'center', fontSize: block.headerSize || (compact ? 13 : 16), fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1, wordBreak: 'break-word' }}>
                         {headerText}
                      </div>
                   )}
@@ -3617,18 +3617,18 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                      {/* Esquerda */}
                      {leftText && (
                         <div style={{ flex: '0.8 1 0%', minWidth: 0, padding: compact ? '4px' : '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                           <span style={{ color: leftTextColor, fontSize: block.leftTextSize ? (compact ? Math.round(block.leftTextSize * 0.7) : block.leftTextSize) : (compact ? 15 : 22), fontWeight: 800, lineHeight: 1.15, wordBreak: 'break-word' }}>{leftText}</span>
+                           <span style={{ color: leftTextColor, fontSize: block.leftTextSize || (compact ? 15 : 22), fontWeight: 800, lineHeight: 1.15, wordBreak: 'break-word' }}>{leftText}</span>
                         </div>
                      )}
                      {/* Direita */}
                      <div style={{ background: boxRightBg, borderRadius: radius, padding: compact ? '12px 6px' : '24px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: '1.8 1 0%', minWidth: 0, boxSizing: 'border-box', overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 4 : 6, opacity: 0.8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                           {pref && <span style={{ color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500, whiteSpace: 'nowrap' }}>{pref}</span>}
-                           {oldP && <OldPriceUI size={compact ? 14 : 20} strikeSize={2} />}
-                           {suf && <span style={{ color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500, textAlign: 'center' }}>{suf}</span>}
+                           {pref && <span style={{ color: tColor, fontSize: block.labelSize || (compact ? 11 : 14), fontWeight: 500, whiteSpace: 'nowrap' }}>{pref}</span>}
+                           {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 14 : 20)} strikeSize={2} />}
+                           {suf && <span style={{ color: tColor, fontSize: block.labelSize || (compact ? 11 : 14), fontWeight: 500, textAlign: 'center' }}>{suf}</span>}
                         </div>
                         <div style={{ marginTop: compact ? 4 : 10 }}>
-                           <NewPriceUI size={compact ? 34 : 56} />
+                           <NewPriceUI size={block.priceSize || (compact ? 34 : 56)} />
                         </div>
                      </div>
                   </div>

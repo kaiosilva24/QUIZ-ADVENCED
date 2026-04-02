@@ -3152,18 +3152,20 @@ function PriceDisplayEditor({ block, onChange }) {
       {block.model === 'offer_card' && (
          <Section title="Topo e Lateral (Cartão de Oferta)">
             <Field label="Texto do Cabeçalho Superior"><Input value={block.headerText || ''} onChange={v => onChange({ headerText: v })} placeholder="PLANO COMPLETO E PERSONALIZADO" /></Field>
-            <div className="grid grid-cols-2 gap-4 mt-3">
+            <div className="grid grid-cols-3 gap-3 mt-3">
                <Field label="Fundo Cabeç."><ColorPicker value={block.headerBg || '#0f172a'} onChange={v => onChange({ headerBg: v })} /></Field>
                <Field label="Cor Texto Cabeç."><ColorPicker value={block.headerColor || '#ffffff'} onChange={v => onChange({ headerColor: v })} /></Field>
+               <Field label="Fonte Cabeç. (px)"><Input type="number" value={block.headerSize || 16} onChange={v => onChange({ headerSize: parseInt(v) })} /></Field>
             </div>
             <div className="mt-3">
                <Field label="Texto do Lado Esquerdo"><Input value={block.leftText || ''} onChange={v => onChange({ leftText: v })} placeholder="⏰ OFERTA ESPECIAL" /></Field>
                <div className="grid grid-cols-2 gap-4 mt-3">
                   <Field label="Cor do Título Esquerdo"><ColorPicker value={block.leftTextColor || '#166534'} onChange={v => onChange({ leftTextColor: v })} /></Field>
-                  <Field label="Tamanho da Fonte (Esquerda)"><Input type="number" value={block.leftTextSize || 22} onChange={v => onChange({ leftTextSize: parseInt(v) })} /></Field>
+                  <Field label="Fonte Esquerda (px)"><Input type="number" value={block.leftTextSize || 22} onChange={v => onChange({ leftTextSize: parseInt(v) })} /></Field>
                </div>
                <div className="grid grid-cols-2 gap-4 mt-3">
                   <Field label="Fundo da Caixa Direita"><ColorPicker value={block.boxRightBg || '#dcfce7'} onChange={v => onChange({ boxRightBg: v })} /></Field>
+                  <Field label="Fonte Textos (De/Por) (px)"><Input type="number" value={block.labelSize || 14} onChange={v => onChange({ labelSize: parseInt(v) })} /></Field>
                </div>
             </div>
          </Section>
