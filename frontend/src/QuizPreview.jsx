@@ -3580,21 +3580,21 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                         {headerText}
                      </div>
                   )}
-                  <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', background: bg, alignItems: compact ? 'center' : 'stretch' }}>
+                  <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', background: bg, boxSizing: 'border-box' }}>
                      {/* Esquerda */}
                      {leftText && (
-                        <div style={{ flex: 1, padding: compact ? '16px' : '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                           <span style={{ color: leftTextColor, fontSize: compact ? 18 : 26, fontWeight: 800 }}>{leftText}</span>
+                        <div style={{ flex: 1, padding: compact ? '16px' : '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                           <span style={{ color: leftTextColor, fontSize: compact ? 18 : 22, fontWeight: 800, lineHeight: 1.2 }}>{leftText}</span>
                         </div>
                      )}
                      {/* Direita */}
-                     <div style={{ background: boxRightBg, padding: compact ? '16px' : '24px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: compact ? 'center' : 'flex-end', borderTopLeftRadius: compact ? 0 : 24, borderBottomLeftRadius: compact ? 0 : 24, margin: compact ? '0 16px 16px 16px' : '16px 16px 16px 0', borderRadius: compact ? 16 : '24px', minWidth: compact ? 'auto' : 250 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.8 }}>
-                           {pref && <span style={{ color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500 }}>{pref}</span>}
-                           {oldP && <OldPriceUI size={compact ? 16 : 20} strikeSize={1} />}
-                           {suf && <span style={{ color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500 }}>{suf}</span>}
+                     <div style={{ background: boxRightBg, padding: compact ? '20px 16px' : '24px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', borderTopLeftRadius: compact ? 0 : 32, borderBottomLeftRadius: compact ? 0 : 32, flex: '1 1 auto', boxSizing: 'border-box', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                           {pref && <span style={{ color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500, whiteSpace: 'nowrap' }}>{pref}</span>}
+                           {oldP && <OldPriceUI size={compact ? 16 : 20} strikeSize={2} />}
+                           {suf && <span style={{ color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500, textAlign: 'center' }}>{suf}</span>}
                         </div>
-                        <div style={{ marginTop: compact ? 4 : 8 }}>
+                        <div style={{ marginTop: compact ? 8 : 12 }}>
                            <NewPriceUI size={compact ? 44 : 56} />
                         </div>
                      </div>
