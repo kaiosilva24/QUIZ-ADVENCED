@@ -3118,6 +3118,67 @@ function FaqEditor({ block, onChange }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PriceDisplayEditor
+// ─────────────────────────────────────────────────────────────────────────────
+function PriceDisplayEditor({ block, onChange }) {
+  return (
+    <>
+      <Section title="Esquema Visual">
+        <Field label="Modelo de Tabela">
+          <Select value={block.model || 'classic'} onChange={v => onChange({ model: v })} options={[
+            { value: 'classic', label: 'Clássico (De X por Y lado a lado)' },
+            { value: 'badge', label: 'Destaque com Tag (Selo de desconto)' },
+            { value: 'minimalist', label: 'Minimalista Gigante' },
+          ]} />
+        </Field>
+        <Field label="Animação Dinâmica">
+          <Select value={block.animationMode || 'pulse'} onChange={v => onChange({ animationMode: v })} options={[
+            { value: 'none', label: 'Sem animação' },
+            { value: 'pulse', label: 'Pulsação Suave' },
+            { value: 'heartbeat', label: 'Batida de Coração (Rápida)' },
+            { value: 'shimmer', label: 'Brilho Passando (Shimmer)' },
+            { value: 'bounce', label: 'Pulinho Contínuo' },
+          ]} />
+        </Field>
+      </Section>
+      <Section title="Textos e Valores">
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Moeda (Símbolo)"><Input value={block.currency || ''} onChange={v => onChange({ currency: v })} placeholder="R$" /></Field>
+          <Field label="Texto antes do preço"><Input value={block.prefix || ''} onChange={v => onChange({ prefix: v })} placeholder="De" /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Preço Antigo"><Input value={block.oldPrice || ''} onChange={v => onChange({ oldPrice: v })} placeholder="197,00" /></Field>
+          <Field label="Texto de conexão (Meio)"><Input value={block.suffix || ''} onChange={v => onChange({ suffix: v })} placeholder="por apenas" /></Field>
+        </div>
+        <Field label="Preço Novo (Atual)"><Input value={block.newPrice || ''} onChange={v => onChange({ newPrice: v })} placeholder="29,90" /></Field>
+        <Field label="Texto do Período (ex: 12x de, ou /mês)"><Input value={block.period || ''} onChange={v => onChange({ period: v })} placeholder="" /></Field>
+        {block.model === 'badge' && (
+           <Field label="Texto da Tag Central"><Input value={block.badgeText || ''} onChange={v => onChange({ badgeText: v })} placeholder="ECONOMIZE 85%" /></Field>
+        )}
+        <Field label="Subtexto Abaixo (Mensagem Escassez)"><Input value={block.subtext || ''} onChange={v => onChange({ subtext: v })} placeholder="Sua oferta exclusiva foi ativada!" /></Field>
+      </Section>
+      <Section title="Cores e Fundo">
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Cor Preço Atual"><ColorPicker value={block.newPriceColor || '#22c55e'} onChange={v => onChange({ newPriceColor: v })} /></Field>
+          <Field label="Cor Preço Antigo"><ColorPicker value={block.oldPriceColor || '#ef4444'} onChange={v => onChange({ oldPriceColor: v })} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Cor dos Textos Gerais"><ColorPicker value={block.textColor || '#94a3b8'} onChange={v => onChange({ textColor: v })} /></Field>
+          {block.model === 'badge' && <Field label="Fundo da Tag"><ColorPicker value={block.badgeBg || '#ef4444'} onChange={v => onChange({ badgeBg: v })} /></Field>}
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Fundo do Bloco"><ColorPicker value={block.bg || 'transparent'} onChange={v => onChange({ bg: v })} /></Field>
+          <Field label="Cor da Borda"><ColorPicker value={block.boxBorder || 'transparent'} onChange={v => onChange({ boxBorder: v })} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Arredondamento (px)"><Input type="number" value={block.boxRadius ?? 16} onChange={v => onChange({ boxRadius: parseInt(v) })} /></Field>
+        </div>
+      </Section>
+    </>
+  );
+}
+
 export default function BlockEditor({ block, theme, steps, currentStepIdx, onChange }) {
   if (!block) return null;
 
@@ -3144,6 +3205,7 @@ export default function BlockEditor({ block, theme, steps, currentStepIdx, onCha
     animated_text_carousel: AnimatedTextCarouselEditor,
     button_grid: ButtonGridEditor,
     faq: FaqEditor,
+    price_display: PriceDisplayEditor,
   };
 
   const Editor = editorMap[block.type];

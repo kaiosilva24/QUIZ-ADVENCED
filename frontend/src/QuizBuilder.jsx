@@ -10,7 +10,7 @@ import {
   GripVertical, Plus, Trash2, ChevronLeft, Save, Eye, EyeOff,
   Type, Image, MousePointerClick, AlignLeft, ToggleLeft, Minus,
   CheckCircle2, Users, Layers, Palette, Settings, ArrowRight, Music, Video, Copy, MoveVertical, Timer,
-  Undo2, Redo2, Radio, RefreshCw, AlertCircle, Cloud, LayoutList, ImagePlus, BarChart3, Images, HelpCircle
+  Undo2, Redo2, Radio, RefreshCw, AlertCircle, Cloud, LayoutList, ImagePlus, BarChart3, Images, HelpCircle, Tag
 } from 'lucide-react';
 import QuizPreview from './QuizPreview';
 import BlockEditor from './BlockEditor';
@@ -38,6 +38,7 @@ const BLOCK_TYPES = [
   { type: 'animated_text_carousel', label: 'Textos Animados', icon: Type, color: '#0ea5e9' },
   { type: 'button_grid', label: 'Grade de Botões', icon: LayoutList, color: '#3b82f6' },
   { type: 'faq', label: 'FAQ (Perguntas)', icon: HelpCircle, color: '#f43f5e' },
+  { type: 'price_display', label: 'Bloco de Preço', icon: Tag, color: '#10b981' },
 ];
 
 function createBlock(type) {
@@ -233,6 +234,25 @@ function createBlock(type) {
       dividerColor: '#e2e8f0',
       bg: 'transparent',
       boxPadding: 16,
+    };
+    case 'price_display': return { ...base,
+      model: 'classic', // classic, badge, minimalist
+      oldPrice: '197,00',
+      newPrice: '29,90',
+      currency: 'R$',
+      prefix: 'De',
+      suffix: 'por apenas',
+      period: '', // ex: /mês, ou 12x de
+      subtext: 'Oferta exclusiva de bônus ativada!',
+      animationMode: 'pulse', // none, pulse, bounce, shimmer
+      bg: 'transparent',
+      boxBorder: 'transparent',
+      boxRadius: 16,
+      newPriceColor: '#22c55e',
+      oldPriceColor: '#ef4444',
+      textColor: '#94a3b8',
+      badgeBg: '#ef4444',
+      badgeText: 'ECONOMIZE 85%',
     };
     default:            return base;
   }

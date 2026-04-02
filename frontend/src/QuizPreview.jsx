@@ -3437,6 +3437,118 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       );
     }
 
+    case 'price_display': {
+      const model = block.model || 'classic';
+      const anim = block.animationMode || 'pulse';
+      const oldP = block.oldPrice || '';
+      const newP = block.newPrice || '';
+      const curr = block.currency || 'R$';
+      const pref = block.prefix || '';
+      const suf = block.suffix || '';
+      const sub = block.subtext || '';
+      const per = block.period || '';
+      const badgeTxt = block.badgeText || '';
+
+      const nColor = block.newPriceColor || '#22c55e';
+      const oColor = block.oldPriceColor || '#ef4444';
+      const tColor = block.textColor || '#94a3b8';
+      const bColor = block.badgeBg || '#ef4444';
+      const bg = block.bg || 'transparent';
+      const border = block.boxBorder || 'transparent';
+      const radius = block.boxRadius ?? 16;
+
+      const animId = `pdanim_${block.id || Math.random().toString(36).slice(2, 8)}`;
+      let inlineStyle = `
+        @keyframes ${animId}_pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes ${animId}_heartbeat { 0% { transform: scale(1); } 14% { transform: scale(1.08); } 28% { transform: scale(1); } 42% { transform: scale(1.08); } 70%, 100% { transform: scale(1); } }
+        @keyframes ${animId}_bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes ${animId}_shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+      `;
+      
+      let animStyle = {};
+      if (anim === 'pulse') animStyle = { animation: `${animId}_pulse 2s infinite ease-in-out` };
+      if (anim === 'heartbeat') animStyle = { animation: `${animId}_heartbeat 1.5s infinite ease-in-out` };
+      if (anim === 'bounce') animStyle = { animation: `${animId}_bounce 2s infinite ease-in-out` };
+
+      const isShimmer = anim === 'shimmer';
+
+      const OldPriceUI = ({ size, strikeSize }) => (
+         <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: oColor, opacity: 0.7, textDecoration: 'line-through', textDecorationThickness: strikeSize || 2 }}>
+            <span style={{ fontSize: size * 0.7 }}>{curr}</span>
+            <span style={{ fontSize: size, fontWeight: 700 }}>{oldP}</span>
+         </div>
+      );
+
+      const NewPriceUI = ({ size }) => (
+         <div style={{ ...animStyle, display: 'flex', alignItems: 'baseline', gap: compact ? 2 : 4, color: isShimmer ? undefined : nColor, textShadow: isShimmer ? '0 0 10px rgba(255,255,255,0.3)' : 'none' }}>
+            <span style={{ fontSize: size * 0.5, fontWeight: 600, color: isShimmer ? '#94a3b8' : 'inherit' }}>{curr}</span>
+            <span style={{ fontSize: size, fontWeight: 900, lineHeight: 1, letterSpacing: -1 }}>
+              {isShimmer ? (
+                 <span style={{
+                    background: `linear-gradient(90deg, ${nColor} 0%, #ffffff 50%, ${nColor} 100%)`,
+                    backgroundSize: '200% auto',
+                    color: 'transparent',
+                    WebkitBackgroundClip: 'text',
+                    animation: `${animId}_shimmer 2s infinite linear`
+                 }}>{newP}</span>
+              ) : newP}
+            </span>
+            {per && <span style={{ fontSize: size * 0.35, fontWeight: 500, color: tColor, opacity: 0.8 }}>{per}</span>}
+         </div>
+      );
+
+      return (
+         <div style={{ width: '100%', background: bg, border: `1px solid ${border}`, borderRadius: radius, padding: compact ? '20px 15px' : '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <style>{inlineStyle}</style>
+
+            {model === 'classic' && (
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 8 : 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {pref && <span style={{ color: tColor, fontSize: compact ? 12 : 16, fontWeight: 500 }}>{pref}</span>}
+                    {oldP && <OldPriceUI size={compact ? 20 : 26} strikeSize={2} />}
+                    {suf && <span style={{ color: tColor, fontSize: compact ? 12 : 16, fontWeight: 500 }}>{suf}</span>}
+                  </div>
+                  <NewPriceUI size={compact ? 48 : 64} />
+               </div>
+            )}
+
+            {model === 'badge' && (
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 12 : 16 }}>
+                  {badgeTxt && (
+                     <div style={{ background: bColor, color: '#fff', fontSize: compact ? 11 : 14, fontWeight: 800, padding: compact ? '4px 12px' : '6px 16px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 1 }}>
+                        {badgeTxt}
+                     </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 4 : 8 }}>
+                     {pref && <span style={{ color: tColor, fontSize: compact ? 14 : 18, fontWeight: 600 }}>{pref}</span>}
+                     {oldP && <OldPriceUI size={compact ? 24 : 32} strikeSize={3} />}
+                     {suf && <span style={{ color: tColor, fontSize: compact ? 14 : 18, fontWeight: 600, marginTop: 4 }}>{suf}</span>}
+                     <div style={{ marginTop: compact ? 8 : 12 }}>
+                        <NewPriceUI size={compact ? 56 : 80} />
+                     </div>
+                  </div>
+               </div>
+            )}
+
+            {model === 'minimalist' && (
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <NewPriceUI size={compact ? 64 : 100} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, marginTop: compact ? 8 : 12 }}>
+                    {pref && <span style={{ color: tColor, fontSize: compact ? 12 : 14, opacity: 0.7, fontWeight: 500 }}>{pref}</span>}
+                    {oldP && <OldPriceUI size={compact ? 16 : 20} strikeSize={1} />}
+                  </div>
+               </div>
+            )}
+
+            {sub && (
+               <div style={{ marginTop: compact ? 16 : 24, padding: compact ? '8px 16px' : '12px 24px', background: 'rgba(255,255,255,0.05)', borderRadius: 12, color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500, textAlign: 'center', maxWidth: '90%' }}>
+                  {sub}
+               </div>
+            )}
+         </div>
+      );
+    }
+
     case 'faq': {
       const items = block.items || [];
       const [openItems, setOpenItems] = React.useState({});
