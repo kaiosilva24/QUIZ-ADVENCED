@@ -3128,20 +3128,41 @@ function PriceDisplayEditor({ block, onChange }) {
         <Field label="Modelo de Tabela">
           <Select value={block.model || 'classic'} onChange={v => onChange({ model: v })} options={[
             { value: 'classic', label: 'Clássico (De X por Y lado a lado)' },
-            { value: 'badge', label: 'Destaque com Tag (Selo de desconto)' },
+            { value: 'badge', label: 'Destaque com Tag central' },
             { value: 'minimalist', label: 'Minimalista Gigante' },
+            { value: 'offer_card', label: 'Cartão de Oferta (Especial)' },
           ]} />
         </Field>
-        <Field label="Animação Dinâmica">
+        <Field label="Animação do Preço (Opções Avançadas)">
           <Select value={block.animationMode || 'pulse'} onChange={v => onChange({ animationMode: v })} options={[
             { value: 'none', label: 'Sem animação' },
             { value: 'pulse', label: 'Pulsação Suave' },
             { value: 'heartbeat', label: 'Batida de Coração (Rápida)' },
-            { value: 'shimmer', label: 'Brilho Passando (Shimmer)' },
             { value: 'bounce', label: 'Pulinho Contínuo' },
+            { value: 'wiggle', label: 'Chacoalho (Wiggle)' },
+            { value: 'shimmer', label: 'Brilho Passando (Shimmer Prata/Branco)' },
+            { value: 'neon', label: 'Glow Neon (Piscar Brilhante)' },
+            { value: 'typewriter', label: 'Máquina de Escrever (Aparecendo)' },
+            { value: 'gradient_slide', label: 'Gradiente Deslizante Premium' },
           ]} />
         </Field>
       </Section>
+      {block.model === 'offer_card' && (
+         <Section title="Topo e Lateral (Cartão de Oferta)">
+            <Field label="Texto do Cabeçalho Superior"><Input value={block.headerText || ''} onChange={v => onChange({ headerText: v })} placeholder="PLANO COMPLETO E PERSONALIZADO" /></Field>
+            <div className="grid grid-cols-2 gap-4 mt-3">
+               <Field label="Fundo Cabeç."><ColorPicker value={block.headerBg || '#0f172a'} onChange={v => onChange({ headerBg: v })} /></Field>
+               <Field label="Cor Texto Cabeç."><ColorPicker value={block.headerColor || '#ffffff'} onChange={v => onChange({ headerColor: v })} /></Field>
+            </div>
+            <div className="mt-3">
+               <Field label="Texto do Lado Esquerdo"><Input value={block.leftText || ''} onChange={v => onChange({ leftText: v })} placeholder="⏰ OFERTA ESPECIAL" /></Field>
+               <div className="grid grid-cols-2 gap-4 mt-3">
+                  <Field label="Cor do Título Esquerdo"><ColorPicker value={block.leftTextColor || '#166534'} onChange={v => onChange({ leftTextColor: v })} /></Field>
+                  <Field label="Fundo da Caixa Direita"><ColorPicker value={block.boxRightBg || '#dcfce7'} onChange={v => onChange({ boxRightBg: v })} /></Field>
+               </div>
+            </div>
+         </Section>
+      )}
       <Section title="Textos e Valores">
         <div className="grid grid-cols-2 gap-4">
           <Field label="Moeda (Símbolo)"><Input value={block.currency || ''} onChange={v => onChange({ currency: v })} placeholder="R$" /></Field>

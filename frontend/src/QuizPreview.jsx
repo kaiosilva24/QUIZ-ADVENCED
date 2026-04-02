@@ -3456,6 +3456,13 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const bg = block.bg || 'transparent';
       const border = block.boxBorder || 'transparent';
       const radius = block.boxRadius ?? 16;
+      
+      const headerText = block.headerText || '';
+      const headerBg = block.headerBg || '#0f172a';
+      const headerColor = block.headerColor || '#ffffff';
+      const leftText = block.leftText || '';
+      const leftTextColor = block.leftTextColor || '#166534';
+      const boxRightBg = block.boxRightBg || '#dcfce7';
 
       const animId = `pdanim_${block.id || Math.random().toString(36).slice(2, 8)}`;
       let inlineStyle = `
@@ -3463,14 +3470,44 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         @keyframes ${animId}_heartbeat { 0% { transform: scale(1); } 14% { transform: scale(1.08); } 28% { transform: scale(1); } 42% { transform: scale(1.08); } 70%, 100% { transform: scale(1); } }
         @keyframes ${animId}_bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         @keyframes ${animId}_shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes ${animId}_wiggle { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
+        @keyframes ${animId}_neon { 0%, 100% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px ${nColor}, 0 0 30px ${nColor}; } 50% { text-shadow: 0 0 2px #fff, 0 0 5px #fff, 0 0 10px ${nColor}, 0 0 20px ${nColor}; } }
+        @keyframes ${animId}_typewriter { 0%, 10% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); } 90%, 100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); } }
+        @keyframes ${animId}_gradient_slide { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
       `;
       
       let animStyle = {};
       if (anim === 'pulse') animStyle = { animation: `${animId}_pulse 2s infinite ease-in-out` };
       if (anim === 'heartbeat') animStyle = { animation: `${animId}_heartbeat 1.5s infinite ease-in-out` };
       if (anim === 'bounce') animStyle = { animation: `${animId}_bounce 2s infinite ease-in-out` };
+      if (anim === 'wiggle') animStyle = { animation: `${animId}_wiggle 2.5s infinite ease-in-out` };
+      if (anim === 'neon') animStyle = { animation: `${animId}_neon 1.5s infinite ease-in-out` };
+      if (anim === 'typewriter') animStyle = { animation: `${animId}_typewriter 3s ease-in-out infinite alternate` };
 
       const isShimmer = anim === 'shimmer';
+      const isGradientSlide = anim === 'gradient_slide';
+
+      const SpecialTextSpan = ({ children }) => {
+         if (isShimmer) {
+             return <span style={{
+                    background: `linear-gradient(90deg, ${nColor} 0%, #ffffff 50%, ${nColor} 100%)`,
+                    backgroundSize: '200% auto',
+                    color: 'transparent',
+                    WebkitBackgroundClip: 'text',
+                    animation: `${animId}_shimmer 2s infinite linear`
+                 }}>{children}</span>;
+         }
+         if (isGradientSlide) {
+             return <span style={{
+                    background: `linear-gradient(270deg, ${nColor}, #fbbf24, #10b981, ${nColor})`,
+                    backgroundSize: '400% 400%',
+                    color: 'transparent',
+                    WebkitBackgroundClip: 'text',
+                    animation: `${animId}_gradient_slide 4s ease infinite`
+                 }}>{children}</span>;
+         }
+         return children;
+      };
 
       const OldPriceUI = ({ size, strikeSize }) => (
          <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: oColor, opacity: 0.7, textDecoration: 'line-through', textDecorationThickness: strikeSize || 2 }}>
@@ -3480,25 +3517,21 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       );
 
       const NewPriceUI = ({ size }) => (
-         <div style={{ ...animStyle, display: 'flex', alignItems: 'baseline', gap: compact ? 2 : 4, color: isShimmer ? undefined : nColor, textShadow: isShimmer ? '0 0 10px rgba(255,255,255,0.3)' : 'none' }}>
-            <span style={{ fontSize: size * 0.5, fontWeight: 600, color: isShimmer ? '#94a3b8' : 'inherit' }}>{curr}</span>
+         <div style={{ ...animStyle, display: 'flex', alignItems: 'baseline', gap: compact ? 2 : 4, color: (isShimmer || isGradientSlide) ? undefined : nColor, textShadow: isShimmer ? '0 0 10px rgba(255,255,255,0.3)' : 'none' }}>
+            <span style={{ fontSize: size * 0.5, fontWeight: 600, color: (isShimmer || isGradientSlide) ? tColor : 'inherit' }}>{curr}</span>
             <span style={{ fontSize: size, fontWeight: 900, lineHeight: 1, letterSpacing: -1 }}>
-              {isShimmer ? (
-                 <span style={{
-                    background: `linear-gradient(90deg, ${nColor} 0%, #ffffff 50%, ${nColor} 100%)`,
-                    backgroundSize: '200% auto',
-                    color: 'transparent',
-                    WebkitBackgroundClip: 'text',
-                    animation: `${animId}_shimmer 2s infinite linear`
-                 }}>{newP}</span>
-              ) : newP}
+              <SpecialTextSpan>{newP}</SpecialTextSpan>
             </span>
             {per && <span style={{ fontSize: size * 0.35, fontWeight: 500, color: tColor, opacity: 0.8 }}>{per}</span>}
          </div>
       );
 
       return (
-         <div style={{ width: '100%', background: bg, border: `1px solid ${border}`, borderRadius: radius, padding: compact ? '20px 15px' : '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+         <div style={
+            model === 'offer_card'
+            ? { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }
+            : { width: '100%', background: bg, border: `1px solid ${border}`, borderRadius: radius, padding: compact ? '20px 15px' : '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }
+         }>
             <style>{inlineStyle}</style>
 
             {model === 'classic' && (
@@ -3536,6 +3569,35 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, marginTop: compact ? 8 : 12 }}>
                     {pref && <span style={{ color: tColor, fontSize: compact ? 12 : 14, opacity: 0.7, fontWeight: 500 }}>{pref}</span>}
                     {oldP && <OldPriceUI size={compact ? 16 : 20} strikeSize={1} />}
+                  </div>
+               </div>
+            )}
+
+            {model === 'offer_card' && (
+               <div style={{ width: '100%', borderRadius: radius, overflow: 'hidden', border: `1px solid ${border}` }}>
+                  {headerText && (
+                     <div style={{ padding: compact ? '10px 12px' : '16px 24px', background: headerBg, color: headerColor, textAlign: 'center', fontSize: compact ? 12 : 16, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1 }}>
+                        {headerText}
+                     </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', background: bg, alignItems: compact ? 'center' : 'stretch' }}>
+                     {/* Esquerda */}
+                     {leftText && (
+                        <div style={{ flex: 1, padding: compact ? '16px' : '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                           <span style={{ color: leftTextColor, fontSize: compact ? 18 : 26, fontWeight: 800 }}>{leftText}</span>
+                        </div>
+                     )}
+                     {/* Direita */}
+                     <div style={{ background: boxRightBg, padding: compact ? '16px' : '24px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: compact ? 'center' : 'flex-end', borderTopLeftRadius: compact ? 0 : 24, borderBottomLeftRadius: compact ? 0 : 24, margin: compact ? '0 16px 16px 16px' : '16px 16px 16px 0', borderRadius: compact ? 16 : '24px', minWidth: compact ? 'auto' : 250 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.8 }}>
+                           {pref && <span style={{ color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500 }}>{pref}</span>}
+                           {oldP && <OldPriceUI size={compact ? 16 : 20} strikeSize={1} />}
+                           {suf && <span style={{ color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500 }}>{suf}</span>}
+                        </div>
+                        <div style={{ marginTop: compact ? 4 : 8 }}>
+                           <NewPriceUI size={compact ? 44 : 56} />
+                        </div>
+                     </div>
                   </div>
                </div>
             )}
