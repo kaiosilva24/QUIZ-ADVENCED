@@ -1032,7 +1032,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
         {/* Main editor area */}
         <div className="flex-1 flex overflow-hidden">
           {/* Block Palette */}
-          <div className="w-52 shrink-0 border-r border-white/5 bg-slate-900/30 overflow-y-auto p-3">
+          <div className="w-44 shrink-0 border-r border-white/5 bg-slate-900/30 overflow-y-auto p-2">
             <p className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-3 px-1">+ Adicionar Bloco</p>
             <div className="grid grid-cols-2 gap-1.5">
               {BLOCK_TYPES.map(({ type, label, icon: Icon, color }) => (
@@ -1190,9 +1190,9 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
       </div>
 
       {/* ── RIGHT PANEL: Live Preview ────────────────────────────────── */}
-      <div className="w-80 shrink-0 flex flex-col items-center justify-center bg-slate-900/20 gap-4 p-6">
+      <div className="w-[420px] shrink-0 flex flex-col items-center justify-center bg-slate-900/20 gap-3 p-4">
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Preview Live</p>
-        <QuizPreview config={config} stepIdx={currentStepIdx} compact selectedBlockId={selectedBlockId} onNavigate={handlePreviewNavigate} scores={previewScores} />
+        <QuizPreview config={config} stepIdx={currentStepIdx} selectedBlockId={selectedBlockId} onNavigate={handlePreviewNavigate} scores={previewScores} />
         <div className="flex gap-2">
           {config.steps.map((_, idx) => (
             <button key={idx} onClick={() => setCurrentStepIdx(idx)}
