@@ -3613,22 +3613,22 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                         {headerText}
                      </div>
                   )}
-                  <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', flexWrap: 'wrap', background: bg, boxSizing: 'border-box', padding: compact ? '12px' : '16px', gap: compact ? '12px' : '16px', alignItems: 'stretch' }}>
+                  <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', background: bg, boxSizing: 'border-box', padding: compact ? '12px' : '16px', gap: compact ? '12px' : '16px', alignItems: 'stretch' }}>
                      {/* Esquerda */}
                      {leftText && (
-                        <div style={{ flex: '1 1 200px', minWidth: 0, padding: compact ? '8px' : '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                        <div style={{ flex: '1 1 0%', minWidth: 0, padding: compact ? '8px' : '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
                            <span style={{ color: leftTextColor, fontSize: compact ? 18 : 24, fontWeight: 800, lineHeight: 1.2, wordBreak: 'break-word' }}>{leftText}</span>
                         </div>
                      )}
                      {/* Direita */}
-                     <div style={{ background: boxRightBg, borderRadius: radius, padding: compact ? '20px 16px' : '24px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: '1 1 250px', minWidth: 0, boxSizing: 'border-box' }}>
+                     <div style={{ background: boxRightBg, borderRadius: radius, padding: compact ? '16px 8px' : '24px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: '1.2 1 0%', minWidth: 0, boxSizing: 'border-box' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.8, flexWrap: 'wrap', justifyContent: 'center' }}>
                            {pref && <span style={{ color: tColor, fontSize: compact ? 12 : 14, fontWeight: 500, whiteSpace: 'nowrap' }}>{pref}</span>}
-                           {oldP && <OldPriceUI size={compact ? 18 : 20} strikeSize={2} />}
+                           {oldP && <OldPriceUI size={compact ? 16 : 20} strikeSize={2} />}
                            {suf && <span style={{ color: tColor, fontSize: compact ? 12 : 14, fontWeight: 500, textAlign: 'center' }}>{suf}</span>}
                         </div>
                         <div style={{ marginTop: compact ? 8 : 12 }}>
-                           <NewPriceUI size={compact ? 48 : 64} />
+                           <NewPriceUI size={compact ? 42 : 60} />
                         </div>
                      </div>
                   </div>
