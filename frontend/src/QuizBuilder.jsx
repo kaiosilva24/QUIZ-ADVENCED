@@ -178,7 +178,13 @@ function createBlock(type) {
       animationOut: 'fadeOut',
       transitionSpeed: 0.5,
       loop: true,
-      bold: true
+      bold: true,
+      bgColor: 'transparent',
+      bgRadius: 0,
+      bgPadding: 0,
+      showProgressBar: false,
+      progressBarColor: '#6366f1',
+      progressBarHeight: 4,
     };
     case 'button_grid': return { ...base,
       columns: 7,

@@ -2765,6 +2765,36 @@ function AnimatedTextCarouselEditor({ block, onChange }) {
         </div>
       </Section>
       <Section title="Estilo Geral">
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Cor de Fundo">
+            <ColorPicker value={block.bgColor || 'transparent'} onChange={v => onChange({ bgColor: v })} />
+          </Field>
+          <Field label="Arredondamento (px)">
+            <Input type="number" value={block.bgRadius ?? 0} onChange={v => onChange({ bgRadius: parseInt(v) })} />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-2">
+          <Field label="Padding Interno (px)">
+            <Input type="number" value={block.bgPadding ?? 0} onChange={v => onChange({ bgPadding: parseInt(v) })} />
+          </Field>
+        </div>
+        
+        <div className="mt-4 mb-4 pt-4 border-t border-slate-700/50 space-y-3">
+          <Field label="Barra de Tempo (Progresso)">
+            <Toggle label="Mostrar Barra de Tempo" value={!!block.showProgressBar} onChange={v => onChange({ showProgressBar: v })} />
+          </Field>
+          {block.showProgressBar && (
+            <div className="grid grid-cols-2 gap-4 pl-2 border-l-2 border-indigo-500/50 ml-1">
+              <Field label="Cor da Barra">
+                <ColorPicker value={block.progressBarColor || '#6366f1'} onChange={v => onChange({ progressBarColor: v })} />
+              </Field>
+              <Field label="Espessura (px)">
+                <Input type="number" value={block.progressBarHeight ?? 4} onChange={v => onChange({ progressBarHeight: parseInt(v) })} />
+              </Field>
+            </div>
+          )}
+        </div>
+
         <Field label="Tamanho da Fonte">
           <Select value={block.textSize || 'lg'} onChange={v => onChange({ textSize: v })} options={[
              { value: 'sm', label: 'Pequeno (sm)' },

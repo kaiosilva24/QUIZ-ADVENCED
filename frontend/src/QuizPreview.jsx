@@ -3732,6 +3732,9 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
       const currentText = items[currentIndex]?.text || '';
 
+      // Animação da barra de progresso (diminui da largura total para zero)
+      const currentDuration = items[currentIndex]?.duration || 3;
+
       return (
         <div style={{ width: '100%', position: 'relative' }}>
           <style>{getAnimationKeyframes()}</style>
@@ -3743,32 +3746,55 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             alignItems: 'center',
             textAlign: block.textAlign || 'center',
             overflow: 'hidden',
+            background: block.bgColor || 'transparent',
+            borderRadius: compact ? Math.round((block.bgRadius || 0) * 0.7) : (block.bgRadius || 0),
+            padding: compact ? Math.round((block.bgPadding || 0) * 0.7) : (block.bgPadding || 0),
+            position: 'relative',
           }}>
-            {(phase === 'in' || phase === 'view') && (
-              <span style={{ 
-                color: block.textColor || '#ffffff', 
-                fontSize: sizeMap[block.textSize] || sizeMap['lg'],
-                fontWeight: block.bold ? 800 : 400,
-                fontFamily: block.fontFamily || 'inherit',
-                whiteSpace: 'pre-wrap',
-                animation: phase === 'in' ? animationValue : 'none',
-                opacity: phase === 'view' ? 1 : 0
-              }}>
-                {currentText}
-              </span>
+            <div style={{ flex: 1, zIndex: 1 }}>
+              {(phase === 'in' || phase === 'view') && (
+                <span style={{ 
+                  color: block.textColor || '#ffffff', 
+                  fontSize: sizeMap[block.textSize] || sizeMap['lg'],
+                  fontWeight: block.bold ? 800 : 400,
+                  fontFamily: block.fontFamily || 'inherit',
+                  whiteSpace: 'pre-wrap',
+                  animation: phase === 'in' ? animationValue : 'none',
+                  opacity: phase === 'view' ? 1 : 0
+                }}>
+                  {currentText}
+                </span>
+              )}
+              {phase === 'out' && (
+                <span style={{ 
+                  color: block.textColor || '#ffffff', 
+                  fontSize: sizeMap[block.textSize] || sizeMap['lg'],
+                  fontWeight: block.bold ? 800 : 400,
+                  fontFamily: block.fontFamily || 'inherit',
+                  whiteSpace: 'pre-wrap',
+                  animation: animationValue,
+                }}>
+                  {currentText}
+                </span>
+              )}
+            </div>
+
+            {block.showProgressBar && (
+              <div 
+                key={`progress_${currentIndex}`}
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  height: compact ? Math.max(2, (block.progressBarHeight || 4) * 0.7) : (block.progressBarHeight || 4),
+                  background: block.progressBarColor || '#6366f1',
+                  animation: `shrinkWidth ${currentDuration + transitionSpeed * 2}s linear forwards`,
+                  transformOrigin: 'left',
+                  zIndex: 2,
+                }}
+              />
             )}
-            {phase === 'out' && (
-              <span style={{ 
-                color: block.textColor || '#ffffff', 
-                fontSize: sizeMap[block.textSize] || sizeMap['lg'],
-                fontWeight: block.bold ? 800 : 400,
-                fontFamily: block.fontFamily || 'inherit',
-                whiteSpace: 'pre-wrap',
-                animation: animationValue,
-              }}>
-                {currentText}
-              </span>
-            )}
+            <style>{`@keyframes shrinkWidth { from { width: 100%; } to { width: 0%; } }`}</style>
           </div>
         </div>
       );
