@@ -3160,6 +3160,9 @@ function PriceDisplayEditor({ block, onChange }) {
                <Field label="Texto do Lado Esquerdo"><Input value={block.leftText || ''} onChange={v => onChange({ leftText: v })} placeholder="⏰ OFERTA ESPECIAL" /></Field>
                <div className="grid grid-cols-2 gap-4 mt-3">
                   <Field label="Cor do Título Esquerdo"><ColorPicker value={block.leftTextColor || '#166534'} onChange={v => onChange({ leftTextColor: v })} /></Field>
+                  <Field label="Tamanho da Fonte (Esquerda)"><Input type="number" value={block.leftTextSize || 22} onChange={v => onChange({ leftTextSize: parseInt(v) })} /></Field>
+               </div>
+               <div className="grid grid-cols-2 gap-4 mt-3">
                   <Field label="Fundo da Caixa Direita"><ColorPicker value={block.boxRightBg || '#dcfce7'} onChange={v => onChange({ boxRightBg: v })} /></Field>
                </div>
             </div>
