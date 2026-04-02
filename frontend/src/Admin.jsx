@@ -979,25 +979,47 @@ function AnalyticsView({ quizzes }) {
                   <p className="text-xs text-slate-400 mt-1">Acompanhe segundo a segundo onde os leads estão engajando ou abandonando seus Áudios e VSLs.</p>
                 </div>
                 
-                {(!mediaMetrics || Object.keys(mediaMetrics).length === 0) ? (
-                  <div className="py-20 text-center border border-dashed border-slate-700/50 rounded-2xl bg-slate-900/20">
-                    <VideoIcon size={40} className="text-slate-700 mx-auto mb-3"/>
-                    <p className="text-slate-400 font-medium">Nenhum dado de mídia captado ainda.</p>
-                    <p className="text-xs text-slate-500 mt-1">Coloque um bloco de Áudio WhatsApp ou Vídeo nativo no funil e atraia leads.</p>
-                  </div>
-                ) : (
-                  Object.entries(mediaMetrics).map(([blockId, mProps]) => {
+                {(() => {
+                  if (!mediaMetrics || Object.keys(mediaMetrics).length === 0) {
+                    return (
+                      <div className="py-20 text-center border border-dashed border-slate-700/50 rounded-2xl bg-slate-900/20">
+                        <VideoIcon size={40} className="text-slate-700 mx-auto mb-3"/>
+                        <p className="text-slate-400 font-medium">Nenhum dado de mídia captado ainda.</p>
+                        <p className="text-xs text-slate-500 mt-1">Coloque um bloco de Áudio WhatsApp ou Vídeo nativo no funil e atraia leads.</p>
+                      </div>
+                    );
+                  }
+
+                  // 1. Filtrar mídias que ainda existem no quiz configurado
+                  const activeMediaEntries = Object.entries(mediaMetrics).filter(([blockId]) => {
+                    if (!quizDetail.config || !quizDetail.config.steps) return false;
+                    return quizDetail.config.steps.some(st => st.blocks?.some(b => b.id === blockId));
+                  });
+
+                  if (activeMediaEntries.length === 0) {
+                    return (
+                      <div className="py-20 text-center border border-dashed border-slate-700/50 rounded-2xl bg-slate-900/20">
+                        <VideoIcon size={40} className="text-slate-700 mx-auto mb-3"/>
+                        <p className="text-slate-400 font-medium">Nenhuma mídia encontrada na configuração atual.</p>
+                        <p className="text-xs text-slate-500 mt-1">Mídias excluídas do quiz não são mais exibidas no analytics.</p>
+                      </div>
+                    );
+                  }
+
+                  // 2. Renderizar apenas as mídias ativas
+                  return activeMediaEntries.map(([blockId, mProps]) => {
                     const { curve, stats } = mProps;
                     let bName = 'Bloco de Mídia';
                     let typeIcon = <PlayCircle size={14}/>;
-                    if (quizDetail.config && quizDetail.config.steps) {
-                      for (const st of quizDetail.config.steps) {
-                        const b = st.blocks?.find(x => x.id === blockId);
-                        if (b) {
-                          bName = b.type === 'audio' ? 'Áudio' : 'Vídeo';
-                          typeIcon = b.type === 'audio' ? <Volume2 size={14}/> : <VideoIcon size={14}/>;
-                          break;
-                        }
+                    let stepNameStr = '';
+
+                    for (const st of quizDetail.config.steps) {
+                      const b = st.blocks?.find(x => x.id === blockId);
+                      if (b) {
+                        bName = b.type === 'audio' ? 'Áudio' : 'Vídeo';
+                        typeIcon = b.type === 'audio' ? <Volume2 size={14}/> : <VideoIcon size={14}/>;
+                        stepNameStr = quizDetail.stepNaming?.[st.id] || st.label || `Etapa ${st.id}`;
+                        break;
                       }
                     }
                     
@@ -1015,7 +1037,9 @@ function AnalyticsView({ quizzes }) {
                     return (
                       <div key={blockId} className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-5 shadow-lg">
                         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-white/5 pb-4 gap-4">
-                          <h4 className="text-lg font-bold text-slate-200 flex items-center gap-2">{typeIcon} {bName}</h4>
+                          <h4 className="text-lg font-bold text-slate-200 flex items-center gap-2">
+                            {typeIcon} {bName} <span className="text-sm font-normal text-slate-500 ml-2">({stepNameStr})</span>
+                          </h4>
                           <div className="flex gap-4">
                             <div className="text-right">
                               <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Total Plays</p>
@@ -1060,7 +1084,7 @@ function AnalyticsView({ quizzes }) {
                       </div>
                     );
                   })
-                )}
+                })()}
               </div>
             ) : (
               <div className="space-y-6">
