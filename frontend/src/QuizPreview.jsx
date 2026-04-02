@@ -1270,7 +1270,7 @@ function LoadingScreen({ block, accent, defaultText, compact }) {
 }
 
 // Renderizador fiel ao InLead: converte o config JSON em tela visual
-export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate, selectedBlockId, quizId, visitorId, scores = {} }) {
+export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate, selectedBlockId, quizId, visitorId, scores = {}, onSelectBlock }) {
   const step = config?.steps?.[stepIdx];
   const theme = config?.theme || {};
   const accent = theme.accent || '#6366f1';
@@ -1405,13 +1405,27 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
                 <div
                   key={block.id}
                   id={`preview-block-${block.id}`}
-                  className={`shrink-0 w-full ${compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300' : ''}`}
+                  className={`shrink-0 w-full ${compact && block.id === selectedBlockId ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 rounded-lg transition-all duration-300 relative' : ''} ${onSelectBlock ? 'cursor-pointer hover:ring-2 hover:ring-indigo-500/50 hover:ring-offset-2 hover:ring-offset-slate-900 rounded-lg transition-all relative group' : ''}`}
+                  onClick={(e) => {
+                    // Prevent navigation clicks from taking over if we are in builder select mode
+                    if (onSelectBlock) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSelectBlock(block.id);
+                    }
+                  }}
+                  styleCapture={isStagger ? {
+                    animation: `stepStaggerItem ${dur} ${ease} both`,
+                    animationDelay: `${idx * (parseFloat(dur) * 0.18).toFixed(2)}s`,
+                  } : {}}
                   style={isStagger ? {
                     animation: `stepStaggerItem ${dur} ${ease} both`,
                     animationDelay: `${idx * (parseFloat(dur) * 0.18).toFixed(2)}s`,
                   } : {}}
                 >
-                  <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} scores={scores} onStartLoading={onStartLoading} />
+                  <div className={onSelectBlock ? 'pointer-events-none' : ''}>
+                    <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} scores={scores} onStartLoading={onStartLoading} />
+                  </div>
                 </div>
               ))}
               {(!step?.blocks || step.blocks.length === 0) && (

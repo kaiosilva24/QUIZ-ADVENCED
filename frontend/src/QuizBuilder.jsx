@@ -1192,7 +1192,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
       {/* ── RIGHT PANEL: Live Preview ────────────────────────────────── */}
       <div className="w-[420px] shrink-0 flex flex-col items-center justify-center bg-slate-900/20 gap-3 p-4">
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Preview Live</p>
-        <QuizPreview config={config} stepIdx={currentStepIdx} selectedBlockId={selectedBlockId} onNavigate={handlePreviewNavigate} scores={previewScores} />
+        <QuizPreview config={config} stepIdx={currentStepIdx} selectedBlockId={selectedBlockId} onSelectBlock={setSelectedBlockId} onNavigate={handlePreviewNavigate} scores={previewScores} />
         <div className="flex gap-2">
           {config.steps.map((_, idx) => (
             <button key={idx} onClick={() => setCurrentStepIdx(idx)}
