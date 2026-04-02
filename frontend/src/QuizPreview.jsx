@@ -3462,6 +3462,137 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const radius = block.boxRadius ?? 16;
       const isDonut = mode === 'donut';
       
+      if (mode === 'versus') {
+        return (
+          <div style={{
+            width: '100%',
+            background: block.boxBg || 'transparent',
+            border: `1px solid ${block.boxBorder || 'transparent'}`,
+            borderRadius: radius,
+            padding: compact ? '16px' : '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: compact ? 12 : 24
+          }}>
+            {metrics.map((m, idx) => {
+              const lTarget = m.value || 0;
+              const rTarget = m.rightValue ?? 100;
+              const lVal = Math.round(lTarget * animationProgress);
+              const rVal = Math.round(rTarget * animationProgress);
+              const lFillTarget = m.leftFill ?? 20;
+              const rFillTarget = m.rightFill ?? 100;
+              const lFillVal = lFillTarget * animationProgress;
+              const rFillVal = rFillTarget * animationProgress;
+
+              return (
+                <div key={m.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: compact ? 12 : 24, paddingBottom: compact ? 12 : 24, borderBottom: idx === metrics.length - 1 ? 'none' : '1px solid rgba(148,163,184,0.1)' }}>
+                  {/* Lado Esquerdo */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', minHeight: compact ? 28 : 40 }}>
+                      <span style={{ color: defaultText, fontSize: compact ? 11 : 14, fontWeight: 600, lineHeight: 1.2, paddingRight: 8 }}>{m.text || 'Renda incerta'}</span>
+                      <span style={{ color: defaultText, fontSize: compact ? 10 : 12, opacity: 0.5 }}>{lVal}%</span>
+                    </div>
+                    <div style={{ width: '100%', height: compact ? 12 : 16, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <div style={{ position: 'absolute', width: '100%', borderBottom: `4px dashed rgba(148,163,184,0.3)` }} />
+                      <div style={{ position: 'absolute', width: `${lFillVal}%`, borderBottom: `4px dashed ${m.bgColor || '#ef4444'}`, transition: 'width 0.1s linear' }} />
+                      <div style={{ position: 'absolute', left: `max(0px, calc(${lFillVal}% - ${compact ? 6 : 8}px))`, width: compact ? 12 : 16, height: compact ? 12 : 16, background: '#fff', borderRadius: '50%', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', transition: 'left 0.1s linear' }} />
+                    </div>
+                  </div>
+                  {/* Lado Direito */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 4 : 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', minHeight: compact ? 28 : 40 }}>
+                      <span style={{ color: defaultText, fontSize: compact ? 11 : 14, fontWeight: 600, lineHeight: 1.2, paddingRight: 8 }}>{m.rightText || 'Faturando alto'}</span>
+                      <span style={{ color: defaultText, fontSize: compact ? 10 : 12, opacity: 0.5 }}>{rVal}%</span>
+                    </div>
+                    <div style={{ width: '100%', height: compact ? 12 : 16, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <div style={{ position: 'absolute', width: '100%', borderBottom: `4px dashed rgba(148,163,184,0.3)` }} />
+                      <div style={{ position: 'absolute', width: `${rFillVal}%`, borderBottom: `4px dashed ${m.rightBgColor || '#22c55e'}`, transition: 'width 0.1s linear' }} />
+                      <div style={{ position: 'absolute', left: `max(0px, calc(${rFillVal}% - ${compact ? 6 : 8}px))`, width: compact ? 12 : 16, height: compact ? 12 : 16, background: '#fff', borderRadius: '50%', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', transition: 'left 0.1s linear' }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+
+      if (mode === 'area') {
+        const sVal = block.areaStartValue ?? 0;
+        const eVal = block.areaEndValue ?? 100;
+        const startTarget = sVal;
+        const endTarget = sVal + (eVal - sVal) * animationProgress;
+
+        const h = compact ? 150 : 250;
+
+        return (
+          <div style={{
+            width: '100%',
+            background: block.boxBg || 'transparent',
+            border: `1px solid ${block.boxBorder || 'transparent'}`,
+            borderRadius: radius,
+            padding: compact ? '20px 10px' : '30px 20px',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            <div style={{ width: '100%', height: h, position: 'relative', display: 'flex' }}>
+              {/* Eixo Y */}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingRight: 8, borderRight: '1px dashed rgba(148,163,184,0.3)' }}>
+                {[100, 75, 50, 25, 0].map(val => (
+                  <span key={val} style={{ fontSize: compact ? 9 : 12, color: defaultText, opacity: 0.6 }}>{val}</span>
+                ))}
+              </div>
+              
+              {/* Gráfico SVG com clip-path */}
+              <div style={{ flex: 1, position: 'relative', borderBottom: '1px dashed rgba(148,163,184,0.3)' }}>
+                {/* Linhas Horizontais */}
+                {[0, 25, 50, 75].map(val => (
+                  <div key={val} style={{ position: 'absolute', left: 0, right: 0, bottom: `${val}%`, borderBottom: '1px dashed rgba(148,163,184,0.1)' }} />
+                ))}
+
+                <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, clipPath: `inset(0 ${100 - (animationProgress*100)}% 0 0)` }}>
+                  <defs>
+                    <linearGradient id={`grad_${block.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor={block.areaStartColor || '#ef4444'} stopOpacity="0.8" />
+                      <stop offset="100%" stopColor={block.areaEndColor || '#22c55e'} stopOpacity="0.8" />
+                    </linearGradient>
+                  </defs>
+                  <polygon 
+                    points={`0,100 0,${100 - sVal} 100,${100 - eVal} 100,100`}
+                    fill={`url(#grad_${block.id})`}
+                  />
+                  <polyline 
+                     points={`0,${100 - sVal} 100,${100 - eVal}`}
+                     fill="none"
+                     stroke={block.areaEndColor || '#22c55e'}
+                     strokeWidth="1.5"
+                  />
+                </svg>
+
+                {/* Eixo X: Ponto Início e Ponto Fim. Oculto se não iniciou ou se passou. */}
+                <div style={{ position: 'absolute', bottom: `${sVal}%`, left: 0, transform: 'translate(-50%, 50%)', width: compact ? 12 : 16, height: compact ? 12 : 16, background: block.areaStartColor || '#ef4444', borderRadius: '50%', boxShadow: '0 0 0 4px rgba(255,255,255,0.7)', zIndex: 10 }}>
+                  <div style={{ position: 'absolute', top: -30, left: '50%', transform: 'translateX(-50%)', background: '#fff', padding: '2px 6px', borderRadius: 4, border: '1px solid #e2e8f0', fontSize: compact ? 8 : 10, color: '#334155', fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                    {block.areaStartLabel || 'HOJE'}
+                  </div>
+                </div>
+
+                <div style={{ position: 'absolute', bottom: `${endTarget}%`, left: `${animationProgress*100}%`, transform: 'translate(-50%, 50%)', width: compact ? 12 : 16, height: compact ? 12 : 16, background: block.areaEndColor || '#22c55e', borderRadius: '50%', boxShadow: '0 0 0 4px rgba(255,255,255,0.7)', zIndex: 10, transition: 'all 0.1s linear' }}>
+                  <div style={{ position: 'absolute', top: -30, right: 0, transform: 'translateX(0%)', background: '#fff', padding: '2px 6px', borderRadius: 4, border: '1px solid #e2e8f0', fontSize: compact ? 8 : 10, color: '#334155', fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                    {block.areaEndLabel || '30 DIAS'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Eixo X labels (embaixo) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingLeft: compact ? 24 : 32 }}>
+              <span style={{ fontSize: compact ? 9 : 11, color: defaultText, opacity: 0.6 }}>{block.areaStartSub || 'R$0/dia'}</span>
+              <span style={{ fontSize: compact ? 9 : 11, color: defaultText, opacity: 0.6 }}>{block.areaEndSub || 'R$200-400/dia (meta)'}</span>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div style={{
           width: '100%',

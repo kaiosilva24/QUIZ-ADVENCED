@@ -2571,7 +2571,9 @@ function AnimatedMetricsEditor({ block, onChange }) {
         <Field label="Tipo do Gráfico">
           <Select value={block.mode || 'donut'} onChange={v => onChange({ mode: v })} options={[
             { value: 'donut', label: 'Círculo (Donut)' },
-            { value: 'bar', label: 'Barra Vertical' }
+            { value: 'bar', label: 'Barra Vertical' },
+            { value: 'versus', label: 'Comparação Horizontal (Versus)' },
+            { value: 'area', label: 'Evolução (Área)' }
           ]} />
         </Field>
         <Field label="Cor de Fundo da Caixa (opcional)">
@@ -2585,39 +2587,79 @@ function AnimatedMetricsEditor({ block, onChange }) {
         </Field>
       </Section>
 
-      <Section title="Métricas">
-        <div className="space-y-4">
-          {metrics.map((m, idx) => (
-            <div key={m.id} className="relative bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
-              <button onClick={() => removeMetric(idx)} className="absolute top-2 right-2 text-slate-500 hover:text-red-400">
-                <Trash2 size={14} />
-              </button>
-              <div className="pt-2 space-y-3">
-                <Field label={`Valor Final (%) - ${m.value}%`}>
-                  <Slider min={0} max={100} value={m.value || 0} onChange={v => updateMetric(idx, { value: v })} />
-                </Field>
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Cor Principal">
-                    <ColorPicker value={m.color} onChange={v => updateMetric(idx, { color: v })} />
-                  </Field>
-                  <Field label="Cor Trilho/Fundo">
-                    <ColorPicker value={m.bgColor} onChange={v => updateMetric(idx, { bgColor: v })} />
-                  </Field>
-                </div>
-                <Field label="Texto Descritivo">
-                  <Input value={m.text || ''} onChange={v => updateMetric(idx, { text: v })} placeholder="Ex: Resultado sem método" />
-                </Field>
-                <Field label="Cor do Texto">
-                  <ColorPicker value={m.textColor || '#94a3b8'} onChange={v => updateMetric(idx, { textColor: v })} />
-                </Field>
-              </div>
+      {block.mode === 'area' ? (
+        <Section title="Configuração do Gráfico de Área">
+          <div className="space-y-4">
+            <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-3">
+              <h4 className="text-xs font-bold text-slate-400 mb-2">Ponto Inicial</h4>
+              <Field label="Rótulo (ex: HOJE)"><Input value={block.areaStartLabel || ''} onChange={v => onChange({ areaStartLabel: v })} /></Field>
+              <Field label="Subtexto (ex: R$0/dia)"><Input value={block.areaStartSub || ''} onChange={v => onChange({ areaStartSub: v })} /></Field>
+              <Field label="Valor (%)"><Slider min={0} max={100} value={block.areaStartValue ?? 0} onChange={v => onChange({ areaStartValue: v })} /></Field>
+              <Field label="Cor Inicial"><ColorPicker value={block.areaStartColor || '#ef4444'} onChange={v => onChange({ areaStartColor: v })} /></Field>
             </div>
-          ))}
-          <button onClick={addMetric} className="w-full py-2 flex items-center justify-center gap-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-500 hover:text-indigo-400 transition-all cursor-pointer">
-            <Plus size={14} /> Adicionar Métrica
-          </button>
-        </div>
-      </Section>
+            <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-3">
+              <h4 className="text-xs font-bold text-slate-400 mb-2">Ponto Final (Meta)</h4>
+              <Field label="Rótulo (ex: 30 DIAS)"><Input value={block.areaEndLabel || ''} onChange={v => onChange({ areaEndLabel: v })} /></Field>
+              <Field label="Subtexto (ex: R$200-400/dia)"><Input value={block.areaEndSub || ''} onChange={v => onChange({ areaEndSub: v })} /></Field>
+              <Field label="Valor (%)"><Slider min={0} max={100} value={block.areaEndValue ?? 100} onChange={v => onChange({ areaEndValue: v })} /></Field>
+              <Field label="Cor Final"><ColorPicker value={block.areaEndColor || '#22c55e'} onChange={v => onChange({ areaEndColor: v })} /></Field>
+            </div>
+          </div>
+        </Section>
+      ) : (
+        <Section title="Métricas">
+          <div className="space-y-4">
+            {metrics.map((m, idx) => (
+              <div key={m.id} className="relative bg-slate-800/50 border border-slate-700/50 rounded-xl p-3">
+                <button onClick={() => removeMetric(idx)} className="absolute top-2 right-2 text-slate-500 hover:text-red-400 z-10">
+                  <Trash2 size={14} />
+                </button>
+                {block.mode === 'versus' ? (
+                  <div className="pt-2 space-y-3">
+                    <div className="p-2 border border-red-500/30 rounded bg-red-500/10">
+                      <h4 className="text-[10px] font-bold text-red-400 uppercase mb-2">Lado Esquerdo</h4>
+                      <Field label="Texto"><Input value={m.text || ''} onChange={v => updateMetric(idx, { text: v })} placeholder="Ex: Renda incerta" /></Field>
+                      <Field label={`Valor (%) - ${m.value || 0}%`}><Slider min={0} max={100} value={m.value || 0} onChange={v => updateMetric(idx, { value: v })} /></Field>
+                      <Field label="Cor do Fundo da Linha"><ColorPicker value={m.bgColor || '#ef4444'} onChange={v => updateMetric(idx, { bgColor: v })} /></Field>
+                      <Field label="Tamanho da linha cheia (%)"><Slider min={0} max={100} value={m.leftFill || 20} onChange={v => updateMetric(idx, { leftFill: v })} /></Field>
+                    </div>
+                    <div className="p-2 border border-green-500/30 rounded bg-green-500/10">
+                      <h4 className="text-[10px] font-bold text-green-400 uppercase mb-2">Lado Direito</h4>
+                      <Field label="Texto"><Input value={m.rightText || ''} onChange={v => updateMetric(idx, { rightText: v })} placeholder="Ex: Faturando alto" /></Field>
+                      <Field label={`Valor (%) - ${m.rightValue || 100}%`}><Slider min={0} max={100} value={m.rightValue || 100} onChange={v => updateMetric(idx, { rightValue: v })} /></Field>
+                      <Field label="Cor do Fundo da Linha"><ColorPicker value={m.rightBgColor || '#22c55e'} onChange={v => updateMetric(idx, { rightBgColor: v })} /></Field>
+                      <Field label="Tamanho da linha cheia (%)"><Slider min={0} max={100} value={m.rightFill || 100} onChange={v => updateMetric(idx, { rightFill: v })} /></Field>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pt-2 space-y-3">
+                    <Field label={`Valor Final (%) - ${m.value}%`}>
+                      <Slider min={0} max={100} value={m.value || 0} onChange={v => updateMetric(idx, { value: v })} />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Field label="Cor Principal">
+                        <ColorPicker value={m.color} onChange={v => updateMetric(idx, { color: v })} />
+                      </Field>
+                      <Field label="Cor Trilho/Fundo">
+                        <ColorPicker value={m.bgColor} onChange={v => updateMetric(idx, { bgColor: v })} />
+                      </Field>
+                    </div>
+                    <Field label="Texto Descritivo">
+                      <Input value={m.text || ''} onChange={v => updateMetric(idx, { text: v })} placeholder="Ex: Resultado sem método" />
+                    </Field>
+                    <Field label="Cor do Texto">
+                      <ColorPicker value={m.textColor || '#94a3b8'} onChange={v => updateMetric(idx, { textColor: v })} />
+                    </Field>
+                  </div>
+                )}
+              </div>
+            ))}
+            <button onClick={addMetric} className="w-full py-2 flex items-center justify-center gap-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-500 hover:text-indigo-400 transition-all cursor-pointer">
+              <Plus size={14} /> Adicionar Métrica
+            </button>
+          </div>
+        </Section>
+      )}
     </>
   );
 }
