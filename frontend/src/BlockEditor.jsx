@@ -3127,9 +3127,11 @@ function PriceDisplayEditor({ block, onChange }) {
       <Section title="Esquema Visual">
         <Field label="Modelo de Tabela">
           <Select value={block.model || 'classic'} onChange={v => onChange({ model: v })} options={[
-            { value: 'classic', label: 'Clássico (De X por Y lado a lado)' },
-            { value: 'badge', label: 'Destaque com Tag central' },
+            { value: 'classic', label: 'Clássico (Lado a Lado)' },
+            { value: 'badge', label: 'Destaque com Tag Central' },
             { value: 'minimalist', label: 'Minimalista Gigante' },
+            { value: 'clean_horizontal', label: 'Moderno Dividido (Clean)' },
+            { value: 'premium_stack', label: 'Pilha Premium (Luxo)' },
             { value: 'offer_card', label: 'Cartão de Oferta (Especial)' },
           ]} />
         </Field>
