@@ -2779,21 +2779,7 @@ function AnimatedTextCarouselEditor({ block, onChange }) {
           </Field>
         </div>
         
-        <div className="mt-4 mb-4 pt-4 border-t border-slate-700/50 space-y-3">
-          <Field label="Barra de Tempo (Progresso)">
-            <Toggle label="Mostrar Barra de Tempo" value={!!block.showProgressBar} onChange={v => onChange({ showProgressBar: v })} />
-          </Field>
-          {block.showProgressBar && (
-            <div className="grid grid-cols-2 gap-4 pl-2 border-l-2 border-indigo-500/50 ml-1">
-              <Field label="Cor da Barra">
-                <ColorPicker value={block.progressBarColor || '#6366f1'} onChange={v => onChange({ progressBarColor: v })} />
-              </Field>
-              <Field label="Espessura (px)">
-                <Input type="number" value={block.progressBarHeight ?? 4} onChange={v => onChange({ progressBarHeight: parseInt(v) })} />
-              </Field>
-            </div>
-          )}
-        </div>
+
 
         <Field label="Tamanho da Fonte">
           <Select value={block.textSize || 'lg'} onChange={v => onChange({ textSize: v })} options={[
@@ -2831,7 +2817,25 @@ function AnimatedTextCarouselEditor({ block, onChange }) {
           <Toggle label="Ativar texto forte" value={!!block.bold} onChange={v => onChange({ bold: v })} />
         </Field>
       </Section>
-      <Section title="Efeitos de Transição">
+      <Section title="Barra de Progresso (Tempo na Tela)">
+        <Field label="Exibir Barra Sincronizada com o Tempo?">
+          <Toggle label="Mostrar Barra" value={!!block.showProgressBar} onChange={v => onChange({ showProgressBar: v })} />
+        </Field>
+        {block.showProgressBar && (
+          <div className="grid grid-cols-2 gap-4 mt-3 p-3 bg-slate-800/50 rounded-xl border border-indigo-500/30">
+            <Field label="Cor da Barra">
+              <ColorPicker value={block.progressBarColor || '#6366f1'} onChange={v => onChange({ progressBarColor: v })} />
+            </Field>
+            <Field label="Espessura (px)">
+              <Input type="number" value={block.progressBarHeight ?? 4} onChange={v => onChange({ progressBarHeight: parseInt(v) })} />
+            </Field>
+          </div>
+        )}
+        <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
+          O tempo total de carregamento da barra será calculado automaticamente com base na "Duração na tela (Segundos)" configurada em cada texto individualmente lá em cima, somado com a velocidade de transição.
+        </p>
+      </Section>
+      <Section title="Efeitos de Entrada e Saída">
         <Field label="Entrada (Surgimento)">
           <Select value={block.animationIn || 'fadeIn'} onChange={v => onChange({ animationIn: v })} options={[
             { value: 'fadeIn', label: 'Surgir (Fade In)' },
