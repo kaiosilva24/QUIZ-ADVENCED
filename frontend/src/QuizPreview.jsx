@@ -3637,7 +3637,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                         {headerText}
                      </div>
                   )}
-                  <div style={{ display: 'flex', flexDirection: 'row', background: bg, boxSizing: 'border-box', padding: `${block.blockPaddingY ?? (compact ? 8 : 16)}px ${block.blockPaddingX ?? (compact ? 8 : 16)}px`, gap: compact ? '8px' : '16px', alignItems: 'stretch' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', background: block.bodyBg || 'transparent', boxSizing: 'border-box', padding: `${block.blockPaddingY ?? (compact ? 8 : 16)}px ${block.blockPaddingX ?? (compact ? 8 : 16)}px`, gap: compact ? '8px' : '16px', alignItems: 'stretch' }}>
                      {/* Esquerda */}
                      {leftText && (
                         <div style={{ flex: '0.8 1 0%', minWidth: 0, padding: compact ? '4px' : '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
@@ -3659,15 +3659,15 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                </div>
             )}
 
-            {sub && model !== 'clean_horizontal' && model !== 'premium_stack' && (
+            {sub && sub.trim() && model !== 'clean_horizontal' && model !== 'premium_stack' && model !== 'offer_card' && (
                <div style={{ marginTop: compact ? 16 : 24, padding: compact ? '8px 16px' : '12px 24px', background: 'rgba(255,255,255,0.05)', borderRadius: 12, color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500, textAlign: 'center', maxWidth: '90%' }}>
-                  {sub}
+                  {sub.trim()}
                </div>
             )}
             
-            {sub && (model === 'clean_horizontal' || model === 'premium_stack') && (
+            {sub && sub.trim() && (model === 'clean_horizontal' || model === 'premium_stack') && (
                <div style={{ marginTop: compact ? 16 : 24, color: tColor, fontSize: compact ? 12 : 14, fontWeight: 500, textAlign: 'center' }}>
-                  {sub}
+                  {sub.trim()}
                </div>
             )}
          </div>

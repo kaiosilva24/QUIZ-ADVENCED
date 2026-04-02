@@ -3205,7 +3205,10 @@ function PriceDisplayEditor({ block, onChange }) {
                   <Field label="Fonte Esquerda (px)"><Input type="number" value={block.leftTextSize || 22} onChange={v => onChange({ leftTextSize: parseInt(v) })} /></Field>
                </div>
                <div className="grid grid-cols-2 gap-4 mt-3">
+                  <Field label="Fundo da Linha do Corpo"><ColorPicker value={block.bodyBg || 'transparent'} onChange={v => onChange({ bodyBg: v })} /></Field>
                   <Field label="Fundo da Caixa Direita"><ColorPicker value={block.boxRightBg || '#dcfce7'} onChange={v => onChange({ boxRightBg: v })} /></Field>
+               </div>
+               <div className="grid grid-cols-2 gap-4 mt-3">
                   <Field label="Fonte Textos (De/Por) (px)"><Input type="number" value={block.labelSize || 14} onChange={v => onChange({ labelSize: parseInt(v) })} /></Field>
                </div>
             </div>
