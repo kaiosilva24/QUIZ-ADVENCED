@@ -2591,6 +2591,12 @@ function AnimatedMetricsEditor({ block, onChange }) {
         <Section title="Configuração do Gráfico de Área">
           <div className="space-y-4">
             <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-3">
+              <h4 className="text-xs font-bold text-slate-400 mb-2">Eixos e Cores Globais</h4>
+              <Field label="Valores do Eixo Y (separados por vírgula)"><Input value={block.areaYAxisLabels || '100, 75, 50, 25, 0'} onChange={v => onChange({ areaYAxisLabels: v })} placeholder="Ex: 100, 75, 50, 25, 0" /></Field>
+              <Field label="Cor dos Textos e Subtextos"><ColorPicker value={block.areaTextColor || '#94a3b8'} onChange={v => onChange({ areaTextColor: v })} /></Field>
+              <Field label="Cor da Grade (Linhas Base)"><ColorPicker value={block.areaGridColor || 'rgba(148,163,184,0.3)'} onChange={v => onChange({ areaGridColor: v })} /></Field>
+            </div>
+            <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50 space-y-3">
               <h4 className="text-xs font-bold text-slate-400 mb-2">Ponto Inicial</h4>
               <Field label="Rótulo (ex: HOJE)"><Input value={block.areaStartLabel || ''} onChange={v => onChange({ areaStartLabel: v })} /></Field>
               <Field label="Subtexto (ex: R$0/dia)"><Input value={block.areaStartSub || ''} onChange={v => onChange({ areaStartSub: v })} /></Field>

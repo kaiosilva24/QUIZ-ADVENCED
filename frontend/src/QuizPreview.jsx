@@ -3524,6 +3524,14 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         const endTarget = sVal + (eVal - sVal) * animationProgress;
 
         const h = compact ? 150 : 250;
+        
+        const yLabelsStr = block.areaYAxisLabels || '100, 75, 50, 25, 0';
+        const yLabelsRaw = yLabelsStr.split(',').map(s => s.trim()).filter(Boolean);
+        const yLabels = yLabelsRaw.length ? yLabelsRaw : ['100', '75', '50', '25', '0'];
+        const numLabels = yLabels.length;
+        
+        const txtColor = block.areaTextColor || defaultText;
+        const gridColor = block.areaGridColor || 'rgba(148,163,184,0.3)';
 
         return (
           <div style={{
@@ -3537,18 +3545,21 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           }}>
             <div style={{ width: '100%', height: h, position: 'relative', display: 'flex' }}>
               {/* Eixo Y */}
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingRight: 8, borderRight: '1px dashed rgba(148,163,184,0.3)' }}>
-                {[100, 75, 50, 25, 0].map(val => (
-                  <span key={val} style={{ fontSize: compact ? 9 : 12, color: defaultText, opacity: 0.6 }}>{val}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingRight: 8, borderRight: `1px dashed ${gridColor}` }}>
+                {yLabels.map((lbl, idx) => (
+                  <span key={idx} style={{ fontSize: compact ? 9 : 12, color: txtColor, opacity: 0.6 }}>{lbl}</span>
                 ))}
               </div>
               
               {/* Gráfico SVG com clip-path */}
-              <div style={{ flex: 1, position: 'relative', borderBottom: '1px dashed rgba(148,163,184,0.3)' }}>
+              <div style={{ flex: 1, position: 'relative', borderBottom: `1px dashed ${gridColor}` }}>
                 {/* Linhas Horizontais */}
-                {[0, 25, 50, 75].map(val => (
-                  <div key={val} style={{ position: 'absolute', left: 0, right: 0, bottom: `${val}%`, borderBottom: '1px dashed rgba(148,163,184,0.1)' }} />
-                ))}
+                {yLabels.map((_, idx) => {
+                  const perc = (numLabels <= 1) ? 0 : 100 - (idx * 100 / (numLabels - 1));
+                  return (
+                    <div key={idx} style={{ position: 'absolute', left: 0, right: 0, bottom: `${perc}%`, borderBottom: `1px dashed ${gridColor}`, opacity: 0.5 }} />
+                  );
+                })}
 
                 <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, clipPath: `inset(0 ${100 - (animationProgress*100)}% 0 0)` }}>
                   <defs>
@@ -3586,8 +3597,8 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
             {/* Eixo X labels (embaixo) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingLeft: compact ? 24 : 32 }}>
-              <span style={{ fontSize: compact ? 9 : 11, color: defaultText, opacity: 0.6 }}>{block.areaStartSub || 'R$0/dia'}</span>
-              <span style={{ fontSize: compact ? 9 : 11, color: defaultText, opacity: 0.6 }}>{block.areaEndSub || 'R$200-400/dia (meta)'}</span>
+              <span style={{ fontSize: compact ? 9 : 11, color: txtColor, opacity: 0.6 }}>{block.areaStartSub || 'R$0/dia'}</span>
+              <span style={{ fontSize: compact ? 9 : 11, color: txtColor, opacity: 0.6 }}>{block.areaEndSub || 'R$200-400/dia (meta)'}</span>
             </div>
           </div>
         );
