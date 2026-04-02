@@ -3543,7 +3543,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       return (
          <div style={
             model === 'offer_card'
-            ? { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }
+            ? { width: '100%' }
             : {
                 width: '100%',
                 background: bg,
@@ -3645,7 +3645,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                         </div>
                      )}
                      {/* Direita */}
-                     <div style={{ background: boxRightBg, borderRadius: radius, padding: compact ? '12px 6px' : '24px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: '1.8 1 0%', minWidth: 0, boxSizing: 'border-box', overflow: 'hidden' }}>
+                     <div style={{ background: boxRightBg, borderRadius: radius, padding: `${block.blockPaddingY ?? (compact ? 8 : 16)}px ${block.blockPaddingX ?? (compact ? 10 : 20)}px`, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: '1.8 1 0%', minWidth: 0, boxSizing: 'border-box', overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 4 : 6, opacity: 0.8, flexWrap: 'wrap', justifyContent: 'center' }}>
                            {pref && <span style={{ color: tColor, fontSize: block.labelSize || (compact ? 11 : 14), fontWeight: 500, whiteSpace: 'nowrap' }}>{pref}</span>}
                            {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 14 : 20)} strikeSize={2} />}
