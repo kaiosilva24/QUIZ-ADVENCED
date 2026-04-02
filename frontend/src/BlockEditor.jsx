@@ -3249,6 +3249,11 @@ function PriceDisplayEditor({ block, onChange }) {
         <div className="grid grid-cols-2 gap-4 mt-3">
           <Field label="Arredondamento (px)"><Input type="number" value={block.boxRadius ?? 16} onChange={v => onChange({ boxRadius: parseInt(v) })} /></Field>
         </div>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Espaço Interno Vertical (px)"><Input type="number" value={block.blockPaddingY ?? ''} onChange={v => onChange({ blockPaddingY: parseInt(v) || 0 })} placeholder="Auto" /></Field>
+          <Field label="Espaço Interno Horizontal (px)"><Input type="number" value={block.blockPaddingX ?? ''} onChange={v => onChange({ blockPaddingX: parseInt(v) || 0 })} placeholder="Auto" /></Field>
+        </div>
+        <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">💡 Use 0 para remover o espaço vazio e deixar o botão logo abaixo.</p>
       </Section>
     </>
   );

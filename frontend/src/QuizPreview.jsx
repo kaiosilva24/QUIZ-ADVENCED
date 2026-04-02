@@ -3544,7 +3544,17 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
          <div style={
             model === 'offer_card'
             ? { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }
-            : { width: '100%', background: bg, border: `1px solid ${border}`, borderRadius: radius, padding: compact ? '20px 15px' : '32px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }
+            : {
+                width: '100%',
+                background: bg,
+                border: `1px solid ${border}`,
+                borderRadius: radius,
+                padding: `${block.blockPaddingY ?? (compact ? 20 : 32)}px ${block.blockPaddingX ?? (compact ? 15 : 24)}px`,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }
          }>
             <style>{inlineStyle}</style>
 
@@ -3627,7 +3637,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                         {headerText}
                      </div>
                   )}
-                  <div style={{ display: 'flex', flexDirection: 'row', background: bg, boxSizing: 'border-box', padding: compact ? '8px' : '16px', gap: compact ? '8px' : '16px', alignItems: 'stretch' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', background: bg, boxSizing: 'border-box', padding: `${block.blockPaddingY ?? (compact ? 8 : 16)}px ${block.blockPaddingX ?? (compact ? 8 : 16)}px`, gap: compact ? '8px' : '16px', alignItems: 'stretch' }}>
                      {/* Esquerda */}
                      {leftText && (
                         <div style={{ flex: '0.8 1 0%', minWidth: 0, padding: compact ? '4px' : '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
