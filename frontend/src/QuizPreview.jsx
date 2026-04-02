@@ -3609,19 +3609,19 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             {model === 'offer_card' && (
                <div style={{ width: '100%', borderRadius: radius, overflow: 'hidden', border: `1px solid ${border}` }}>
                   {headerText && (
-                     <div style={{ padding: compact ? '10px 12px' : '14px 24px', background: headerBg, color: headerColor, textAlign: 'center', fontSize: compact ? 13 : 16, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
+                     <div style={{ padding: compact ? '10px 12px' : '14px 24px', background: headerBg, color: headerColor, textAlign: 'center', fontSize: compact ? 13 : 16, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1, wordBreak: 'break-word' }}>
                         {headerText}
                      </div>
                   )}
-                  <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', background: bg, boxSizing: 'border-box', padding: compact ? '12px' : '16px', gap: compact ? '12px' : '16px', alignItems: 'stretch' }}>
+                  <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', flexWrap: 'wrap', background: bg, boxSizing: 'border-box', padding: compact ? '12px' : '16px', gap: compact ? '12px' : '16px', alignItems: 'stretch' }}>
                      {/* Esquerda */}
                      {leftText && (
-                        <div style={{ flex: 1, padding: compact ? '8px' : '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                           <span style={{ color: leftTextColor, fontSize: compact ? 18 : 24, fontWeight: 800, lineHeight: 1.2 }}>{leftText}</span>
+                        <div style={{ flex: '1 1 200px', minWidth: 0, padding: compact ? '8px' : '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+                           <span style={{ color: leftTextColor, fontSize: compact ? 18 : 24, fontWeight: 800, lineHeight: 1.2, wordBreak: 'break-word' }}>{leftText}</span>
                         </div>
                      )}
                      {/* Direita */}
-                     <div style={{ background: boxRightBg, borderRadius: radius, padding: compact ? '20px 16px' : '24px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: '1 1 auto', boxSizing: 'border-box' }}>
+                     <div style={{ background: boxRightBg, borderRadius: radius, padding: compact ? '20px 16px' : '24px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: '1 1 250px', minWidth: 0, boxSizing: 'border-box' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.8, flexWrap: 'wrap', justifyContent: 'center' }}>
                            {pref && <span style={{ color: tColor, fontSize: compact ? 12 : 14, fontWeight: 500, whiteSpace: 'nowrap' }}>{pref}</span>}
                            {oldP && <OldPriceUI size={compact ? 18 : 20} strikeSize={2} />}
