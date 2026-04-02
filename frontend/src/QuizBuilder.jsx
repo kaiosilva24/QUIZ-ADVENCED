@@ -36,6 +36,7 @@ const BLOCK_TYPES = [
   { type: 'animated_metrics', label: 'Métricas Animadas', icon: BarChart3, color: '#ec4899' },
   { type: 'image_carousel', label: 'Carrossel Imagens', icon: Images, color: '#f59e0b' },
   { type: 'animated_text_carousel', label: 'Textos Animados', icon: Type, color: '#0ea5e9' },
+  { type: 'button_grid', label: 'Grade de Botões', icon: LayoutList, color: '#3b82f6' },
 ];
 
 function createBlock(type) {
@@ -178,6 +179,35 @@ function createBlock(type) {
       transitionSpeed: 0.5,
       loop: true,
       bold: true
+    };
+    case 'button_grid': return { ...base,
+      columns: 7,
+      gap: 10,
+      justifyContent: 'center',
+      multiSelect: false,
+      buttonBg: '#09090b',
+      buttonBorder: 'transparent',
+      buttonTextColor: '#ffffff',
+      buttonRadius: 16,
+      buttonHeight: 50,
+      buttonWidth: 60,
+      buttonFontSize: 16,
+      buttonSelectedBg: '#6366f1',
+      buttonSelectedTextColor: '#ffffff',
+      buttonSelectedBorder: '#6366f1',
+      nextStep: null,
+      options: [
+        { id: 'opt_1', text: '01', scoreTarget: '' },
+        { id: 'opt_2', text: '02', scoreTarget: '' },
+        { id: 'opt_3', text: '03', scoreTarget: '' },
+        { id: 'opt_4', text: '04', scoreTarget: '' },
+        { id: 'opt_5', text: '05', scoreTarget: '' },
+        { id: 'opt_6', text: '06', scoreTarget: '' },
+        { id: 'opt_7', text: '07', scoreTarget: '' },
+        { id: 'opt_8', text: '08', scoreTarget: '' },
+        { id: 'opt_9', text: '09', scoreTarget: '' },
+        { id: 'opt_10', text: '10', scoreTarget: '' },
+      ]
     };
     default:            return base;
   }

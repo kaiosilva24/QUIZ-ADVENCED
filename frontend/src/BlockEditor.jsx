@@ -2839,6 +2839,119 @@ function AnimatedTextCarouselEditor({ block, onChange }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ButtonGridEditor
+// ─────────────────────────────────────────────────────────────────────────────
+function ButtonGridEditor({ block, onChange, steps, currentStepIdx }) {
+  const options = block.options || [];
+
+  const updateOption = (idx, patch) => {
+    const newOptions = [...options];
+    newOptions[idx] = { ...newOptions[idx], ...patch };
+    onChange({ options: newOptions });
+  };
+
+  const addOption = () => {
+    onChange({ options: [...options, { id: `opt_${Date.now()}`, text: `${options.length + 1}`.padStart(2, '0'), scoreTarget: '' }] });
+  };
+
+  const removeOption = (idx) => {
+    onChange({ options: options.filter((_, i) => i !== idx) });
+  };
+
+  const availableScores = [...new Set((steps || []).map(s => s.variantScore).filter(Boolean))];
+
+  return (
+    <>
+      <Section title="Comportamento">
+        <Toggle label="Seleção Múltipla" value={!!block.multiSelect} onChange={v => onChange({ multiSelect: v })} />
+        {!block.multiSelect && (
+          <Field label="Ação ao Selecionar (Próxima Etapa)">
+            <Select
+              value={block.nextStep || ''}
+              onChange={v => onChange({ nextStep: v })}
+              options={[
+                { value: '', label: 'Ir para a próxima etapa (padrão)' },
+                ...(steps || [])
+                  .filter((s, idx) => idx > currentStepIdx && !s.isVariant)
+                  .map(s => ({ value: s.id, label: `Pular para: ${(s.title || '').replace(/(<([^>]+)>)/gi, '').substring(0, 30)}` }))
+              ]}
+            />
+          </Field>
+        )}
+      </Section>
+
+      <Section title="Aparência">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Botões por Linha (Colunas)">
+            <Select value={block.columns ?? 7} onChange={v => onChange({ columns: parseInt(v) })} options={[
+              ...Array.from({ length: 12 }, (_, i) => ({ value: (i + 1).toString(), label: (i + 1).toString() }))
+            ]} />
+          </Field>
+          <Field label="Alinhamento">
+            <Select value={block.justifyContent || 'center'} onChange={v => onChange({ justifyContent: v })} options={[
+              { value: 'flex-start', label: 'Esquerda' },
+              { value: 'center', label: 'Centro' },
+              { value: 'flex-end', label: 'Direita' },
+              { value: 'space-between', label: 'Espaçado' },
+              { value: 'space-evenly', label: 'Distribuído' },
+            ]} />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          <Field label="Espaçamento Vertical/Horizontal (px)"><Input type="number" value={block.gap ?? 10} onChange={v => onChange({ gap: parseInt(v) })} /></Field>
+          <Field label="Arredondamento (px)"><Input type="number" value={block.buttonRadius ?? 16} onChange={v => onChange({ buttonRadius: parseInt(v) })} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          <Field label="Largura (px, 0=auto)"><Input type="number" value={block.buttonWidth ?? 60} onChange={v => onChange({ buttonWidth: parseInt(v) })} /></Field>
+          <Field label="Altura (px)"><Input type="number" value={block.buttonHeight ?? 50} onChange={v => onChange({ buttonHeight: parseInt(v) })} /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mt-3">
+          <Field label="Tamanho da Fonte (px)"><Input type="number" value={block.buttonFontSize ?? 16} onChange={v => onChange({ buttonFontSize: parseInt(v) })} /></Field>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <Field label="Fundo"><ColorPicker value={block.buttonBg || '#040914'} onChange={v => onChange({ buttonBg: v })} /></Field>
+          <Field label="Borda"><ColorPicker value={block.buttonBorder || 'transparent'} onChange={v => onChange({ buttonBorder: v })} /></Field>
+          <Field label="Texto"><ColorPicker value={block.buttonTextColor || '#ffffff'} onChange={v => onChange({ buttonTextColor: v })} /></Field>
+        </div>
+        <p className="text-[10px] font-bold mt-4 mb-2 text-slate-500 uppercase tracking-wider">Estado Selecionado</p>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Fundo (Selecionado)"><ColorPicker value={block.buttonSelectedBg || '#6366f1'} onChange={v => onChange({ buttonSelectedBg: v })} /></Field>
+          <Field label="Borda (Selecionado)"><ColorPicker value={block.buttonSelectedBorder || '#6366f1'} onChange={v => onChange({ buttonSelectedBorder: v })} /></Field>
+          <Field label="Texto (Selecionado)"><ColorPicker value={block.buttonSelectedTextColor || '#ffffff'} onChange={v => onChange({ buttonSelectedTextColor: v })} /></Field>
+        </div>
+      </Section>
+
+      <Section title="Botões">
+        <div className="space-y-3">
+          {options.map((opt, idx) => (
+            <div key={opt.id} className="relative bg-slate-800/50 border border-slate-700/50 rounded-xl p-3 flex gap-3 items-start">
+              <span className="text-xs font-bold text-slate-500 mt-8">{idx + 1}</span>
+              <div className="flex-1 space-y-2">
+                <Field label="Texto do Botão">
+                  <Input value={opt.text} onChange={v => updateOption(idx, { text: v })} placeholder="01" />
+                </Field>
+                <div className="pt-1">
+                  <Field label="Tag Variante associada (opcional)">
+                    <ScoreTargetSelector value={opt.scoreTarget || ''} onChange={v => updateOption(idx, { scoreTarget: v })} availableScores={availableScores} />
+                  </Field>
+                </div>
+              </div>
+              <button onClick={() => removeOption(idx)} className="mt-8 text-slate-500 hover:text-red-400 cursor-pointer">
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+          <button onClick={addOption} className="w-full py-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-500 hover:text-indigo-400 transition-all cursor-pointer">
+            + Adicionar Botão
+          </button>
+        </div>
+      </Section>
+    </>
+  );
+}
+
 export default function BlockEditor({ block, theme, steps, currentStepIdx, onChange }) {
   if (!block) return null;
 
@@ -2863,6 +2976,7 @@ export default function BlockEditor({ block, theme, steps, currentStepIdx, onCha
     animated_metrics: AnimatedMetricsEditor,
     image_carousel: ImageCarouselEditor,
     animated_text_carousel: AnimatedTextCarouselEditor,
+    button_grid: ButtonGridEditor,
   };
 
   const Editor = editorMap[block.type];

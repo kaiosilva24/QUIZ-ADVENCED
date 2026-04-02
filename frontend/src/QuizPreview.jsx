@@ -2667,6 +2667,81 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       );
     }
 
+    case 'button_grid': {
+      const opts = block.options || [];
+      const isMulti = block.multiSelect !== false;
+      const [selected, setSelected] = React.useState([]);
+
+      const toggleOpt = (optId) => {
+        if (isMulti) {
+          setSelected(prev => prev.includes(optId) ? prev.filter(id => id !== optId) : [...prev, optId]);
+        } else {
+          // Em single select, seleciona e já avança
+          const target = resolveNextStep(block.nextStep);
+          const scoreTarget = opts.find(o => o.id === optId)?.scoreTarget;
+          
+          if (block.showLoading && onStartLoading && onNavigate) {
+             onStartLoading(block, (block.loadingDuration || 3) * 1000, () => {
+               if (target) onNavigate(target, scoreTarget || 'Selecionado', false, scoreTarget || null);
+             });
+          } else if (onNavigate && target) {
+             onNavigate(target, scoreTarget || 'Selecionado', false, scoreTarget || null);
+          }
+        }
+      };
+
+      const columns = block.columns || 7;
+      
+      return (
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: compact ? Math.max(2, (block.gap ?? 10) * 0.6) : (block.gap ?? 10),
+          justifyContent: block.justifyContent || 'center',
+          width: '100%',
+          maxWidth: '100%',
+        }}>
+          {opts.map(opt => {
+            const isSel = selected.includes(opt.id);
+            const w = block.buttonWidth ? (compact ? Math.round(block.buttonWidth * 0.7) : block.buttonWidth) : 'auto';
+            const minW = block.buttonWidth ? 0 : (compact ? 30 : 40);
+
+            // Se for pra fluir no flex-wrap com colunas uniformes:
+            const basisCalc = `calc((100% - ${(columns - 1) * (block.gap ?? 10)}px) / ${columns})`;
+            
+            return (
+              <button
+                key={opt.id}
+                onClick={() => toggleOpt(opt.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: block.buttonWidth ? w : basisCalc,
+                  minWidth: minW,
+                  height: compact ? Math.round((block.buttonHeight ?? 50) * 0.7) : (block.buttonHeight ?? 50),
+                  borderRadius: compact ? Math.round((block.buttonRadius ?? 16) * 0.7) : (block.buttonRadius ?? 16),
+                  background: isSel ? (block.buttonSelectedBg || '#6366f1') : (block.buttonBg || '#040914'),
+                  border: `1px solid ${isSel ? (block.buttonSelectedBorder || '#6366f1') : (block.buttonBorder || 'transparent')}`,
+                  color: isSel ? (block.buttonSelectedTextColor || '#ffffff') : (block.buttonTextColor || '#ffffff'),
+                  fontSize: compact ? Math.round((block.buttonFontSize ?? 16) * 0.7) : (block.buttonFontSize ?? 16),
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  padding: block.buttonWidth ? 0 : '0 10px',
+                  outline: 'none',
+                  flexShrink: block.buttonWidth ? 0 : 1,
+                  boxShadow: isSel ? `0 4px 12px ${(block.buttonSelectedBg || '#6366f1')}40` : '0 2px 4px rgba(0,0,0,0.1)',
+                }}
+              >
+                {opt.text}
+              </button>
+            );
+          })}
+        </div>
+      );
+    }
+
     case 'checkbox_selector': {
       const opts = block.options || [];
       const isMulti = block.multiSelect !== false;
