@@ -570,7 +570,17 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
     const block = createBlock(type);
     setConfig(c => ({
       ...c,
-      steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, blocks: [...s.blocks, block] } : s)
+      steps: c.steps.map((s, i) => {
+        if (i !== currentStepIdx) return s;
+        const newBlocks = [...s.blocks];
+        let insertIdx = newBlocks.length;
+        if (selectedBlockId) {
+          const selectedIdx = newBlocks.findIndex(b => b.id === selectedBlockId);
+          if (selectedIdx !== -1) insertIdx = selectedIdx + 1;
+        }
+        newBlocks.splice(insertIdx, 0, block);
+        return { ...s, blocks: newBlocks };
+      })
     }));
     setSelectedBlockId(block.id);
   };
