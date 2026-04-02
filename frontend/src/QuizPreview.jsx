@@ -3738,63 +3738,61 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       return (
         <div style={{ width: '100%', position: 'relative' }}>
           <style>{getAnimationKeyframes()}</style>
-          <div style={{ 
-            width: '100%', 
-            minHeight: compact ? 40 : 80,
-            display: 'flex', 
-            justifyContent: block.textAlign === 'left' ? 'flex-start' : block.textAlign === 'right' ? 'flex-end' : 'center',
-            alignItems: 'center',
-            textAlign: block.textAlign || 'center',
-            overflow: 'hidden',
-            background: block.bgColor || 'transparent',
-            borderRadius: compact ? Math.round((block.bgRadius || 0) * 0.7) : (block.bgRadius || 0),
-            padding: compact ? Math.round((block.bgPadding || 0) * 0.7) : (block.bgPadding || 0),
-            position: 'relative',
-          }}>
-            <div style={{ flex: 1, zIndex: 1 }}>
-              {(phase === 'in' || phase === 'view') && (
-                <span style={{ 
-                  color: block.textColor || '#ffffff', 
-                  fontSize: sizeMap[block.textSize] || sizeMap['lg'],
-                  fontWeight: block.bold ? 800 : 400,
-                  fontFamily: block.fontFamily || 'inherit',
-                  whiteSpace: 'pre-wrap',
-                  animation: phase === 'in' ? animationValue : 'none',
-                  opacity: phase === 'view' ? 1 : 0
-                }}>
-                  {currentText}
-                </span>
-              )}
-              {phase === 'out' && (
-                <span style={{ 
-                  color: block.textColor || '#ffffff', 
-                  fontSize: sizeMap[block.textSize] || sizeMap['lg'],
-                  fontWeight: block.bold ? 800 : 400,
-                  fontFamily: block.fontFamily || 'inherit',
-                  whiteSpace: 'pre-wrap',
-                  animation: animationValue,
-                }}>
-                  {currentText}
-                </span>
-              )}
-            </div>
+          <style>{`@keyframes atcShrink_${block.id}{from{width:100%}to{width:0%}}`}</style>
 
-            {block.showProgressBar && (
-              <div 
-                key={`progress_${currentIndex}`}
+          {/* O key garante que o React recria o div a cada mudança de fase/item, acionando a animação */}
+          <div
+            key={`atc_${currentIndex}_${phase}`}
+            style={{ 
+              width: '100%', 
+              minHeight: compact ? 40 : 80,
+              display: 'flex', 
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: block.textAlign === 'left' ? 'flex-start' : block.textAlign === 'right' ? 'flex-end' : 'center',
+              textAlign: block.textAlign || 'center',
+              overflow: 'hidden',
+              background: block.bgColor || 'transparent',
+              borderRadius: compact ? Math.round((block.bgRadius || 0) * 0.7) : (block.bgRadius || 0),
+              padding: compact ? Math.round((block.bgPadding || 0) * 0.7) : (block.bgPadding || 0),
+              position: 'relative',
+              // Animação engloba TODO o bloco (fundo + texto)
+              animation: phase === 'in'
+                ? `${animInName} ${transitionSpeed}s ease forwards`
+                : phase === 'out'
+                ? `${animOutName} ${transitionSpeed}s ease forwards`
+                : 'none',
+            }}
+          >
+            <span style={{ 
+              color: block.textColor || '#ffffff', 
+              fontSize: sizeMap[block.textSize] || sizeMap['lg'],
+              fontWeight: block.bold ? 800 : 400,
+              fontFamily: block.fontFamily || 'inherit',
+              whiteSpace: 'pre-wrap',
+              display: 'block',
+              width: '100%',
+            }}>
+              {currentText}
+            </span>
+
+            {/* Barra de Delay — aparece logo após a entrada, encolhe durante o tempo de exibição */}
+            {block.showProgressBar && phase !== 'out' && (
+              <div
+                key={`bar_${currentIndex}`}
                 style={{
                   position: 'absolute',
                   bottom: 0,
                   left: 0,
+                  width: '100%',
                   height: compact ? Math.max(2, (block.progressBarHeight || 4) * 0.7) : (block.progressBarHeight || 4),
                   background: block.progressBarColor || '#6366f1',
-                  animation: `shrinkWidth ${currentDuration + transitionSpeed * 2}s linear forwards`,
-                  transformOrigin: 'left',
+                  // Delay = tempo de entrada; duração = tempo de exibição do texto
+                  animation: `atcShrink_${block.id} ${(items[currentIndex]?.duration || 3)}s linear ${transitionSpeed}s forwards`,
                   zIndex: 2,
                 }}
               />
             )}
-            <style>{`@keyframes shrinkWidth { from { width: 100%; } to { width: 0%; } }`}</style>
           </div>
         </div>
       );
