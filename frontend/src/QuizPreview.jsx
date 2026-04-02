@@ -3538,10 +3538,10 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 8 : 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, flexWrap: 'wrap', justifyContent: 'center' }}>
                     {pref && <span style={{ color: tColor, fontSize: compact ? 12 : 16, fontWeight: 500 }}>{pref}</span>}
-                    {oldP && <OldPriceUI size={compact ? 20 : 26} strikeSize={2} />}
+                    {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 20 : 26)} strikeSize={2} />}
                     {suf && <span style={{ color: tColor, fontSize: compact ? 12 : 16, fontWeight: 500 }}>{suf}</span>}
                   </div>
-                  <NewPriceUI size={compact ? 48 : 64} />
+                  <NewPriceUI size={block.priceSize || (compact ? 48 : 64)} />
                </div>
             )}
 
@@ -3554,10 +3554,10 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   )}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 4 : 8 }}>
                      {pref && <span style={{ color: tColor, fontSize: compact ? 14 : 18, fontWeight: 600 }}>{pref}</span>}
-                     {oldP && <OldPriceUI size={compact ? 24 : 32} strikeSize={3} />}
+                     {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 24 : 32)} strikeSize={3} />}
                      {suf && <span style={{ color: tColor, fontSize: compact ? 14 : 18, fontWeight: 600, marginTop: 4 }}>{suf}</span>}
                      <div style={{ marginTop: compact ? 8 : 12 }}>
-                        <NewPriceUI size={compact ? 56 : 80} />
+                        <NewPriceUI size={block.priceSize || (compact ? 56 : 80)} />
                      </div>
                   </div>
                </div>
@@ -3565,10 +3565,10 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
             {model === 'minimalist' && (
                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <NewPriceUI size={compact ? 64 : 100} />
+                  <NewPriceUI size={block.priceSize || (compact ? 64 : 100)} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, marginTop: compact ? 8 : 12 }}>
                     {pref && <span style={{ color: tColor, fontSize: compact ? 12 : 14, opacity: 0.7, fontWeight: 500 }}>{pref}</span>}
-                    {oldP && <OldPriceUI size={compact ? 16 : 20} strikeSize={1} />}
+                    {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 16 : 20)} strikeSize={1} />}
                   </div>
                </div>
             )}
@@ -3577,13 +3577,13 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                <div style={{ display: 'flex', flexDirection: compact ? 'column' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: compact ? 16 : 24, width: '100%', padding: compact ? '8px' : '0 16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: compact ? 'center' : 'flex-start' }}>
                      {pref && <span style={{ color: tColor, fontSize: compact ? 13 : 16, fontWeight: 500, marginBottom: 4 }}>{pref}</span>}
-                     {oldP && <OldPriceUI size={compact ? 22 : 28} strikeSize={2} />}
+                     {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 22 : 28)} strikeSize={2} />}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                      <div style={{ width: 1, height: '50px', background: border, display: compact ? 'none' : 'block' }} />
                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: compact ? 'center' : 'flex-end' }}>
                         {suf && <span style={{ color: tColor, fontSize: compact ? 12 : 14, fontWeight: 500, opacity: 0.8, marginBottom: 4 }}>{suf}</span>}
-                        <NewPriceUI size={compact ? 50 : 70} />
+                        <NewPriceUI size={block.priceSize || (compact ? 50 : 70)} />
                      </div>
                   </div>
                </div>
@@ -3598,11 +3598,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 8 : 12 }}>
                      {pref && <span style={{ color: tColor, fontSize: compact ? 13 : 15, fontWeight: 500 }}>{pref}</span>}
-                     {oldP && <OldPriceUI size={compact ? 18 : 24} strikeSize={2} />}
+                     {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 18 : 24)} strikeSize={2} />}
                      {suf && <span style={{ color: tColor, fontSize: compact ? 13 : 15, fontWeight: 500 }}>{suf}</span>}
                   </div>
                   <div style={{ height: 1, width: '60%', background: border, margin: '8px 0', opacity: 0.5 }} />
-                  <NewPriceUI size={compact ? 56 : 80} />
+                  <NewPriceUI size={block.priceSize || (compact ? 56 : 80)} />
                </div>
             )}
 
@@ -3617,7 +3617,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                      {/* Esquerda */}
                      {leftText && (
                         <div style={{ flex: '0.8 1 0%', minWidth: 0, padding: compact ? '4px' : '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-                           <span style={{ color: leftTextColor, fontSize: compact ? 15 : 22, fontWeight: 800, lineHeight: 1.15, wordBreak: 'break-word' }}>{leftText}</span>
+                           <span style={{ color: leftTextColor, fontSize: block.leftTextSize ? (compact ? Math.round(block.leftTextSize * 0.7) : block.leftTextSize) : (compact ? 15 : 22), fontWeight: 800, lineHeight: 1.15, wordBreak: 'break-word' }}>{leftText}</span>
                         </div>
                      )}
                      {/* Direita */}

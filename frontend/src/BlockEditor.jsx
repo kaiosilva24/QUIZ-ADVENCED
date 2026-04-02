@@ -3177,8 +3177,14 @@ function PriceDisplayEditor({ block, onChange }) {
           <Field label="Preço Antigo"><Input value={block.oldPrice || ''} onChange={v => onChange({ oldPrice: v })} placeholder="197,00" /></Field>
           <Field label="Texto de conexão (Meio)"><Input value={block.suffix || ''} onChange={v => onChange({ suffix: v })} placeholder="por apenas" /></Field>
         </div>
-        <Field label="Preço Novo (Atual)"><Input value={block.newPrice || ''} onChange={v => onChange({ newPrice: v })} placeholder="29,90" /></Field>
-        <Field label="Texto do Período (ex: 12x de, ou /mês)"><Input value={block.period || ''} onChange={v => onChange({ period: v })} placeholder="" /></Field>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Preço Novo (Atual)"><Input value={block.newPrice || ''} onChange={v => onChange({ newPrice: v })} placeholder="29,90" /></Field>
+          <Field label="Texto do Período"><Input value={block.period || ''} onChange={v => onChange({ period: v })} placeholder="ex: /mês" /></Field>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-3">
+          <Field label="Tamanho da Fonte (Preço Novo)"><Input type="number" value={block.priceSize || ''} onChange={v => onChange({ priceSize: parseInt(v) || '' })} placeholder="Auto" /></Field>
+          <Field label="Tamanho da Fonte (Preço Antigo)"><Input type="number" value={block.oldPriceSize || ''} onChange={v => onChange({ oldPriceSize: parseInt(v) || '' })} placeholder="Auto" /></Field>
+        </div>
         {block.model === 'badge' && (
            <Field label="Texto da Tag Central"><Input value={block.badgeText || ''} onChange={v => onChange({ badgeText: v })} placeholder="ECONOMIZE 85%" /></Field>
         )}
