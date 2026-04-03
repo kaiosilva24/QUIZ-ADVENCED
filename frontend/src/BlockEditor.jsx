@@ -2610,6 +2610,43 @@ function AnimatedMetricsEditor({ block, onChange }) {
               <Field label="Valor (%)"><Slider min={0} max={100} value={block.areaEndValue ?? 100} onChange={v => onChange({ areaEndValue: v })} /></Field>
               <Field label="Cor Final"><ColorPicker value={block.areaEndColor || '#22c55e'} onChange={v => onChange({ areaEndColor: v })} /></Field>
             </div>
+
+            {/* Waypoints intermediários */}
+            <div className="p-3 bg-indigo-900/30 rounded-lg border border-indigo-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-indigo-300">📍 Pontos Intermediários (opcional)</h4>
+                <button
+                  onClick={() => {
+                    const wp = block.areaWaypoints || [];
+                    onChange({ areaWaypoints: [...wp, { id: `wp_${Date.now()}`, value: 50, label: '10 DIAS', sub: '', color: '#f59e0b' }] });
+                  }}
+                  className="text-[10px] px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded cursor-pointer"
+                >
+                  + Adicionar Ponto
+                </button>
+              </div>
+              <p className="text-[10px] text-indigo-400 leading-relaxed">Cria uma trajetória com vários segmentos. A linha sobe/desce em cada ponto, em vez de ir reto do início ao fim.</p>
+              {(block.areaWaypoints || []).map((wp, idx) => {
+                const updateWp = patch => {
+                  const wps = [...(block.areaWaypoints || [])];
+                  wps[idx] = { ...wps[idx], ...patch };
+                  onChange({ areaWaypoints: wps });
+                };
+                const removeWp = () => {
+                  onChange({ areaWaypoints: (block.areaWaypoints || []).filter((_, i) => i !== idx) });
+                };
+                return (
+                  <div key={wp.id || idx} className="relative p-3 bg-slate-800 rounded-lg border border-slate-600/50 space-y-2">
+                    <button onClick={removeWp} className="absolute top-2 right-2 text-slate-500 hover:text-red-400"><Trash2 size={12} /></button>
+                    <p className="text-[10px] font-bold text-slate-300">Ponto {idx + 1}</p>
+                    <Field label="Rótulo (tooltip no gráfico)"><Input value={wp.label || ''} onChange={v => updateWp({ label: v })} placeholder="Ex: 10 DIAS" /></Field>
+                    <Field label="Subtexto (eixo X abaixo)"><Input value={wp.sub || ''} onChange={v => updateWp({ sub: v })} placeholder="Ex: semana 1" /></Field>
+                    <Field label={`Altura do ponto (%) — ${wp.value ?? 50}%`}><Slider min={0} max={100} value={wp.value ?? 50} onChange={v => updateWp({ value: v })} /></Field>
+                    <Field label="Cor do dot"><ColorPicker value={wp.color || '#f59e0b'} onChange={v => updateWp({ color: v })} /></Field>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </Section>
       ) : (

@@ -3850,18 +3850,48 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       if (mode === 'area') {
         const sVal = block.areaStartValue ?? 0;
         const eVal = block.areaEndValue ?? 100;
-        const startTarget = sVal;
-        const endTarget = sVal + (eVal - sVal) * animationProgress;
+        const waypoints = block.areaWaypoints || [];
+
+        // Build full point list: [start, ...waypoints, end]
+        const allPoints = [
+          { value: sVal, label: block.areaStartLabel || 'HOJE', sub: block.areaStartSub || '', color: block.areaStartColor || '#ef4444' },
+          ...waypoints,
+          { value: eVal, label: block.areaEndLabel || '30 DIAS', sub: block.areaEndSub || '', color: block.areaEndColor || '#22c55e' },
+        ];
+        const N = allPoints.length;
 
         const h = compact ? 150 : 250;
-        
         const yLabelsStr = block.areaYAxisLabels || '100, 75, 50, 25, 0';
         const yLabelsRaw = yLabelsStr.split(',').map(s => s.trim()).filter(Boolean);
         const yLabels = yLabelsRaw.length ? yLabelsRaw : ['100', '75', '50', '25', '0'];
         const numLabels = yLabels.length;
-        
         const txtColor = block.areaTextColor || defaultText;
         const gridColor = block.areaGridColor || 'rgba(148,163,184,0.3)';
+
+        // Build SVG polygon points (0 to 100 coordinate space)
+        // For the animated clip (reveal left to right), we use clipPath
+        const svgPoints = allPoints.map((pt, i) => {
+          const x = N === 1 ? 0 : (i / (N - 1)) * 100;
+          const y = 100 - (pt.value ?? 0);
+          return `${x},${y}`;
+        });
+        const areaPoints = [
+          `0,100`,
+          ...svgPoints,
+          `100,100`
+        ].join(' ');
+        const linePoints = svgPoints.join(' ');
+
+        // Animated endpoint (last animated dot tracks animationProgress)
+        const progressX = animationProgress * 100; // 0-100
+        // Find which segment the current progress is in
+        const progressSegIdx = N <= 1 ? 0 : Math.min(Math.floor(animationProgress * (N - 1)), N - 2);
+        const segProgress = N <= 1 ? animationProgress : (animationProgress * (N - 1)) - progressSegIdx;
+        const pA = allPoints[progressSegIdx];
+        const pB = allPoints[Math.min(progressSegIdx + 1, N - 1)];
+        const liveY = (pA?.value ?? 0) + ((pB?.value ?? 0) - (pA?.value ?? 0)) * segProgress;
+
+        const gradId = `grad_${block.id}`;
 
         return (
           <div style={{
@@ -3880,55 +3910,98 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   <span key={idx} style={{ fontSize: compact ? 9 : 12, color: txtColor, opacity: 0.6 }}>{lbl}</span>
                 ))}
               </div>
-              
-              {/* Gráfico SVG com clip-path */}
+
+              {/* Gráfico SVG */}
               <div style={{ flex: 1, position: 'relative', borderBottom: `1px dashed ${gridColor}` }}>
-                {/* Linhas Horizontais */}
+                {/* Linhas horizontais da grade */}
                 {yLabels.map((_, idx) => {
                   const perc = (numLabels <= 1) ? 0 : 100 - (idx * 100 / (numLabels - 1));
-                  return (
-                    <div key={idx} style={{ position: 'absolute', left: 0, right: 0, bottom: `${perc}%`, borderBottom: `1px dashed ${gridColor}`, opacity: 0.5 }} />
-                  );
+                  return <div key={idx} style={{ position: 'absolute', left: 0, right: 0, bottom: `${perc}%`, borderBottom: `1px dashed ${gridColor}`, opacity: 0.5 }} />;
                 })}
 
-                <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100" style={{ position: 'absolute', inset: 0, clipPath: `inset(0 ${100 - (animationProgress*100)}% 0 0)` }}>
+                <svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100"
+                  style={{ position: 'absolute', inset: 0, clipPath: `inset(0 ${100 - (animationProgress * 100)}% 0 0)` }}>
                   <defs>
-                    <linearGradient id={`grad_${block.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                    <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
                       <stop offset="0%" stopColor={block.areaStartColor || '#ef4444'} stopOpacity="0.8" />
                       <stop offset="100%" stopColor={block.areaEndColor || '#22c55e'} stopOpacity="0.8" />
                     </linearGradient>
                   </defs>
-                  <polygon 
-                    points={`0,100 0,${100 - sVal} 100,${100 - eVal} 100,100`}
-                    fill={`url(#grad_${block.id})`}
-                  />
-                  <polyline 
-                     points={`0,${100 - sVal} 100,${100 - eVal}`}
-                     fill="none"
-                     stroke={block.areaEndColor || '#22c55e'}
-                     strokeWidth="1.5"
-                  />
+                  {/* Área preenchida */}
+                  <polygon points={areaPoints} fill={`url(#${gradId})`} />
+                  {/* Linha de cima */}
+                  <polyline points={linePoints} fill="none" stroke={block.areaEndColor || '#22c55e'} strokeWidth="1.5" />
                 </svg>
 
-                {/* Eixo X: Ponto Início e Ponto Fim. Oculto se não iniciou ou se passou. */}
-                <div style={{ position: 'absolute', bottom: `${sVal}%`, left: 0, transform: 'translate(-50%, 50%)', width: compact ? 12 : 16, height: compact ? 12 : 16, background: block.areaStartColor || '#ef4444', borderRadius: '50%', boxShadow: '0 0 0 4px rgba(255,255,255,0.7)', zIndex: 10 }}>
-                  <div style={{ position: 'absolute', top: -30, left: '50%', transform: 'translateX(-50%)', background: '#fff', padding: '2px 6px', borderRadius: 4, border: '1px solid #e2e8f0', fontSize: compact ? 8 : 10, color: '#334155', fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                    {block.areaStartLabel || 'HOJE'}
-                  </div>
-                </div>
+                {/* Dots e labels para cada ponto */}
+                {allPoints.map((pt, i) => {
+                  const xPct = N === 1 ? 0 : (i / (N - 1)) * 100;
+                  const yPct = pt.value ?? 0;
+                  const isFirst = i === 0;
+                  const isLast = i === N - 1;
+                  // Show all dots, live dot animation on the last one
+                  const dotColor = pt.color || (isLast ? (block.areaEndColor || '#22c55e') : (block.areaStartColor || '#ef4444'));
+                  return (
+                    <div key={i} style={{
+                      position: 'absolute',
+                      bottom: `${yPct}%`,
+                      left: `${xPct}%`,
+                      transform: 'translate(-50%, 50%)',
+                      width: compact ? 10 : 14,
+                      height: compact ? 10 : 14,
+                      background: dotColor,
+                      borderRadius: '50%',
+                      boxShadow: '0 0 0 3px rgba(255,255,255,0.8)',
+                      zIndex: 10,
+                    }}>
+                      {/* Label topo */}
+                      {pt.label && (
+                        <div style={{
+                          position: 'absolute',
+                          top: -28,
+                          left: isLast ? 'auto' : '50%',
+                          right: isLast ? 0 : 'auto',
+                          transform: isFirst ? 'translateX(-10%)' : isLast ? 'none' : 'translateX(-50%)',
+                          background: '#fff',
+                          padding: '2px 5px',
+                          borderRadius: 4,
+                          border: '1px solid #e2e8f0',
+                          fontSize: compact ? 7 : 9,
+                          color: '#334155',
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.15)'
+                        }}>
+                          {pt.label}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
 
-                <div style={{ position: 'absolute', bottom: `${endTarget}%`, left: `${animationProgress*100}%`, transform: 'translate(-50%, 50%)', width: compact ? 12 : 16, height: compact ? 12 : 16, background: block.areaEndColor || '#22c55e', borderRadius: '50%', boxShadow: '0 0 0 4px rgba(255,255,255,0.7)', zIndex: 10, transition: 'all 0.1s linear' }}>
-                  <div style={{ position: 'absolute', top: -30, right: 0, transform: 'translateX(0%)', background: '#fff', padding: '2px 6px', borderRadius: 4, border: '1px solid #e2e8f0', fontSize: compact ? 8 : 10, color: '#334155', fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                    {block.areaEndLabel || '30 DIAS'}
-                  </div>
-                </div>
+                {/* Dot animado que corre ao longo da linha */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: `${liveY}%`,
+                  left: `${progressX}%`,
+                  transform: 'translate(-50%, 50%)',
+                  width: compact ? 14 : 18,
+                  height: compact ? 14 : 18,
+                  background: block.areaEndColor || '#22c55e',
+                  borderRadius: '50%',
+                  boxShadow: '0 0 0 4px rgba(255,255,255,0.9)',
+                  zIndex: 20,
+                  transition: 'all 0.05s linear',
+                  opacity: animationProgress > 0 && animationProgress < 1 ? 1 : 0
+                }} />
               </div>
             </div>
 
             {/* Eixo X labels (embaixo) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingLeft: compact ? 24 : 32 }}>
-              <span style={{ fontSize: compact ? 9 : 11, color: txtColor, opacity: 0.6 }}>{block.areaStartSub || 'R$0/dia'}</span>
-              <span style={{ fontSize: compact ? 9 : 11, color: txtColor, opacity: 0.6 }}>{block.areaEndSub || 'R$200-400/dia (meta)'}</span>
+              {allPoints.map((pt, i) => pt.sub ? (
+                <span key={i} style={{ fontSize: compact ? 8 : 10, color: txtColor, opacity: 0.6, textAlign: 'center', flex: 1 }}>{pt.sub}</span>
+              ) : null)}
             </div>
           </div>
         );
