@@ -1342,8 +1342,9 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
   };
 
 
-  const width = compact ? 200 : 390;
-  const height = compact ? 380 : 680;
+  const isBuilder = !!onSelectBlock;
+  const width = compact ? 200 : (isBuilder ? 390 : '100%');
+  const height = compact ? 380 : (isBuilder ? 680 : '100%');
 
   React.useEffect(() => {
     if (selectedBlockId && compact) {
@@ -1359,11 +1360,13 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
 
   return (
     <div
-      className="rounded-3xl overflow-hidden shadow-2xl"
+      className={`${isBuilder ? (compact ? 'rounded-2xl' : 'rounded-3xl') : ''} overflow-hidden ${isBuilder ? 'shadow-2xl' : ''}`}
       style={{
         width,
         height,
-        border: compact ? '3px solid #1e293b' : '4px solid #1e293b',
+        minHeight: !isBuilder ? '100dvh' : undefined,
+        border: isBuilder ? (compact ? '3px solid #1e293b' : '4px solid #1e293b') : 'none',
+        margin: '0 auto',
         ...containerStyle,
       }}
     >
