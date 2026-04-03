@@ -2753,21 +2753,8 @@ function ImageCarouselEditor({ block, onChange }) {
 
   return (
     <>
-      <Section title="Título e Texto (Opcional)">
-        <Field label="Título">
-          <Input value={block.title || ''} onChange={v => onChange({ title: v })} placeholder="Ex: Galeria de Fotos" />
-        </Field>
-        <div className="mt-3">
-          <Field label="Texto Abaixo / Descrição">
-            <textarea
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-indigo-500"
-              rows={2}
-              value={block.text || ''}
-              onChange={e => onChange({ text: e.target.value })}
-              placeholder="Digite um texto descritivo..."
-            />
-          </Field>
-        </div>
+      <Section title="Estilos de Texto (Opcional)">
+        <div className="text-[10px] text-slate-400 mb-2">Configure os textos individualmente em cada imagem da lista abaixo. Aqui você define o estilo visual para todos eles:</div>
         <div className="grid grid-cols-2 gap-4 mt-3">
           <Field label="Cor do Título"><ColorPicker value={block.titleColor || '#ffffff'} onChange={v => onChange({ titleColor: v })} /></Field>
           <Field label="Tamanho Título (px)"><Input type="number" value={block.titleSize || 24} onChange={v => onChange({ titleSize: parseInt(v) })} /></Field>
@@ -2856,6 +2843,20 @@ function ImageCarouselEditor({ block, onChange }) {
                    </div>
                 )}
               </Field>
+              <div className="mt-3 space-y-2">
+                <Field label="Título nesta Imagem (Opcional)">
+                  <Input value={img.title || ''} onChange={v => updateImage(idx, { title: v })} placeholder="Ex: Novo Produto" />
+                </Field>
+                <Field label="Texto nesta Imagem (Opcional)">
+                  <textarea
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-1 px-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    rows={2}
+                    value={img.text || ''}
+                    onChange={e => updateImage(idx, { text: e.target.value })}
+                    placeholder="Descrição para esta imagem..."
+                  />
+                </Field>
+              </div>
             </div>
           ))}
           <button onClick={addImage} className="w-full py-2 flex items-center justify-center gap-2 border border-dashed border-slate-600 hover:border-indigo-500/50 rounded-xl text-xs text-slate-500 hover:text-indigo-400 transition-all cursor-pointer">
