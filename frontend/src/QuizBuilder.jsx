@@ -725,7 +725,7 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
         {activeTab === 'blocks' && (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
             {/* Step Tabs */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-1 bg-slate-900/30 min-h-[150px]" style={{ flexBasis: '50%' }}>
+            <div className="h-[50%] shrink-0 overflow-y-auto p-2 space-y-1 bg-slate-900/30">
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleStepDragEnd}>
                 <SortableContext items={config.steps.map(s => s.id)} strategy={verticalListSortingStrategy}>
                   {config.steps.map((step, idx) => (
@@ -748,10 +748,10 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
               </button>
             </div>
 
-            <div className="h-1.5 shrink-0 bg-slate-950 border-y border-white/5 relative z-20"></div>
+            <div className="h-[6px] shrink-0 bg-slate-950 border-y border-white/5 relative z-20"></div>
 
             {/* Block List (Sortable) */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-1.5 relative min-h-[150px]" style={{ flexBasis: '50%' }}>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1.5 relative min-h-0">
               <div className="sticky top-0 -mx-2 px-3 py-2 -mt-2 bg-slate-900/90 backdrop-blur-md z-10 mb-2 border-b border-white/5 shadow-sm">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Blocos da etapa {currentStepIdx + 1}</p>
               </div>
