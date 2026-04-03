@@ -3484,6 +3484,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const boxRightBg = block.boxRightBg || '#dcfce7';
 
       const animId = `pdanim_${block.id || Math.random().toString(36).slice(2, 8)}`;
+      const hasSpin = block.borderAnimation === 'rotating_gradient';
+      const hasPulseBorder = block.borderAnimation === 'pulse_border';
+      const borderW = block.borderWidth ?? 1;
+      const borderS = block.borderAnimation === 'dashed' ? 'dashed' : 'solid';
+      
       let inlineStyle = `
         @keyframes ${animId}_pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         @keyframes ${animId}_heartbeat { 0% { transform: scale(1); } 14% { transform: scale(1.08); } 28% { transform: scale(1); } 42% { transform: scale(1.08); } 70%, 100% { transform: scale(1); } }
@@ -3493,6 +3498,32 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         @keyframes ${animId}_neon { 0%, 100% { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px ${nColor}, 0 0 30px ${nColor}; } 50% { text-shadow: 0 0 2px #fff, 0 0 5px #fff, 0 0 10px ${nColor}, 0 0 20px ${nColor}; } }
         @keyframes ${animId}_typewriter { 0%, 10% { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); } 90%, 100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); } }
         @keyframes ${animId}_gradient_slide { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes ${animId}_spin_border { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes ${animId}_pulse_border { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        .${animId}_spin_box {
+           position: relative;
+           overflow: hidden;
+           border: ${borderW}px solid transparent !important;
+           border-radius: ${radius}px;
+           z-index: 1;
+        }
+        .${animId}_spin_box::before {
+           content: '';
+           position: absolute;
+           top: -50%; left: -50%; width: 200%; height: 200%;
+           background: conic-gradient(from 0deg, transparent 60%, ${border !== 'transparent' ? border : '#3b82f6'} 100%);
+           animation: ${animId}_spin_border 2.5s linear infinite;
+           z-index: -2;
+        }
+        .${animId}_spin_box::after {
+           content: '';
+           position: absolute;
+           inset: 0;
+           background: ${bg !== 'transparent' ? bg : '#0f172a'};
+           border-radius: ${Math.max(0, radius - borderW)}px;
+           z-index: -1;
+        }
       `;
       
       let animStyle = {};
@@ -3546,25 +3577,29 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       );
 
       return (
-         <div style={
+         <div 
+            className={(hasSpin && model !== 'offer_card') ? `${animId}_spin_box` : ''}
+            style={
             model === 'offer_card'
-            ? { width: '100%' }
+            ? { width: '100%', position: 'relative' }
             : {
                 width: '100%',
-                background: bg,
-                border: `1px solid ${border}`,
+                background: hasSpin ? 'transparent' : bg,
+                border: hasSpin ? 'none' : `${borderW}px ${borderS} ${border}`,
                 borderRadius: radius,
                 padding: `${block.blockPaddingY ?? (compact ? 20 : 32)}px ${block.blockPaddingX ?? (compact ? 15 : 24)}px`,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                boxShadow: hasPulseBorder ? '0 0 0 0 rgba(239, 68, 68, 0.4)' : undefined,
+                animation: hasPulseBorder ? `${animId}_pulse_border 2s infinite` : undefined
               }
          }>
             <style>{inlineStyle}</style>
 
             {model === 'classic' && (
-               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 8 : 12 }}>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: block.textGap ?? (compact ? 8 : 12), position: 'relative', zIndex: 2 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, flexWrap: 'wrap', justifyContent: 'center' }}>
                     {pref && <span style={{ color: tColor, fontSize: compact ? 12 : 16, fontWeight: 500 }}>{pref}</span>}
                     {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 20 : 26)} strikeSize={2} />}
@@ -3575,7 +3610,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             )}
 
             {model === 'badge' && (
-               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 12 : 16 }}>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: block.textGap ?? (compact ? 12 : 16), position: 'relative', zIndex: 2 }}>
                   {badgeTxt && (
                      <div style={{ background: bColor, color: '#fff', fontSize: compact ? 11 : 14, fontWeight: 800, padding: compact ? '4px 12px' : '6px 16px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 1 }}>
                         {badgeTxt}
@@ -3593,7 +3628,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             )}
 
             {model === 'minimalist' && (
-               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: block.textGap ? block.textGap / 2 : 0, position: 'relative', zIndex: 2 }}>
                   <NewPriceUI size={block.priceSize || (compact ? 64 : 100)} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, marginTop: compact ? 8 : 12 }}>
                     {pref && <span style={{ color: tColor, fontSize: compact ? 12 : 14, opacity: 0.7, fontWeight: 500 }}>{pref}</span>}
@@ -3619,7 +3654,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             )}
 
             {model === 'premium_stack' && (
-               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 8 : 12, padding: compact ? '8px' : '16px' }}>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: block.textGap ?? (compact ? 8 : 12), padding: compact ? '8px' : '16px', position: 'relative', zIndex: 2 }}>
                   {badgeTxt && (
                      <div style={{ background: bColor, color: '#fff', fontSize: compact ? 10 : 12, fontWeight: 700, padding: '4px 12px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: compact ? 4 : 8 }}>
                         {badgeTxt}
@@ -3671,9 +3706,41 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             )}
             
             {sub && sub.trim() && (model === 'clean_horizontal' || model === 'premium_stack') && (
-               <div style={{ marginTop: compact ? 16 : 24, color: tColor, fontSize: compact ? 12 : 14, fontWeight: 500, textAlign: 'center' }}>
+               <div style={{ marginTop: compact ? 16 : 24, color: tColor, fontSize: compact ? 12 : 14, fontWeight: 500, textAlign: 'center', position: 'relative', zIndex: 2 }}>
                   {sub.trim()}
                </div>
+            )}
+
+            {!!block.showButton && (
+               <button
+                  onClick={(e) => {
+                     e.stopPropagation();
+                     if (onNavigate && block.nextStep) onNavigate(block.nextStep);
+                  }}
+                  style={{
+                     marginTop: compact ? 16 : 24,
+                     width: '100%',
+                     padding: compact ? '12px' : '16px',
+                     background: block.buttonBg || '#6366f1',
+                     color: block.buttonTextColor || '#ffffff',
+                     borderRadius: 12,
+                     fontWeight: 700,
+                     fontSize: compact ? 14 : 16,
+                     border: 'none',
+                     display: 'flex',
+                     alignItems: 'center',
+                     justifyContent: 'center',
+                     gap: 8,
+                     cursor: 'pointer',
+                     position: 'relative',
+                     zIndex: 2,
+                     boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
+                     transition: 'transform 0.1s'
+                  }}
+               >
+                  {block.buttonEmoji && <span>{block.buttonEmoji}</span>}
+                  {block.buttonText || 'Garantir Oferta'}
+               </button>
             )}
          </div>
       );

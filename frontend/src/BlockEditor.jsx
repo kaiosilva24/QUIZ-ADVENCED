@@ -3285,6 +3285,20 @@ function PriceDisplayEditor({ block, onChange }) {
             </div>
          </Section>
       )}
+      <Section title="Design da Caixa (Borda e Estrutura)">
+         <div className="grid grid-cols-2 gap-4">
+            <Field label="Espaçamento Interno (Gap)"><Input type="number" value={block.textGap ?? 12} onChange={v => onChange({ textGap: parseInt(v) })} placeholder="Ex: 12" /></Field>
+            <Field label="Espessura da Borda (px)"><Input type="number" value={block.borderWidth ?? 1} onChange={v => onChange({ borderWidth: parseInt(v) })} /></Field>
+         </div>
+         <Field label="Efeito/Animação da Borda">
+            <Select value={block.borderAnimation || 'none'} onChange={v => onChange({ borderAnimation: v })} options={[
+              { value: 'none', label: 'Borda Sólida Normal' },
+              { value: 'dashed', label: 'Borda Tracejada' },
+              { value: 'rotating_gradient', label: 'Efeito Giratório Mágico (Neon)' },
+              { value: 'pulse_border', label: 'Borda Pulsante (Glow)' },
+            ]} />
+         </Field>
+      </Section>
       <Section title="Textos e Valores">
         <div className="grid grid-cols-2 gap-4">
           <Field label="Moeda (Símbolo)"><Input value={block.currency || ''} onChange={v => onChange({ currency: v })} placeholder="R$" /></Field>
@@ -3306,6 +3320,27 @@ function PriceDisplayEditor({ block, onChange }) {
            <Field label="Texto da Tag Central"><Input value={block.badgeText || ''} onChange={v => onChange({ badgeText: v })} placeholder="ECONOMIZE 85%" /></Field>
         )}
         <Field label="Subtexto Abaixo (Mensagem Escassez)"><Input value={block.subtext || ''} onChange={v => onChange({ subtext: v })} placeholder="Sua oferta exclusiva foi ativada!" /></Field>
+      </Section>
+      <Section title="Botão de Ação Opcional (Interno)">
+         <Toggle label="Mostrar Botão Direto no Preço" value={!!block.showButton} onChange={v => onChange({ showButton: v })} />
+         {block.showButton && (
+            <div className="mt-3 space-y-3">
+               <Field label="Emoji do Botão">
+                 <Input value={block.buttonEmoji || ''} onChange={v => onChange({ buttonEmoji: v })} placeholder="👉" />
+               </Field>
+               <Field label="Texto do Botão">
+                 <Input value={block.buttonText || 'Garantir Oferta'} onChange={v => onChange({ buttonText: v })} />
+               </Field>
+               <div className="grid grid-cols-2 gap-4 mt-3">
+                  <Field label="Cor de Fundo">
+                    <ColorPicker value={block.buttonBg || '#6366f1'} onChange={v => onChange({ buttonBg: v })} />
+                  </Field>
+                  <Field label="Cor do Texto">
+                    <ColorPicker value={block.buttonTextColor || '#ffffff'} onChange={v => onChange({ buttonTextColor: v })} />
+                  </Field>
+               </div>
+            </div>
+         )}
       </Section>
       <Section title="Cores e Fundo">
         <div className="grid grid-cols-2 gap-4">
