@@ -1122,6 +1122,63 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
                     </div>
 
                     <div className="space-y-2 pt-4 border-t border-slate-700/50">
+                      <label className="text-xs text-slate-400 font-medium tracking-wide flex items-center gap-2">
+                        ⏳ CARREGAMENTO ANIMADO (AO AVANÇAR)
+                      </label>
+                      <label className="flex items-center gap-3 bg-slate-900 border border-slate-700 hover:border-indigo-500/50 transition-colors p-3 rounded-lg cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="w-5 h-5 accent-indigo-500 rounded bg-slate-800 border-slate-600 cursor-pointer"
+                          checked={!!currentStep?.showLoading}
+                          onChange={e => {
+                            const showLoading = e.target.checked;
+                            setConfig(c => ({
+                              ...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, showLoading } : s)
+                            }));
+                          }}
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-white">Forçar tela de transição animada</p>
+                          <p className="text-xs text-slate-400 mt-0.5">Qualquer clique que avance de etapa passará por esta tela</p>
+                        </div>
+                      </label>
+                      {currentStep?.showLoading && (
+                        <div className="grid grid-cols-2 gap-4 mt-3 bg-slate-900/50 p-4 rounded-lg border border-slate-700/50">
+                          <div className="space-y-2">
+                            <label className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold">Duração (Segundos)</label>
+                            <input 
+                              type="number" 
+                              min="1" max="10"
+                              value={currentStep?.loadingDuration || 3}
+                              onChange={e => {
+                                let loadingDuration = parseInt(e.target.value) || 3;
+                                setConfig(c => ({
+                                  ...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, loadingDuration } : s)
+                                }));
+                              }}
+                              className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-indigo-500"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold">Texto Customizado</label>
+                            <input 
+                              type="text"
+                              placeholder="Analisando suas respostas..."
+                              value={currentStep?.loadingText || ''}
+                              onChange={e => {
+                                const loadingText = e.target.value;
+                                setConfig(c => ({
+                                  ...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, loadingText } : s)
+                                }));
+                              }}
+                              className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-indigo-500"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 pt-4 border-t border-slate-700/50">
                       <label className="text-xs text-slate-400 font-medium tracking-wide uppercase flex items-center gap-2">
                         ✨ Animação de Entrada
                       </label>

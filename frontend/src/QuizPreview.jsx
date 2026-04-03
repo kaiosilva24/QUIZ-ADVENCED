@@ -1304,6 +1304,27 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
     }, afterMs);
   }, []);
 
+  const interceptedOnNavigate = React.useCallback((targetStepId, optionText, isSilent, targetScore) => {
+    // Se estiver no builder configurando (onSelectBlock), se a etapa NÃO pedir loading,
+    // ou se for um redirecionamento "isSilent" (como pulos diretos por baixo dos panos), vai direto:
+    if (onSelectBlock || !step?.showLoading || isSilent) {
+      if (onNavigate) onNavigate(targetStepId, optionText, isSilent, targetScore);
+      return;
+    }
+
+    // Caso contrário, ativa o loading global DA ETAPA para qualquer elemento que chamou a navegação
+    onStartLoading(
+      {
+        loadingText: step.loadingText || 'Analisando suas respostas...',
+        loadingTextColor: theme?.accent || '#ffffff'
+      },
+      (step.loadingDuration || 3) * 1000,
+      () => {
+        if (onNavigate) onNavigate(targetStepId, optionText, isSilent, targetScore);
+      }
+    );
+  }, [onSelectBlock, step?.showLoading, step?.loadingText, step?.loadingDuration, onStartLoading, onNavigate, theme?.accent]);
+
   const containerStyle = {
     background: buildBackground(theme),
     color: textColor,
@@ -1424,7 +1445,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
                   } : {}}
                 >
                   <div className={onSelectBlock ? 'pointer-events-none' : ''}>
-                    <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={onNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} scores={scores} onStartLoading={onStartLoading} />
+                    <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={interceptedOnNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} scores={scores} onStartLoading={onStartLoading} />
                   </div>
                 </div>
               ))}
