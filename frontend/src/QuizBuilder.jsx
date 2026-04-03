@@ -163,6 +163,7 @@ function createBlock(type) {
       showArrows: true,
       autoplay: false,
       autoplaySpeed: 3000,
+      imgScale: 100,
       images: [
         { id: 'img_1', url: '' },
       ]

@@ -2823,6 +2823,11 @@ function ImageCarouselEditor({ block, onChange }) {
         <Field label="Arredondamento do Carrossel (px)">
           <Slider min={0} max={40} value={block.borderRadius ?? 16} onChange={v => onChange({ borderRadius: v })} />
         </Field>
+        <Field label={`Tamanho da Imagem: ${block.imgScale || 100}%`}>
+          <input type="range" min={10} max={100} step={1} value={block.imgScale || 100}
+            onChange={e => onChange({ imgScale: Number(e.target.value) })}
+            className="w-full accent-indigo-500 cursor-pointer" />
+        </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Mostrar Setas na Tela">
             <Toggle value={!!block.showArrows} onChange={v => onChange({ showArrows: v })} />

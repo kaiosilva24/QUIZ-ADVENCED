@@ -4283,63 +4283,69 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
 
       const currentImage = images[currentIndex] || {};
 
+      const alignProps = 
+        block.textAlign === 'left' ? { justifyContent: 'flex-start' } :
+        block.textAlign === 'right' ? { justifyContent: 'flex-end' } :
+        { justifyContent: 'center' };
+
       return (
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: compact ? 12 : 20 }}>
-          {(currentImage.title || currentImage.text) && (
-            <div style={{ textAlign: block.textAlign || 'center', padding: '0 8px', animation: 'fadeIn 0.3s ease-in-out' }}>
-              {currentImage.title && (
-                <div style={{
-                  color: block.titleColor || '#ffffff',
-                  fontSize: compact ? Math.max(16, Math.round((block.titleSize || 24) * 0.7)) : (block.titleSize || 24),
-                  fontWeight: block.titleWeight === 'normal' ? 400 : block.titleWeight === 'semibold' ? 600 : block.titleWeight === 'extrabold' ? 900 : 700,
-                  marginBottom: currentImage.text ? (compact ? 4 : 8) : 0,
-                  lineHeight: 1.2,
-                }}>
-                  {currentImage.title}
-                </div>
-              )}
-              {currentImage.text && (
-                <div style={{
-                  color: block.textColor || '#cbd5e1',
-                  fontSize: compact ? Math.max(12, Math.round((block.textSize || 16) * 0.8)) : (block.textSize || 16),
-                  lineHeight: 1.5,
-                  whiteSpace: 'pre-wrap'
-                }}>
-                  {currentImage.text}
-                </div>
-              )}
-            </div>
-          )}
-          <div style={containerStyle}>
-            {ratio !== 'auto' ? (
-              <img
-                src={images[currentIndex]?.url}
-                alt=""
-                style={{
-                  position: 'absolute',
-                  top: 0, left: 0, width: '100%', height: '100%',
-                  objectFit: block.objectFit || 'cover',
-                  transition: 'opacity 0.3s ease-in-out'
-                }}
-              />
-            ) : (
-              <img
-                src={images[currentIndex]?.url}
-                alt=""
-                style={{
-                  width: '100%',
-                  display: 'block',
-                  transition: 'opacity 0.3s ease-in-out'
-                }}
-              />
+        <div style={{ display: 'flex', width: '100%', ...alignProps }}>
+          <div style={{ width: `${block.imgScale || 100}%`, display: 'flex', flexDirection: 'column', gap: compact ? 12 : 20 }}>
+            {(currentImage.title || currentImage.text) && (
+              <div style={{ textAlign: block.textAlign || 'center', padding: '0 8px', animation: 'fadeIn 0.3s ease-in-out' }}>
+                {currentImage.title && (
+                  <div style={{
+                    color: block.titleColor || '#ffffff',
+                    fontSize: compact ? Math.max(16, Math.round((block.titleSize || 24) * 0.7)) : (block.titleSize || 24),
+                    fontWeight: block.titleWeight === 'normal' ? 400 : block.titleWeight === 'semibold' ? 600 : block.titleWeight === 'extrabold' ? 900 : 700,
+                    marginBottom: currentImage.text ? (compact ? 4 : 8) : 0,
+                    lineHeight: 1.2,
+                  }}>
+                    {currentImage.title}
+                  </div>
+                )}
+                {currentImage.text && (
+                  <div style={{
+                    color: block.textColor || '#cbd5e1',
+                    fontSize: compact ? Math.max(12, Math.round((block.textSize || 16) * 0.8)) : (block.textSize || 16),
+                    lineHeight: 1.5,
+                    whiteSpace: 'pre-wrap'
+                  }}>
+                    {currentImage.text}
+                  </div>
+                )}
+              </div>
             )}
-            
-            {block.showArrows && images.length > 1 && (
-              <>
-                <button
-                  onClick={handlePrev}
+            <div style={containerStyle}>
+              {ratio !== 'auto' ? (
+                <img
+                  src={images[currentIndex]?.url}
+                  alt=""
                   style={{
-                    position: 'absolute', left: compact ? 4 : 12, top: '50%', transform: 'translateY(-50%)',
+                    position: 'absolute',
+                    top: 0, left: 0, width: '100%', height: '100%',
+                    objectFit: block.objectFit || 'cover',
+                    transition: 'opacity 0.3s ease-in-out'
+                  }}
+                />
+              ) : (
+                <img
+                  src={images[currentIndex]?.url}
+                  alt=""
+                  style={{
+                    width: '100%',
+                    display: 'block',
+                    transition: 'opacity 0.3s ease-in-out'
+                  }}
+                />
+              )}
+              
+              {block.showArrows && images.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePrev}
+                    style={{
+                      position: 'absolute', left: compact ? 4 : 12, top: '50%', transform: 'translateY(-50%)',
                     width: compact ? 24 : 40, height: compact ? 24 : 40, borderRadius: '50%',
                     background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10
@@ -4376,6 +4382,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             )}
           </div>
         </div>
+      </div>
       );
     }
 
