@@ -2636,13 +2636,37 @@ function AnimatedMetricsEditor({ block, onChange }) {
                   onChange({ areaWaypoints: (block.areaWaypoints || []).filter((_, i) => i !== idx) });
                 };
                 return (
-                  <div key={wp.id || idx} className="relative p-3 bg-slate-800 rounded-lg border border-slate-600/50 space-y-2">
-                    <button onClick={removeWp} className="absolute top-2 right-2 text-slate-500 hover:text-red-400"><Trash2 size={12} /></button>
-                    <p className="text-[10px] font-bold text-slate-300">Ponto {idx + 1}</p>
-                    <Field label="Rótulo (tooltip no gráfico)"><Input value={wp.label || ''} onChange={v => updateWp({ label: v })} placeholder="Ex: 10 DIAS" /></Field>
-                    <Field label="Subtexto (eixo X abaixo)"><Input value={wp.sub || ''} onChange={v => updateWp({ sub: v })} placeholder="Ex: semana 1" /></Field>
+                  <div key={wp.id || idx} className="p-3 bg-slate-800 rounded-lg border border-slate-600/50 space-y-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[10px] font-bold text-slate-300">📍 Ponto {idx + 1}</p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => updateWp({ showDot: wp.showDot === false ? true : false })}
+                          title={wp.showDot === false ? 'Marcador oculto — clique para mostrar' : 'Clique para ocultar o marcador no gráfico'}
+                          className={`flex items-center gap-1 text-[10px] px-2 py-1 border rounded-md cursor-pointer transition-all ${
+                            wp.showDot === false
+                              ? 'bg-slate-700 border-slate-500 text-slate-400'
+                              : 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
+                          }`}
+                        >
+                          {wp.showDot === false ? '👁️‍🗨️ Invisible' : '👁️ Visível'}
+                        </button>
+                        <button
+                          onClick={removeWp}
+                          className="flex items-center gap-1 text-[10px] px-2 py-1 bg-red-500/20 hover:bg-red-500/40 border border-red-500/40 text-red-400 rounded-md cursor-pointer transition-all"
+                        >
+                          <Trash2 size={10} /> Remover
+                        </button>
+                      </div>
+                    </div>
                     <Field label={`Altura do ponto (%) — ${wp.value ?? 50}%`}><Slider min={0} max={100} value={wp.value ?? 50} onChange={v => updateWp({ value: v })} /></Field>
-                    <Field label="Cor do dot"><ColorPicker value={wp.color || '#f59e0b'} onChange={v => updateWp({ color: v })} /></Field>
+                    {wp.showDot !== false && (
+                      <>
+                        <Field label="Rótulo (tooltip no gráfico)"><Input value={wp.label || ''} onChange={v => updateWp({ label: v })} placeholder="Ex: 10 DIAS" /></Field>
+                        <Field label="Subtexto (eixo X abaixo)"><Input value={wp.sub || ''} onChange={v => updateWp({ sub: v })} placeholder="Ex: semana 1" /></Field>
+                        <Field label="Cor do dot"><ColorPicker value={wp.color || '#f59e0b'} onChange={v => updateWp({ color: v })} /></Field>
+                      </>
+                    )}
                   </div>
                 );
               })}

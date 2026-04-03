@@ -3933,13 +3933,13 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                   <polyline points={linePoints} fill="none" stroke={block.areaEndColor || '#22c55e'} strokeWidth="1.5" />
                 </svg>
 
-                {/* Dots e labels para cada ponto */}
+                {/* Dots e labels para cada ponto — skip if showDot===false (invisible waypoint) */}
                 {allPoints.map((pt, i) => {
+                  if (pt.showDot === false) return null;
                   const xPct = N === 1 ? 0 : (i / (N - 1)) * 100;
                   const yPct = pt.value ?? 0;
                   const isFirst = i === 0;
                   const isLast = i === N - 1;
-                  // Show all dots, live dot animation on the last one
                   const dotColor = pt.color || (isLast ? (block.areaEndColor || '#22c55e') : (block.areaStartColor || '#ef4444'));
                   return (
                     <div key={i} style={{
