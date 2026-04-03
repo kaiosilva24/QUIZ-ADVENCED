@@ -3267,28 +3267,28 @@ function PriceDisplayEditor({ block, onChange, steps }) {
             <div className="grid grid-cols-3 gap-3 mt-3">
                <Field label="Fundo Cabeç."><ColorPicker value={block.headerBg || '#0f172a'} onChange={v => onChange({ headerBg: v })} /></Field>
                <Field label="Cor Texto Cabeç."><ColorPicker value={block.headerColor || '#ffffff'} onChange={v => onChange({ headerColor: v })} /></Field>
-               <Field label="Fonte Cabeç. (px)"><Input type="number" value={block.headerSize || 16} onChange={v => onChange({ headerSize: parseInt(v) })} /></Field>
+               <Field label="Fonte Cabeç. (px)"><Input type="number" value={block.headerSize || 16} onChange={v => onChange({ headerSize: v === '' ? undefined : parseInt(v) })} /></Field>
             </div>
             <div className="mt-3">
                <Field label="Texto do Lado Esquerdo"><Input value={block.leftText || ''} onChange={v => onChange({ leftText: v })} placeholder="⏰ OFERTA ESPECIAL" /></Field>
                <div className="grid grid-cols-2 gap-4 mt-3">
                   <Field label="Cor do Título Esquerdo"><ColorPicker value={block.leftTextColor || '#166534'} onChange={v => onChange({ leftTextColor: v })} /></Field>
-                  <Field label="Fonte Esquerda (px)"><Input type="number" value={block.leftTextSize || 22} onChange={v => onChange({ leftTextSize: parseInt(v) })} /></Field>
+                  <Field label="Fonte Esquerda (px)"><Input type="number" value={block.leftTextSize || 22} onChange={v => onChange({ leftTextSize: v === '' ? undefined : parseInt(v) })} /></Field>
                </div>
                <div className="grid grid-cols-2 gap-4 mt-3">
                   <Field label="Fundo da Linha do Corpo"><ColorPicker value={block.bodyBg || 'transparent'} onChange={v => onChange({ bodyBg: v })} /></Field>
                   <Field label="Fundo da Caixa Direita"><ColorPicker value={block.boxRightBg || '#dcfce7'} onChange={v => onChange({ boxRightBg: v })} /></Field>
                </div>
                <div className="grid grid-cols-2 gap-4 mt-3">
-                  <Field label="Fonte Textos (De/Por) (px)"><Input type="number" value={block.labelSize || 14} onChange={v => onChange({ labelSize: parseInt(v) })} /></Field>
+                  <Field label="Fonte Textos (De/Por) (px)"><Input type="number" value={block.labelSize || 14} onChange={v => onChange({ labelSize: v === '' ? undefined : parseInt(v) })} /></Field>
                </div>
             </div>
          </Section>
       )}
       <Section title="Design da Caixa (Borda e Estrutura)">
          <div className="grid grid-cols-2 gap-4">
-            <Field label="Espaçamento Interno (Gap)"><Input type="number" value={block.textGap ?? 12} onChange={v => onChange({ textGap: parseInt(v) })} placeholder="Ex: 12" /></Field>
-            <Field label="Espessura da Borda (px)"><Input type="number" value={block.borderWidth ?? 1} onChange={v => onChange({ borderWidth: parseInt(v) })} /></Field>
+            <Field label="Espaçamento Interno (Gap)"><Input type="number" value={block.textGap ?? 12} onChange={v => onChange({ textGap: v === '' ? undefined : parseInt(v) })} placeholder="Ex: 12" /></Field>
+            <Field label="Espessura da Borda (px)"><Input type="number" value={block.borderWidth ?? 1} onChange={v => onChange({ borderWidth: v === '' ? undefined : parseInt(v) })} /></Field>
          </div>
          <Field label="Efeito/Animação da Borda">
             <Select value={block.borderAnimation || 'none'} onChange={v => onChange({ borderAnimation: v })} options={[
@@ -3313,8 +3313,8 @@ function PriceDisplayEditor({ block, onChange, steps }) {
           <Field label="Texto do Período"><Input value={block.period || ''} onChange={v => onChange({ period: v })} placeholder="ex: /mês" /></Field>
         </div>
         <div className="grid grid-cols-2 gap-4 mt-3">
-          <Field label="Tamanho da Fonte (Preço Novo)"><Input type="number" value={block.priceSize || ''} onChange={v => onChange({ priceSize: parseInt(v) || '' })} placeholder="Auto" /></Field>
-          <Field label="Tamanho da Fonte (Preço Antigo)"><Input type="number" value={block.oldPriceSize || ''} onChange={v => onChange({ oldPriceSize: parseInt(v) || '' })} placeholder="Auto" /></Field>
+          <Field label="Tamanho da Fonte (Preço Novo)"><Input type="number" value={block.priceSize || ''} onChange={v => onChange({ priceSize: v === '' ? undefined : parseInt(v) })} placeholder="Auto" /></Field>
+          <Field label="Tamanho da Fonte (Preço Antigo)"><Input type="number" value={block.oldPriceSize || ''} onChange={v => onChange({ oldPriceSize: v === '' ? undefined : parseInt(v) })} placeholder="Auto" /></Field>
         </div>
         {block.model === 'badge' && (
            <Field label="Texto da Tag Central"><Input value={block.badgeText || ''} onChange={v => onChange({ badgeText: v })} placeholder="ECONOMIZE 85%" /></Field>
@@ -3343,7 +3343,7 @@ function PriceDisplayEditor({ block, onChange, steps }) {
                </div>
                <div className="grid grid-cols-2 gap-4">
                   <Field label="Arredondamento (px)">
-                    <Input type="number" value={block.buttonRadius ?? 14} onChange={v => onChange({ buttonRadius: parseInt(v) })} />
+                    <Input type="number" value={block.buttonRadius ?? 14} onChange={v => onChange({ buttonRadius: v === '' ? undefined : parseInt(v) })} />
                   </Field>
                   <Field label="Estilo">
                     <Select value={block.buttonStyle || 'solid'} onChange={v => onChange({ buttonStyle: v })} options={[
@@ -3397,11 +3397,11 @@ function PriceDisplayEditor({ block, onChange, steps }) {
           <Field label="Cor da Borda"><ColorPicker value={block.boxBorder || 'transparent'} onChange={v => onChange({ boxBorder: v })} /></Field>
         </div>
         <div className="grid grid-cols-2 gap-4 mt-3">
-          <Field label="Arredondamento (px)"><Input type="number" value={block.boxRadius ?? 16} onChange={v => onChange({ boxRadius: parseInt(v) })} /></Field>
+          <Field label="Arredondamento (px)"><Input type="number" value={block.boxRadius ?? 16} onChange={v => onChange({ boxRadius: v === '' ? undefined : parseInt(v) })} /></Field>
         </div>
         <div className="grid grid-cols-2 gap-4 mt-3">
-          <Field label="Espaço Interno Vertical (px)"><Input type="number" value={block.blockPaddingY ?? ''} onChange={v => onChange({ blockPaddingY: parseInt(v) || 0 })} placeholder="Auto" /></Field>
-          <Field label="Espaço Interno Horizontal (px)"><Input type="number" value={block.blockPaddingX ?? ''} onChange={v => onChange({ blockPaddingX: parseInt(v) || 0 })} placeholder="Auto" /></Field>
+          <Field label="Espaço Interno Vertical (px)"><Input type="number" value={block.blockPaddingY ?? ''} onChange={v => onChange({ blockPaddingY: v === '' ? undefined : parseInt(v) || 0 })} placeholder="Auto" /></Field>
+          <Field label="Espaço Interno Horizontal (px)"><Input type="number" value={block.blockPaddingX ?? ''} onChange={v => onChange({ blockPaddingX: v === '' ? undefined : parseInt(v) || 0 })} placeholder="Auto" /></Field>
         </div>
         <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">💡 Use 0 para remover o espaço vazio e deixar o botão logo abaixo.</p>
       </Section>

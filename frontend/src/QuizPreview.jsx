@@ -3489,6 +3489,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const borderW = block.borderWidth ?? 1;
       const borderS = block.borderAnimation === 'dashed' ? 'dashed' : 'solid';
       
+      const tGap = (block.textGap !== undefined && !isNaN(block.textGap)) ? block.textGap : undefined;
+      const tGapOuter = tGap !== undefined ? tGap : (compact ? 12 : 16);
+      const tGapInner = tGap !== undefined ? tGap : (compact ? 6 : 8);
+      const isZeroGap = tGap === 0;
+
       let inlineStyle = `
         @keyframes ${animId}_pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         @keyframes ${animId}_heartbeat { 0% { transform: scale(1); } 14% { transform: scale(1.08); } 28% { transform: scale(1); } 42% { transform: scale(1.08); } 70%, 100% { transform: scale(1); } }
@@ -3605,28 +3610,30 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             <style>{inlineStyle}</style>
 
             {model === 'classic' && (
-               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: block.textGap ?? (compact ? 8 : 12), position: 'relative', zIndex: 2 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: tGapOuter, position: 'relative', zIndex: 2 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: tGapInner, flexWrap: 'wrap', justifyContent: 'center' }}>
                     {pref && <span style={{ color: tColor, fontSize: compact ? 12 : 16, fontWeight: 500 }}>{pref}</span>}
                     {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 20 : 26)} strikeSize={2} />}
                     {suf && <span style={{ color: tColor, fontSize: compact ? 12 : 16, fontWeight: 500 }}>{suf}</span>}
                   </div>
-                  <NewPriceUI size={block.priceSize || (compact ? 48 : 64)} />
+                  <div style={{ marginTop: isZeroGap ? 0 : undefined }}>
+                     <NewPriceUI size={block.priceSize || (compact ? 48 : 64)} />
+                  </div>
                </div>
             )}
 
             {model === 'badge' && (
-               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: block.textGap ?? (compact ? 12 : 16), position: 'relative', zIndex: 2 }}>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: tGapOuter, position: 'relative', zIndex: 2 }}>
                   {badgeTxt && (
                      <div style={{ background: bColor, color: '#fff', fontSize: compact ? 11 : 14, fontWeight: 800, padding: compact ? '4px 12px' : '6px 16px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 1 }}>
                         {badgeTxt}
                      </div>
                   )}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: compact ? 4 : 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: tGapInner }}>
                      {pref && <span style={{ color: tColor, fontSize: compact ? 14 : 18, fontWeight: 600 }}>{pref}</span>}
                      {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 24 : 32)} strikeSize={3} />}
-                     {suf && <span style={{ color: tColor, fontSize: compact ? 14 : 18, fontWeight: 600, marginTop: 4 }}>{suf}</span>}
-                     <div style={{ marginTop: compact ? 8 : 12 }}>
+                     {suf && <span style={{ color: tColor, fontSize: compact ? 14 : 18, fontWeight: 600, marginTop: isZeroGap ? 0 : 4 }}>{suf}</span>}
+                     <div style={{ marginTop: isZeroGap ? 0 : (compact ? 8 : 12) }}>
                         <NewPriceUI size={block.priceSize || (compact ? 56 : 80)} />
                      </div>
                   </div>
@@ -3634,9 +3641,9 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             )}
 
             {model === 'minimalist' && (
-               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: block.textGap ? block.textGap / 2 : 0, position: 'relative', zIndex: 2 }}>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isZeroGap ? 0 : tGapInner, position: 'relative', zIndex: 2 }}>
                   <NewPriceUI size={block.priceSize || (compact ? 64 : 100)} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 6 : 8, marginTop: compact ? 8 : 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: tGapInner, marginTop: isZeroGap ? 0 : (compact ? 8 : 12) }}>
                     {pref && <span style={{ color: tColor, fontSize: compact ? 12 : 14, opacity: 0.7, fontWeight: 500 }}>{pref}</span>}
                     {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 16 : 20)} strikeSize={1} />}
                   </div>
@@ -3660,18 +3667,18 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             )}
 
             {model === 'premium_stack' && (
-               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: block.textGap ?? (compact ? 8 : 12), padding: compact ? '8px' : '16px', position: 'relative', zIndex: 2 }}>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: tGapOuter, padding: compact ? '8px' : '16px', position: 'relative', zIndex: 2 }}>
                   {badgeTxt && (
-                     <div style={{ background: bColor, color: '#fff', fontSize: compact ? 10 : 12, fontWeight: 700, padding: '4px 12px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: compact ? 4 : 8 }}>
+                     <div style={{ background: bColor, color: '#fff', fontSize: compact ? 10 : 12, fontWeight: 700, padding: '4px 12px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: isZeroGap ? 0 : (compact ? 4 : 8) }}>
                         {badgeTxt}
                      </div>
                   )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: compact ? 8 : 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: tGapInner }}>
                      {pref && <span style={{ color: tColor, fontSize: compact ? 13 : 15, fontWeight: 500 }}>{pref}</span>}
                      {oldP && <OldPriceUI size={block.oldPriceSize || (compact ? 18 : 24)} strikeSize={2} />}
                      {suf && <span style={{ color: tColor, fontSize: compact ? 13 : 15, fontWeight: 500 }}>{suf}</span>}
                   </div>
-                  <div style={{ height: 1, width: '60%', background: border, margin: '8px 0', opacity: 0.5 }} />
+                  <div style={{ height: 1, width: '60%', background: border, margin: isZeroGap ? '0' : '8px 0', opacity: 0.5 }} />
                   <NewPriceUI size={block.priceSize || (compact ? 56 : 80)} />
                </div>
             )}
@@ -3706,13 +3713,13 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             )}
 
             {sub && sub.trim() && model !== 'clean_horizontal' && model !== 'premium_stack' && model !== 'offer_card' && (
-               <div style={{ marginTop: block.textGap !== undefined ? block.textGap : (compact ? 16 : 24), padding: compact ? '8px 16px' : '12px 24px', background: 'rgba(255,255,255,0.05)', borderRadius: 12, color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500, textAlign: 'center', maxWidth: '90%', zIndex: 2, position: 'relative' }}>
+               <div style={{ marginTop: tGapOuter, padding: compact ? '8px 16px' : '12px 24px', background: 'rgba(255,255,255,0.05)', borderRadius: 12, color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500, textAlign: 'center', maxWidth: '90%', zIndex: 2, position: 'relative' }}>
                   {sub.trim()}
                </div>
             )}
             
             {sub && sub.trim() && (model === 'clean_horizontal' || model === 'premium_stack') && (
-               <div style={{ marginTop: block.textGap !== undefined ? block.textGap : (compact ? 16 : 24), color: tColor, fontSize: compact ? 12 : 14, fontWeight: 500, textAlign: 'center', position: 'relative', zIndex: 2 }}>
+               <div style={{ marginTop: tGapOuter, color: tColor, fontSize: compact ? 12 : 14, fontWeight: 500, textAlign: 'center', position: 'relative', zIndex: 2 }}>
                   {sub.trim()}
                </div>
             )}
@@ -3740,7 +3747,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                        }
                     }}
                     style={{
-                       marginTop: block.textGap !== undefined ? block.textGap : (compact ? 16 : 24),
+                       marginTop: tGapOuter,
                        width: '100%',
                        padding: compact ? '12px' : '16px',
                        color: block.buttonTextColor || '#ffffff',
