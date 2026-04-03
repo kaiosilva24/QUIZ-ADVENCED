@@ -3233,7 +3233,7 @@ function FaqEditor({ block, onChange }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // PriceDisplayEditor
 // ─────────────────────────────────────────────────────────────────────────────
-function PriceDisplayEditor({ block, onChange }) {
+function PriceDisplayEditor({ block, onChange, steps }) {
   return (
     <>
       <Section title="Esquema Visual">
@@ -3324,14 +3324,16 @@ function PriceDisplayEditor({ block, onChange }) {
       <Section title="Botão de Ação Opcional (Interno)">
          <Toggle label="Mostrar Botão Direto no Preço" value={!!block.showButton} onChange={v => onChange({ showButton: v })} />
          {block.showButton && (
-            <div className="mt-3 space-y-3">
-               <Field label="Emoji do Botão">
-                 <Input value={block.buttonEmoji || ''} onChange={v => onChange({ buttonEmoji: v })} placeholder="👉" />
-               </Field>
-               <Field label="Texto do Botão">
-                 <Input value={block.buttonText || 'Garantir Oferta'} onChange={v => onChange({ buttonText: v })} />
-               </Field>
-               <div className="grid grid-cols-2 gap-4 mt-3">
+            <div className="mt-3 space-y-4 border-t border-slate-700/50 pt-3">
+               <div className="grid grid-cols-2 gap-4">
+                 <Field label="Emoji">
+                   <Input value={block.buttonEmoji || ''} onChange={v => onChange({ buttonEmoji: v })} placeholder="👉" />
+                 </Field>
+                 <Field label="Texto do Botão">
+                   <Input value={block.buttonText || 'Garantir Oferta'} onChange={v => onChange({ buttonText: v })} />
+                 </Field>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
                   <Field label="Cor de Fundo">
                     <ColorPicker value={block.buttonBg || '#6366f1'} onChange={v => onChange({ buttonBg: v })} />
                   </Field>
@@ -3339,6 +3341,45 @@ function PriceDisplayEditor({ block, onChange }) {
                     <ColorPicker value={block.buttonTextColor || '#ffffff'} onChange={v => onChange({ buttonTextColor: v })} />
                   </Field>
                </div>
+               <div className="grid grid-cols-2 gap-4">
+                  <Field label="Arredondamento (px)">
+                    <Input type="number" value={block.buttonRadius ?? 14} onChange={v => onChange({ buttonRadius: parseInt(v) })} />
+                  </Field>
+                  <Field label="Estilo">
+                    <Select value={block.buttonStyle || 'solid'} onChange={v => onChange({ buttonStyle: v })} options={[
+                      { value: 'solid', label: 'Sólido' },
+                      { value: 'glass', label: 'Glass' },
+                      { value: 'border_only', label: 'Somente Borda' },
+                    ]} />
+                  </Field>
+               </div>
+               <div className="grid grid-cols-2 gap-4">
+                  <Field label="Animação">
+                    <Select value={block.buttonAnimation || 'none'} onChange={v => onChange({ buttonAnimation: v })} options={[
+                      { value: 'none', label: 'Nenhuma' },
+                      { value: 'pulse', label: 'Pulso (Aumenta/Volta)' },
+                      { value: 'neon', label: 'Neon (Brilho Externo)' },
+                      { value: 'blink', label: 'Piscar (Opacidade)' },
+                      { value: 'shake', label: 'Tremer Lado a Lado' },
+                      { value: 'heartbeat', label: 'Batida de Coração' },
+                    ]} />
+                  </Field>
+                  <Field label="Ação ao Clicar">
+                    <Select value={block.buttonActionType || 'step'} onChange={v => onChange({ buttonActionType: v })} options={[
+                      { value: 'step', label: 'Ir para Etapa' },
+                      { value: 'url', label: 'Acessar Link (URL)' },
+                    ]} />
+                  </Field>
+               </div>
+               {block.buttonActionType === 'url' ? (
+                 <Field label="URL de Destino">
+                   <Input value={block.buttonUrl || ''} onChange={v => onChange({ buttonUrl: v })} placeholder="https://exemplo.com/checkout" />
+                 </Field>
+               ) : (
+                 <Field label="Ir para Etapa (Ação do Botão)">
+                   <StepSelect steps={steps} value={block.nextStep} onChange={v => onChange({ nextStep: v })} placeholder="-- Próxima Etapa --" />
+                 </Field>
+               )}
             </div>
          )}
       </Section>

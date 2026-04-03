@@ -3500,6 +3500,12 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         @keyframes ${animId}_gradient_slide { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         @keyframes ${animId}_spin_border { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes ${animId}_pulse_border { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        
+        @keyframes ${animId}_btn_pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+        @keyframes ${animId}_btn_neon { 0%, 100% { box-shadow: 0 0 5px ${block.buttonBg || '#6366f1'}, 0 0 10px ${block.buttonBg || '#6366f1'}; } 50% { box-shadow: 0 0 15px ${block.buttonBg || '#6366f1'}, 0 0 25px ${block.buttonBg || '#6366f1'}; } }
+        @keyframes ${animId}_btn_blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.4; } }
+        @keyframes ${animId}_btn_shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes ${animId}_btn_heartbeat { 0%, 100% { transform: scale(1); } 14% { transform: scale(1.08); } 28% { transform: scale(1); } 42% { transform: scale(1.08); } 70% { transform: scale(1); } }
 
         .${animId}_spin_box {
            position: relative;
@@ -3700,48 +3706,64 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
             )}
 
             {sub && sub.trim() && model !== 'clean_horizontal' && model !== 'premium_stack' && model !== 'offer_card' && (
-               <div style={{ marginTop: compact ? 16 : 24, padding: compact ? '8px 16px' : '12px 24px', background: 'rgba(255,255,255,0.05)', borderRadius: 12, color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500, textAlign: 'center', maxWidth: '90%' }}>
+               <div style={{ marginTop: block.textGap !== undefined ? block.textGap : (compact ? 16 : 24), padding: compact ? '8px 16px' : '12px 24px', background: 'rgba(255,255,255,0.05)', borderRadius: 12, color: tColor, fontSize: compact ? 11 : 14, fontWeight: 500, textAlign: 'center', maxWidth: '90%', zIndex: 2, position: 'relative' }}>
                   {sub.trim()}
                </div>
             )}
             
             {sub && sub.trim() && (model === 'clean_horizontal' || model === 'premium_stack') && (
-               <div style={{ marginTop: compact ? 16 : 24, color: tColor, fontSize: compact ? 12 : 14, fontWeight: 500, textAlign: 'center', position: 'relative', zIndex: 2 }}>
+               <div style={{ marginTop: block.textGap !== undefined ? block.textGap : (compact ? 16 : 24), color: tColor, fontSize: compact ? 12 : 14, fontWeight: 500, textAlign: 'center', position: 'relative', zIndex: 2 }}>
                   {sub.trim()}
                </div>
             )}
 
-            {!!block.showButton && (
-               <button
-                  onClick={(e) => {
-                     e.stopPropagation();
-                     if (onNavigate && block.nextStep) onNavigate(block.nextStep);
-                  }}
-                  style={{
-                     marginTop: compact ? 16 : 24,
-                     width: '100%',
-                     padding: compact ? '12px' : '16px',
-                     background: block.buttonBg || '#6366f1',
-                     color: block.buttonTextColor || '#ffffff',
-                     borderRadius: 12,
-                     fontWeight: 700,
-                     fontSize: compact ? 14 : 16,
-                     border: 'none',
-                     display: 'flex',
-                     alignItems: 'center',
-                     justifyContent: 'center',
-                     gap: 8,
-                     cursor: 'pointer',
-                     position: 'relative',
-                     zIndex: 2,
-                     boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
-                     transition: 'transform 0.1s'
-                  }}
-               >
-                  {block.buttonEmoji && <span>{block.buttonEmoji}</span>}
-                  {block.buttonText || 'Garantir Oferta'}
-               </button>
-            )}
+            {!!block.showButton && (() => {
+               const btnRadius = block.buttonRadius ?? 14;
+               const bgStyleMode = block.buttonStyle || 'solid';
+               const animName = block.buttonAnimation || 'none';
+               
+               let glassStyle = { background: block.buttonBg || '#6366f1', border: 'none', boxShadow: `0 4px 14px ${(block.buttonBg || '#6366f1')}40` };
+               if (bgStyleMode === 'glass') {
+                 glassStyle = { background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.25)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' };
+               } else if (bgStyleMode === 'border_only') {
+                 glassStyle = { background: 'transparent', border: `2px solid ${block.buttonBg || '#6366f1'}`, boxShadow: 'none' };
+               }
+               
+               return (
+                 <button
+                    onClick={(e) => {
+                       e.stopPropagation();
+                       if (block.buttonActionType === 'url' && block.buttonUrl) {
+                          window.open(block.buttonUrl, '_blank');
+                       } else if (onNavigate && block.nextStep) {
+                          onNavigate(block.nextStep);
+                       }
+                    }}
+                    style={{
+                       marginTop: block.textGap !== undefined ? block.textGap : (compact ? 16 : 24),
+                       width: '100%',
+                       padding: compact ? '12px' : '16px',
+                       color: block.buttonTextColor || '#ffffff',
+                       borderRadius: btnRadius,
+                       fontWeight: 700,
+                       fontSize: compact ? 14 : 16,
+                       display: 'flex',
+                       alignItems: 'center',
+                       justifyContent: 'center',
+                       gap: 8,
+                       cursor: 'pointer',
+                       position: 'relative',
+                       zIndex: 2,
+                       transition: 'transform 0.1s',
+                       animation: animName !== 'none' ? `${animId}_btn_${animName} 1.5s infinite` : 'none',
+                       ...glassStyle
+                    }}
+                 >
+                    {block.buttonEmoji && <span>{block.buttonEmoji}</span>}
+                    {block.buttonText || 'Garantir Oferta'}
+                 </button>
+               );
+            })()}
          </div>
       );
     }
