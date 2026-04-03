@@ -1460,7 +1460,7 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
                   } : {}}
                 >
                   <div className={onSelectBlock ? 'pointer-events-none' : ''}>
-                    <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={interceptedOnNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} scores={scores} onStartLoading={onStartLoading} />
+                    <BlockRenderer block={block} theme={{ bg: buildBackground(theme), accent, textColor }} compact={compact} onNavigate={interceptedOnNavigate} quizId={quizId} visitorId={visitorId} stepId={step.id} mediaState={mediaState} setMediaState={setMediaState} steps={config?.steps} stepIdx={stepIdx} scores={scores} onStartLoading={onStartLoading} clickedOptionId={clickedOptionId} setClickedOptionId={setClickedOptionId} />
                   </div>
                 </div>
               ))}
@@ -1610,7 +1610,7 @@ function CountrySelectDropdown({ dialCountry, setDialCountry, setDialCode, compa
   );
 }
 
-function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId, mediaState, setMediaState, steps, stepIdx, scores, onStartLoading }) {
+function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, stepId, mediaState, setMediaState, steps, stepIdx, scores, onStartLoading, clickedOptionId, setClickedOptionId }) {
   const scale = compact ? 0.6 : 1;
   const { accent, textColor: defaultText } = theme;
 
