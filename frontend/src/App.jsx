@@ -363,6 +363,7 @@ function QuizRouter() {
           quizId={quizData.quiz_id || quizData.id}
           visitorId={getVisitorId()}
           scores={scores}
+          isLive={true}
         />
       </div>
     </div>

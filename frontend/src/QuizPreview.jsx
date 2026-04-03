@@ -1270,7 +1270,7 @@ function LoadingScreen({ block, accent, defaultText, compact }) {
 }
 
 // Renderizador fiel ao InLead: converte o config JSON em tela visual
-export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate, selectedBlockId, quizId, visitorId, scores = {}, onSelectBlock }) {
+export default function QuizPreview({ config, stepIdx = 0, compact = false, onNavigate, selectedBlockId, quizId, visitorId, scores = {}, onSelectBlock, isLive = false }) {
   const step = config?.steps?.[stepIdx];
   const theme = config?.theme || {};
   const accent = theme.accent || '#6366f1';
@@ -1342,9 +1342,8 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
   };
 
 
-  const isBuilder = !!onSelectBlock;
-  const width = compact ? 200 : (isBuilder ? 390 : '100%');
-  const height = compact ? 380 : (isBuilder ? 680 : '100%');
+  const width = compact ? 200 : (isLive ? '100%' : 390);
+  const height = compact ? 380 : (isLive ? '100%' : 680);
 
   React.useEffect(() => {
     if (selectedBlockId && compact) {
@@ -1360,12 +1359,12 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
 
   return (
     <div
-      className={`${isBuilder ? (compact ? 'rounded-2xl' : 'rounded-3xl') : ''} overflow-hidden ${isBuilder ? 'shadow-2xl' : ''}`}
+      className={`${!isLive ? (compact ? 'rounded-2xl' : 'rounded-3xl shadow-2xl') : ''} overflow-hidden`}
       style={{
         width,
         height,
-        minHeight: !isBuilder ? '100dvh' : undefined,
-        border: isBuilder ? (compact ? '3px solid #1e293b' : '4px solid #1e293b') : 'none',
+        minHeight: isLive ? '100dvh' : undefined,
+        border: !isLive ? (compact ? '3px solid #1e293b' : '4px solid #1e293b') : 'none',
         margin: '0 auto',
         ...containerStyle,
       }}
