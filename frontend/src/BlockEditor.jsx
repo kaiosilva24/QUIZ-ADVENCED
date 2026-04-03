@@ -1501,7 +1501,7 @@ function ProgressEditor({ block, onChange }) {
 
 function LeadCaptureEditor({ block, onChange, steps, theme }) {
   const all = ['name', 'email', 'phone', 'message'];
-  const labels = { name: 'Nome', email: 'E-mail', phone: 'Telefone', message: 'Mensagem' };
+  const defaultLabels = { name: 'Nome', email: 'E-mail', phone: 'Telefone', message: 'Mensagem' };
   const defaultPlaceholders = { name: 'Digite aqui seu Nome', email: 'Digite aqui seu Email', phone: 'Digite seu DDD + WhatsApp', message: 'Sua mensagem' };
 
   return (
@@ -1509,16 +1509,25 @@ function LeadCaptureEditor({ block, onChange, steps, theme }) {
       <Section title="Campos do Formulário">
         {all.map(f => (
           <div key={f} className="space-y-2">
-            <Toggle label={labels[f]}
+            <Toggle label={defaultLabels[f]}
               value={block.fields?.includes(f)}
               onChange={v => onChange({ fields: v ? [...(block.fields || []), f] : (block.fields || []).filter(x => x !== f) })} />
             {block.fields?.includes(f) && (
-              <div className="pl-2 border-l-2 border-slate-700/50 mb-2">
-                <Input 
-                  value={block.placeholders?.[f] || ''} 
-                  onChange={val => onChange({ placeholders: { ...(block.placeholders || {}), [f]: val } })}
-                  placeholder={`Placeholder: ${defaultPlaceholders[f]}`}
-                />
+              <div className="pl-2 border-l-2 border-slate-700/50 mb-2 space-y-2 mt-2">
+                <Field label={`Rótulo (${defaultLabels[f]})`}>
+                  <Input 
+                    value={block.labels?.[f] !== undefined ? block.labels[f] : defaultLabels[f]} 
+                    onChange={val => onChange({ labels: { ...(block.labels || {}), [f]: val } })}
+                    placeholder={defaultLabels[f]}
+                  />
+                </Field>
+                <Field label="Texto no Campo (Placeholder)">
+                  <Input 
+                    value={block.placeholders?.[f] || ''} 
+                    onChange={val => onChange({ placeholders: { ...(block.placeholders || {}), [f]: val } })}
+                    placeholder={defaultPlaceholders[f]}
+                  />
+                </Field>
               </div>
             )}
           </div>

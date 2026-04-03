@@ -2150,9 +2150,13 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         }
         setErrorMsg('');
 
-        if (block.enableLoading) {
+        if (block.enableLoading && onStartLoading) {
+           onStartLoading(block, (block.loadingDuration || 3) * 1000, () => {
+              proceed();
+           });
+        } else if (block.enableLoading) {
            setIsLoading(true);
-           const timer = setTimeout(() => {
+           setTimeout(() => {
               setIsLoading(false);
               proceed();
            }, (block.loadingDuration || 3) * 1000);
@@ -2161,11 +2165,12 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
         }
       };
 
-      if (isLoading) {
+      if (isLoading && !onStartLoading) {
         return <LoadingScreen block={block} accent={accent} defaultText={defaultText} compact={compact} />;
       }
 
       const defaultFieldTitles = { name: 'Nome', email: 'E-mail', phone: 'Telefone', message: 'Mensagem' };
+      const labelsDict = block.labels || {};
       const defaultPlaceholders = { name: 'Digite aqui seu Nome', email: 'Digite aqui seu Email', phone: 'Digite seu DDD + WhatsApp', message: 'Sua mensagem' };
 
       return (
@@ -2173,7 +2178,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
           {fields.map(f => {
             const placeholder = block.placeholders?.[f] || defaultPlaceholders[f] || f;
-            const fieldTitle = defaultFieldTitles[f] || f;
+            const fieldTitle = labelsDict[f] !== undefined ? labelsDict[f] : (defaultFieldTitles[f] || f);
 
             const fieldStyle = {
               padding: compact ? '6px 10px' : '10px 14px',
