@@ -265,8 +265,23 @@ const SortableBlock = React.memo(function SortableBlock({ block, isSelected, onS
   const typeInfo = BLOCK_TYPES.find(t => t.type === block.type) || BLOCK_TYPES[0];
   const Icon = typeInfo.icon;
 
+  const itemRef = React.useRef(null);
+  React.useEffect(() => {
+    if (isSelected && itemRef.current) {
+      itemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [isSelected]);
+
+  const setRefs = React.useCallback(
+    (node) => {
+      setNodeRef(node);
+      itemRef.current = node;
+    },
+    [setNodeRef]
+  );
+
   return (
-    <div ref={setNodeRef} style={style}
+    <div ref={setRefs} style={style}
       onClick={() => onSelect(block.id)}
       className={`group flex items-center gap-2 px-3 py-2.5 rounded-xl border cursor-pointer transition-all duration-200 select-none ${isSelected ? 'bg-indigo-500/10 border-indigo-500/40 shadow-[0_0_12px_rgba(99,102,241,0.15)]' : 'bg-slate-800/30 border-slate-700/40 hover:border-slate-600 hover:bg-slate-800/60'}`}>
       {/* Drag handle */}
@@ -708,9 +723,9 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
         </div>
 
         {activeTab === 'blocks' && (
-          <div className="flex-1 overflow-y-auto flex flex-col">
+          <div className="flex-1 flex flex-col h-full overflow-hidden">
             {/* Step Tabs */}
-            <div className="p-2 space-y-1 border-b border-white/5">
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 bg-slate-900/30 min-h-[150px]" style={{ flexBasis: '50%' }}>
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleStepDragEnd}>
                 <SortableContext items={config.steps.map(s => s.id)} strategy={verticalListSortingStrategy}>
                   {config.steps.map((step, idx) => (
@@ -728,14 +743,18 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
                 </SortableContext>
               </DndContext>
               <button onClick={addStep}
-                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all cursor-pointer border border-dashed border-slate-700 hover:border-indigo-500/40 focus:outline-none">
+                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all cursor-pointer border border-dashed border-slate-700 hover:border-indigo-500/40 focus:outline-none mb-2">
                 <Plus size={12} /> Adicionar Etapa
               </button>
             </div>
 
+            <div className="h-1.5 shrink-0 bg-slate-950 border-y border-white/5 relative z-20"></div>
+
             {/* Block List (Sortable) */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-              <p className="text-xs text-slate-600 px-1 pt-1 font-medium">Blocos da etapa {currentStepIdx + 1}</p>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1.5 relative min-h-[150px]" style={{ flexBasis: '50%' }}>
+              <div className="sticky top-0 -mx-2 px-3 py-2 -mt-2 bg-slate-900/90 backdrop-blur-md z-10 mb-2 border-b border-white/5 shadow-sm">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Blocos da etapa {currentStepIdx + 1}</p>
+              </div>
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={currentStep?.blocks.map(b => b.id) || []} strategy={verticalListSortingStrategy}>
                   {(currentStep?.blocks || []).map(block => (
