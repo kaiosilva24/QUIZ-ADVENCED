@@ -1295,6 +1295,11 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
 
   // Full-screen loading overlay state
   const [loadingBlock, setLoadingBlock] = React.useState(null);
+  const [clickedOptionId, setClickedOptionId] = React.useState(null);
+
+  React.useEffect(() => {
+    setClickedOptionId(null);
+  }, [stepIdx]);
 
   const onStartLoading = React.useCallback((block, afterMs, navigateFn) => {
     setLoadingBlock(block);
@@ -2060,6 +2065,8 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       const animCSS = animName !== 'none' ? `btn_${animName}_${block.id} ${speed}s infinite` : 'none';
 
       
+      const isSelected = clickedOptionId === block.id;
+
       const BaseButton = (
         <button style={{
           width: block.fullWidth ? `${block.boxWidth || 100}%` : 'auto',
@@ -2072,41 +2079,61 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
           fontFamily: block.fontFamily ? `'${block.fontFamily}', sans-serif` : undefined,
           borderRadius: btnRadius,
           cursor: 'pointer',
-          textAlign: 'center',
-          transition: 'opacity 0.15s ease',
+          transition: 'all 0.15s ease',
           letterSpacing: '0.01em',
           display: 'flex',
           flexDirection: pos === 'top_large' ? 'column' : 'row',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: block.textAlign === 'left' ? 'flex-start' : (block.textAlign === 'right' ? 'flex-end' : 'center'),
           gap: pos === 'top_large' ? (compact ? 6 : 10) : (compact ? 6 : 8),
           animation: animCSS,
           ...glassStyle,
+          ...(isSelected && block.showRadio && bgStyleMode === 'solid' ? { background: `${accent}` } : {}),
+          ...(isSelected && block.showRadio && bgStyleMode !== 'solid' ? { borderColor: accent, background: `${accent}20` } : {})
         }}
         onClick={() => {
-            const isUrl = block.actionType === 'url';
-            if (isUrl && block.buttonUrl) {
-              const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
-              window.open(url, '_blank');
-            } else if (block.showLoading && onStartLoading && onNavigate) {
-              const target = resolveNextStep(block.nextStep, block.scoreTarget);
-              onStartLoading(block, (block.loadingDuration || 3) * 1000, () => {
+            setClickedOptionId(block.id);
+            // Pequeno atraso se RADIO estiver ativo para dar tempo de ver a bolinha marcando
+            const delay = block.showRadio ? 200 : 0;
+            setTimeout(() => {
+              const isUrl = block.actionType === 'url';
+              if (isUrl && block.buttonUrl) {
+                const url = block.buttonUrl.startsWith('http') ? block.buttonUrl : `https://${block.buttonUrl}`;
+                window.open(url, '_blank');
+              } else if (block.showLoading && onStartLoading && onNavigate) {
+                const target = resolveNextStep(block.nextStep, block.scoreTarget);
+                onStartLoading(block, (block.loadingDuration || 3) * 1000, () => {
+                  if (target) onNavigate(target, block.text || 'Avançar', false, block.scoreTarget);
+                });
+              } else if (onNavigate) {
+                const target = resolveNextStep(block.nextStep, block.scoreTarget);
                 if (target) onNavigate(target, block.text || 'Avançar', false, block.scoreTarget);
-              });
-            } else if (onNavigate) {
-              const target = resolveNextStep(block.nextStep, block.scoreTarget);
-              if (target) onNavigate(target, block.text || 'Avançar', false, block.scoreTarget);
-            }
+              }
+            }, delay);
           }}
         >
+          {block.showRadio && (
+            <div style={{
+              width: compact ? 12 : 20, height: compact ? 12 : 20,
+              borderRadius: '50%', border: `2px solid ${isSelected ? (bgStyleMode === 'solid' ? '#fff' : accent) : 'rgba(150,150,150,0.5)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+              background: isSelected ? (bgStyleMode === 'solid' ? '#fff' : accent) : 'transparent',
+              transition: 'all 0.2s ease',
+            }}>
+              {isSelected && <svg viewBox="0 0 24 24" fill="none" stroke={bgStyleMode === 'solid' ? accent : '#fff'} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" style={{ width: compact ? 8 : 12, height: compact ? 8 : 12 }}><polyline points="20 6 9 17 4 12" /></svg>}
+            </div>
+          )}
+
           {pos === 'left_inside' && (block.emojiUnified ? <NativeEmoji unified={block.emojiUnified} size={compact ? 16 : 20} /> : block.emoji && <span>{block.emoji}</span>)}
           {pos === 'top_large' && (block.emojiUnified ? <NativeEmoji unified={block.emojiUnified} size={compact ? 24 : 36} /> : block.emoji && <span style={{fontSize: compact ? 24 : 36, lineHeight: 1}}>{block.emoji}</span>)}
           
-          <span style={{flex: pos === 'top_large' ? 'initial' : 1}}>{block.text || 'Avançar'}</span>
-          
+          <span style={{flex: pos === 'top_large' ? 'initial' : 1, textAlign: block.textAlign || 'center'}}>{block.text || 'Avançar'}</span>
+
           {pos === 'right_inside' && (block.emojiUnified ? <NativeEmoji unified={block.emojiUnified} size={compact ? 16 : 20} /> : block.emoji && <span>{block.emoji}</span>)}
         </button>
       );
+
       let content = BaseButton;
       if (pos === 'left_outside' && (block.emojiUnified || block.emoji)) {
         content = (

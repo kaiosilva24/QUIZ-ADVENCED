@@ -1210,6 +1210,16 @@ function ButtonEditor({ block, onChange, steps, theme }) {
             { value: 'top_large', label: 'Topo Gigante' }
           ]} />
         </Field>
+        <Field label="Alinhamento do Texto">
+          <Select value={block.textAlign || 'center'} onChange={v => onChange({ textAlign: v })} options={[
+            { value: 'left', label: 'Esquerda' },
+            { value: 'center', label: 'Centro' },
+            { value: 'right', label: 'Direita' }
+          ]} />
+        </Field>
+        <Field label="Exibir Bolinha (Padrão Checkbox/Radio)">
+          <Toggle value={block.showRadio || false} onChange={v => onChange({ showRadio: v })} />
+        </Field>
         <Field label="Fonte do Botão"><FontPicker value={block.fontFamily} onChange={v => onChange({ fontFamily: v })} /></Field>
         <Field label={`Tamanho do Texto: ${block.fontSize || 15}px`}>
           <input type="range" min={10} max={32} step={1} value={block.fontSize || 15}
