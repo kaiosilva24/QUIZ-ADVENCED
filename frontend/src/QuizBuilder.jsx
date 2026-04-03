@@ -1143,33 +1143,116 @@ export default function QuizBuilder({ quiz, domain, onBack }) {
                         </div>
                       </label>
                       {currentStep?.showLoading && (
-                        <div className="grid grid-cols-2 gap-4 mt-3 bg-slate-900/50 p-4 rounded-lg border border-slate-700/50">
-                          <div className="space-y-2">
-                            <label className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold">Duração (Segundos)</label>
-                            <input 
-                              type="number" 
-                              min="1" max="10"
-                              value={currentStep?.loadingDuration || 3}
-                              onChange={e => {
-                                let loadingDuration = parseInt(e.target.value) || 3;
-                                setConfig(c => ({
-                                  ...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, loadingDuration } : s)
-                                }));
-                              }}
-                              className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-indigo-500"
-                            />
+                        <div className="mt-3 bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold flex items-center gap-1">Duração (S)</label>
+                              <input 
+                                type="number" min="1" max="15"
+                                value={currentStep?.loadingDuration || 3}
+                                onChange={e => {
+                                  const loadingDuration = parseInt(e.target.value) || 3;
+                                  setConfig(c => ({...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, loadingDuration } : s)}));
+                                }}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-indigo-500"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold flex items-center gap-1">Textos Dinâmicos</label>
+                              <input 
+                                type="text" placeholder="Analisando..., Finalizando..."
+                                value={currentStep?.loadingText || ''}
+                                onChange={e => {
+                                  const loadingText = e.target.value;
+                                  setConfig(c => ({...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, loadingText } : s)}));
+                                }}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-indigo-500"
+                              />
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold">Texto Customizado</label>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold">Cor Principal</label>
+                              <div className="flex bg-slate-800 rounded-lg border border-slate-600 overflow-hidden h-10">
+                                <input type="color" value={currentStep?.loadingColor || config.theme?.accent || '#6366f1'} onChange={e => setConfig(c => ({...c, steps: c.steps.map((s,i) => i === currentStepIdx ? {...s, loadingColor: e.target.value} : s)}))} className="w-12 h-12 -m-1 cursor-pointer" />
+                                <input type="text" value={currentStep?.loadingColor || config.theme?.accent || '#6366f1'} onChange={e => setConfig(c => ({...c, steps: c.steps.map((s,i) => i === currentStepIdx ? {...s, loadingColor: e.target.value} : s)}))} className="flex-1 bg-transparent px-2 text-white text-xs focus:outline-none" />
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold">Cor do Texto</label>
+                              <div className="flex bg-slate-800 rounded-lg border border-slate-600 overflow-hidden h-10">
+                                <input type="color" value={currentStep?.loadingTextColor || config.theme?.text || '#ffffff'} onChange={e => setConfig(c => ({...c, steps: c.steps.map((s,i) => i === currentStepIdx ? {...s, loadingTextColor: e.target.value} : s)}))} className="w-12 h-12 -m-1 cursor-pointer" />
+                                <input type="text" value={currentStep?.loadingTextColor || config.theme?.text || '#ffffff'} onChange={e => setConfig(c => ({...c, steps: c.steps.map((s,i) => i === currentStepIdx ? {...s, loadingTextColor: e.target.value} : s)}))} className="flex-1 bg-transparent px-2 text-white text-xs focus:outline-none" />
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold">Ícone Giratório</label>
+                              <select 
+                                value={currentStep?.loadingStyle || 'spinner'}
+                                onChange={e => setConfig(c => ({...c, steps: c.steps.map((s,i) => i === currentStepIdx ? {...s, loadingStyle: e.target.value} : s)}))}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-indigo-500"
+                              >
+                                <option value="spinner">Círculo Girando</option>
+                                <option value="pulse">Círculo Pulsando</option>
+                                <option value="dots">Três Pontinhos</option>
+                              </select>
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold flex items-center gap-1">Texto Fixo Embaixo</label>
+                              <input 
+                                type="text" placeholder="Aguarde um momento..."
+                                value={currentStep?.progressText || ''}
+                                onChange={e => {
+                                  const progressText = e.target.value;
+                                  setConfig(c => ({...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, progressText } : s)}));
+                                }}
+                                className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-indigo-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="pt-3 border-t border-slate-700/50 space-y-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                               <input type="checkbox" checked={currentStep?.enableProgressBar !== false} onChange={e => setConfig(c => ({...c, steps: c.steps.map((s,i) => i === currentStepIdx ? {...s, enableProgressBar: e.target.checked} : s)}))} className="w-4 h-4 accent-indigo-500 rounded" />
+                               <span className="text-sm font-semibold text-slate-200">Exibir Barra de Progresso Interna</span>
+                            </label>
+
+                            {currentStep?.enableProgressBar !== false && (
+                              <div className="grid grid-cols-2 gap-4 pl-6 opacity-90">
+                                <div className="space-y-2">
+                                  <label className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold flex items-center gap-1">Preenchimento Barra</label>
+                                  <div className="flex bg-slate-800 rounded-lg border border-slate-600 overflow-hidden h-9">
+                                    <input type="color" value={currentStep?.progressFillColor || '#10b981'} onChange={e => setConfig(c => ({...c, steps: c.steps.map((s,i) => i === currentStepIdx ? {...s, progressFillColor: e.target.value} : s)}))} className="w-12 h-12 -m-1 cursor-pointer" />
+                                    <input type="text" value={currentStep?.progressFillColor || '#10b981'} onChange={e => setConfig(c => ({...c, steps: c.steps.map((s,i) => i === currentStepIdx ? {...s, progressFillColor: e.target.value} : s)}))} className="flex-1 bg-transparent px-2 text-white text-xs focus:outline-none" />
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold flex items-center gap-1">Fundo da Barra</label>
+                                  <div className="flex bg-slate-800 rounded-lg border border-slate-600 overflow-hidden h-9">
+                                    <input type="color" value={currentStep?.progressBgColor || '#cbd5e1'} onChange={e => setConfig(c => ({...c, steps: c.steps.map((s,i) => i === currentStepIdx ? {...s, progressBgColor: e.target.value} : s)}))} className="w-12 h-12 -m-1 cursor-pointer" />
+                                    <input type="text" value={currentStep?.progressBgColor || '#cbd5e1'} onChange={e => setConfig(c => ({...c, steps: c.steps.map((s,i) => i === currentStepIdx ? {...s, progressBgColor: e.target.value} : s)}))} className="flex-1 bg-transparent px-2 text-white text-xs focus:outline-none" />
+                                  </div>
+                                </div>
+                                <label className="col-span-2 flex items-center gap-2 cursor-pointer mt-1">
+                                  <input type="checkbox" checked={currentStep?.showProgressPercent !== false} onChange={e => setConfig(c => ({...c, steps: c.steps.map((s,i) => i === currentStepIdx ? {...s, showProgressPercent: e.target.checked} : s)}))} className="w-3.5 h-3.5 accent-indigo-500 rounded" />
+                                  <span className="text-xs text-slate-300">Carregar os números da Porcentagem % junto da barra</span>
+                                </label>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-3 border-t border-slate-700/50 space-y-2">
+                            <label className="text-[11px] text-slate-400 uppercase tracking-widest font-semibold">Texto de Segurança (Rodapé)</label>
                             <input 
-                              type="text"
-                              placeholder="Analisando suas respostas..."
-                              value={currentStep?.loadingText || ''}
+                              type="text" placeholder="🔒 Suas respostas são guardadas em criptografia"
+                              value={currentStep?.loadingFooterText ?? '🔒 Suas respostas são completamente confidenciais'}
                               onChange={e => {
-                                const loadingText = e.target.value;
-                                setConfig(c => ({
-                                  ...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, loadingText } : s)
-                                }));
+                                const loadingFooterText = e.target.value;
+                                setConfig(c => ({...c, steps: c.steps.map((s, i) => i === currentStepIdx ? { ...s, loadingFooterText } : s)}));
                               }}
                               className="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-3 text-sm text-white focus:outline-none focus:border-indigo-500"
                             />

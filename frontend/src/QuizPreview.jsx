@@ -1316,14 +1316,22 @@ export default function QuizPreview({ config, stepIdx = 0, compact = false, onNa
     onStartLoading(
       {
         loadingText: step.loadingText || 'Analisando suas respostas...',
-        loadingTextColor: theme?.accent || '#ffffff'
+        loadingTextColor: step.loadingTextColor || theme?.text || '#ffffff',
+        loadingColor: step.loadingColor || theme?.accent || '#6366f1',
+        loadingStyle: step.loadingStyle || 'spinner',
+        progressText: step.progressText,
+        enableProgressBar: step.enableProgressBar !== false,
+        progressFillColor: step.progressFillColor || '#10b981',
+        progressBgColor: step.progressBgColor || '#cbd5e1',
+        showProgressPercent: step.showProgressPercent !== false,
+        loadingFooterText: step.loadingFooterText ?? '🔒 Suas respostas são completamente confidenciais'
       },
       (step.loadingDuration || 3) * 1000,
       () => {
         if (onNavigate) onNavigate(targetStepId, optionText, isSilent, targetScore);
       }
     );
-  }, [onSelectBlock, step?.showLoading, step?.loadingText, step?.loadingDuration, onStartLoading, onNavigate, theme?.accent]);
+  }, [onSelectBlock, step, onStartLoading, onNavigate, theme]);
 
   const containerStyle = {
     background: buildBackground(theme),
