@@ -1217,8 +1217,11 @@ function ButtonEditor({ block, onChange, steps, theme }) {
             { value: 'right', label: 'Direita' }
           ]} />
         </Field>
-        <Field label="Exibir Bolinha (Padrão Checkbox/Radio)">
-          <Toggle value={block.showRadio || false} onChange={v => onChange({ showRadio: v })} />
+        <Field label="Estilo Múltipla Escolha (Bolinha)">
+          <Select value={block.showRadio ? 'yes' : 'no'} onChange={v => onChange({ showRadio: v === 'yes' })} options={[
+            { value: 'no', label: '❌ Normal (Sem Bolinha)' },
+            { value: 'yes', label: '✅ Exibir Bolinha Vazia (Seleção)' }
+          ]} />
         </Field>
         <Field label="Fonte do Botão"><FontPicker value={block.fontFamily} onChange={v => onChange({ fontFamily: v })} /></Field>
         <Field label={`Tamanho do Texto: ${block.fontSize || 15}px`}>
