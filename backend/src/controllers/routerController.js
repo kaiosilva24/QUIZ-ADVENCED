@@ -10,6 +10,7 @@ async function handleQuizRouting(req, res) {
     const cached = routeCache.get(slug);
     if (cached && (Date.now() - cached.time < CACHE_TTL)) {
         res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
         return res.json(cached.data);
     }
 
@@ -39,6 +40,7 @@ async function handleQuizRouting(req, res) {
         // Save to Ram Cache
         routeCache.set(slug, { time: Date.now(), data: responseData });
         
+        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
         return res.json(responseData);
 
     } catch (error) {

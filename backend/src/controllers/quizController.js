@@ -124,6 +124,7 @@ async function getQuizById(req, res) {
     const cached = memQuizCache.get(id);
     if (cached && (Date.now() - cached.time < QUIZ_CACHE_TTL)) {
         res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
         return res.json(cached.data);
     }
 
@@ -138,6 +139,7 @@ async function getQuizById(req, res) {
         memQuizCache.set(id, { time: Date.now(), data: responseData });
         
         res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
         res.json(responseData);
     } catch (error) {
         res.status(500).json({ error: error.message });

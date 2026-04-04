@@ -11,11 +11,14 @@ async function getDB() {
 
             const pool = new Pool({
                 connectionString,
-                ssl: false, // Desabilitado caso o Oracle não force SSL (se precisar ligar: { rejectUnauthorized: false })
-                min: 0,
+                ssl: false,
+                min: 2,           // Mantém 2 conexões sempre abertas — elimina cold-start
                 max: 10,
-                connectionTimeoutMillis: 60000,
-                idleTimeoutMillis: 60000,
+                connectionTimeoutMillis: 8000,  // Falha rápido se o DB estiver fora
+                idleTimeoutMillis: 120000,       // Mantém conexões vivas por 2min de idle
+                allowExitOnIdle: false,
+                keepAlive: true,                 // TCP keepAlive evita drop do firewall Oracle
+                keepAliveInitialDelayMillis: 10000,
             });
 
             // Força todas as conexões do pool a usarem o schema correto.

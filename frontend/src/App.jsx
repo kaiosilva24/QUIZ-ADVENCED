@@ -27,17 +27,14 @@ async function collectLeadIntel() {
   if (cached) { 
     try { 
       const parsed = JSON.parse(cached); 
-      // Se já tiver cache e tiver cidade, retorna. Senão busca de novo.
       if (parsed.city) return parsed;
     } catch {} 
   }
 
   const ua = navigator.userAgent || '';
-  // Device type
   let device_type = 'desktop';
   if (/Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) device_type = 'mobile';
   else if (/Tablet|iPad/i.test(ua)) device_type = 'tablet';
-  // Browser
   let browser = 'other';
   if (/Edg\//i.test(ua)) browser = 'Edge';
   else if (/OPR\/|Opera/i.test(ua)) browser = 'Opera';
@@ -45,46 +42,48 @@ async function collectLeadIntel() {
   else if (/Firefox\/\d/i.test(ua)) browser = 'Firefox';
   else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) browser = 'Safari';
   else if (/MSIE|Trident/i.test(ua)) browser = 'IE';
-  // OS
   let os = 'other';
   if (/Android/i.test(ua)) os = 'Android';
   else if (/iPhone|iPad|iPod/i.test(ua)) os = 'iOS';
   else if (/Windows/i.test(ua)) os = 'Windows';
   else if (/Mac OS X/i.test(ua)) os = 'macOS';
   else if (/Linux/i.test(ua)) os = 'Linux';
-  // UTM params
   const params = new URLSearchParams(window.location.search);
   const utm_source = params.get('utm_source') || (params.get('fbclid') ? 'facebook' : null) || (params.get('igshid') ? 'instagram' : null) || null;
   const utm_medium = params.get('utm_medium') || null;
   const utm_campaign = params.get('utm_campaign') || null;
   const referrer = document.referrer || null;
 
-  // ─── Geolocalização do lado do cliente (IP do lead, não do servidor) ────────
-  let city = null, state = null, country = null;
-  try {
-    // Usando geojs.io pois ip-api.com bloqueia HTTPS no plano grátis
-    const geoRes = await fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(5000) });
-    const geoJson = await geoRes.json();
-    if (geoJson.city) {
-      city = geoJson.city || null;
-      state = geoJson.region || null;
-      country = geoJson.country_code || null;
-    }
-  } catch (e) { /* geo é opcional, falha silenciosa */ }
+  // Dados sem geo — salvamos primeiro para não atrasar o render
+  const baseIntel = { device_type, browser, os, utm_source, utm_medium, utm_campaign, referrer, city: null, state: null, country: null };
+  localStorage.setItem('quiz_saas_lead_intel', JSON.stringify(baseIntel));
 
-  const intel = { device_type, browser, os, utm_source, utm_medium, utm_campaign, referrer, city, state, country };
-  localStorage.setItem('quiz_saas_lead_intel', JSON.stringify(intel));
-  return intel;
+  // Geo é buscado em background, sem bloquear nada
+  fetch('https://get.geojs.io/v1/ip/geo.json', { signal: AbortSignal.timeout(4000) })
+    .then(r => r.json())
+    .then(geoJson => {
+      if (geoJson.city) {
+        const full = { ...baseIntel, city: geoJson.city || null, state: geoJson.region || null, country: geoJson.country_code || null };
+        localStorage.setItem('quiz_saas_lead_intel', JSON.stringify(full));
+      }
+    })
+    .catch(() => {});
+
+  return baseIntel;
 }
 
-async function trackEvent(quizId, eventType, stepId = null, answerValue = null, timeSpent = 0) {
+function trackEvent(quizId, eventType, stepId = null, answerValue = null, timeSpent = 0) {
   const visitorId = getVisitorId();
   const cleanAnswer = stripHtml(answerValue);
   const body = { quiz_id: quizId, visitor_id: visitorId, event_type: eventType, step_id: stepId, answer_value: cleanAnswer, time_spent_seconds: timeSpent };
-  // Include intel data on 'start' event (awaits geo)
+  // Para 'start': envia o que já tem no cache (sem esperar geo)
   if (eventType === 'start') {
-    const intel = await collectLeadIntel();
-    Object.assign(body, intel);
+    try {
+      const cached = localStorage.getItem('quiz_saas_lead_intel');
+      if (cached) Object.assign(body, JSON.parse(cached));
+    } catch {}
+    // Dispara em background sem bloquear
+    collectLeadIntel();
   }
   fetch('/api/analytics/track', {
     method: 'POST',
@@ -92,7 +91,6 @@ async function trackEvent(quizId, eventType, stepId = null, answerValue = null, 
     body: JSON.stringify(body)
   }).catch(() => {}); // fire-and-forget
 }
-
 // ─── Componente Roteador de Quizzes por Slug (InLead Style) ──────────────────
 function QuizRouter() {
   const [quizData, setQuizData] = useState(null);
