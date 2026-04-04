@@ -72,6 +72,61 @@ app.put('/api/quizzes/:id/pixel', setQuizPixel);
 // --- Rota por Slug (InLead Style) ---
 app.get('/api/route/:slug', handleQuizRouting);
 
+// --- Rota ultra-leve: entrega config SEM imagens base64 (inicial rápido) ---
+app.get('/api/route/:slug/fast', async (req, res) => {
+    const { slug } = req.params;
+    try {
+        const { getDB } = require('./db');
+        const db = await getDB();
+        let quiz = await db.get('SELECT id, config_json FROM quizzes WHERE slug=$1 AND is_active=TRUE', [slug]);
+        if (!quiz && slug.startsWith('quiz-')) {
+            const id = slug.replace('quiz-', '');
+            if (!isNaN(id)) quiz = await db.get('SELECT id, config_json FROM quizzes WHERE id=$1 AND is_active=TRUE', [id]);
+        }
+        if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
+        const cfg = JSON.parse(quiz.config_json || '{}');
+        // Remove imagens base64 da resposta inicial — envia placeholder vazio
+        // O front pode exibir o quiz imediatamente, as imagens carregam sob demanda
+        function stripImages(obj) {
+            if (!obj || typeof obj !== 'object') return;
+            for (const k of Object.keys(obj)) {
+                if (typeof obj[k] === 'string' && obj[k].startsWith('data:image/')) {
+                    obj[k] = ''; // placeholder
+                } else if (typeof obj[k] === 'object') {
+                    stripImages(obj[k]);
+                }
+            }
+        }
+        // Só strip as etapas que não são a primeira (etapas 2+ carregam sob demanda)
+        const steps = cfg.steps || [];
+        steps.slice(1).forEach(s => stripImages(s));
+        res.setHeader('Cache-Control', 'public, max-age=10, stale-while-revalidate=60');
+        res.json({ quiz_id: quiz.id, config: cfg, _stripped: true });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+});
+
+// --- Rota de etapa individual (para carregar imagens da etapa sob demanda) ---
+app.get('/api/route/:slug/step/:stepIdx', async (req, res) => {
+    const { slug, stepIdx } = req.params;
+    const idx = parseInt(stepIdx) || 0;
+    try {
+        const { getDB } = require('./db');
+        const db = await getDB();
+        let quiz = await db.get('SELECT id, config_json FROM quizzes WHERE slug=$1 AND is_active=TRUE', [slug]);
+        if (!quiz && slug.startsWith('quiz-')) {
+            const id = slug.replace('quiz-', '');
+            if (!isNaN(id)) quiz = await db.get('SELECT id, config_json FROM quizzes WHERE id=$1 AND is_active=TRUE', [id]);
+        }
+        if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
+        const cfg = JSON.parse(quiz.config_json || '{}');
+        const steps = cfg.steps || [];
+        const step = steps[idx] || null;
+        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+        return res.json({ step, stepIdx: idx, totalSteps: steps.length });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+});
+
+
 // --- Servir Frontend Estático para TODAS AS OUTRAS rotas ---
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 // Arquivos com hash no nome (JS/CSS/etc): cache de 1 ano, imutável

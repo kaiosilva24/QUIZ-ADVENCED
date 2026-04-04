@@ -155,12 +155,17 @@ function QuizRouter() {
 
   const loadNewQuiz = () => {
     const slug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
-    const endpoint = slug ? `/api/route/${encodeURIComponent(slug)}` : '/api/roundrobin/next';
+    // Usa rota /fast que omite imagens das etapas 2+ para una carga inicial ultrarrápida
+    const fastEndpoint = slug ? `/api/route/${encodeURIComponent(slug)}/fast` : null;
+    const normalEndpoint = slug ? `/api/route/${encodeURIComponent(slug)}` : '/api/roundrobin/next';
+    const endpoint = fastEndpoint || normalEndpoint;
     const now = Date.now();
 
     fetch(endpoint)
       .then(r => {
         if (r.status === 404) {
+          // /fast não existe ainda (quiz antigo)? Tenta rota normal
+          if (endpoint.endsWith('/fast')) return fetch(normalEndpoint).then(r2 => r2.ok ? r2.json() : Promise.reject('err'));
           setError('NO_QUIZ_CONFIGURED');
           setLoading(false);
           throw new Error('no_quiz');
@@ -183,6 +188,17 @@ function QuizRouter() {
         const firstStep = data?.config?.steps?.[0];
         if (firstStep?.id) {
           trackEvent(quizId, 'step_reached', firstStep.id, null, 0);
+        }
+        // Prefetch completo em background após exibir quiz — sem bloquear render
+        if (data._stripped && slug) {
+          setTimeout(() => {
+            fetch(`/api/route/${encodeURIComponent(slug)}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(fullData => {
+                if (fullData) setQuizData(fullData);
+              })
+              .catch(() => {});
+          }, 1200); // aguarda 1.2s para não competir com a renderização inicial
         }
       })
       .catch(() => {});
