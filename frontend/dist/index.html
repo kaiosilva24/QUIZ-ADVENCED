@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>frontend</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css"/>
-    <script type="module" crossorigin src="/assets/index-DscpjsYR.js"></script>
+    <script type="module" crossorigin src="/assets/index-DBnP7okb.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/rolldown-runtime-Dw2cE7zH.js">
     <link rel="modulepreload" crossorigin href="/assets/charts-67GFuNTQ.js">
     <link rel="modulepreload" crossorigin href="/assets/react-Cee4NTdL.js">
@@ -24,5 +24,20 @@
         <div class="global-spinner"></div>
       </div>
     </div>
+    <script>
+      // Prefetch da API do quiz enquanto o bundle JS ainda est\u00e1 carregando
+      // Resultado fica em window.__QUIZ_PREFETCH__ para o React usar imediatamente
+      (function() {
+        try {
+          var slug = location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
+          if (slug && slug !== 'admin') {
+            var url = '/api/route/' + encodeURIComponent(slug) + '/fast';
+            window.__QUIZ_PREFETCH__ = fetch(url).then(function(r) {
+              return r.ok ? r.json() : null;
+            }).catch(function() { return null; });
+          }
+        } catch(e) {}
+      })();
+    </script>
   </body>
 </html>

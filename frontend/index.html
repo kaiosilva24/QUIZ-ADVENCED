@@ -19,6 +19,21 @@
         <div class="global-spinner"></div>
       </div>
     </div>
+    <script>
+      // Prefetch da API do quiz enquanto o bundle JS ainda est\u00e1 carregando
+      // Resultado fica em window.__QUIZ_PREFETCH__ para o React usar imediatamente
+      (function() {
+        try {
+          var slug = location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
+          if (slug && slug !== 'admin') {
+            var url = '/api/route/' + encodeURIComponent(slug) + '/fast';
+            window.__QUIZ_PREFETCH__ = fetch(url).then(function(r) {
+              return r.ok ? r.json() : null;
+            }).catch(function() { return null; });
+          }
+        } catch(e) {}
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

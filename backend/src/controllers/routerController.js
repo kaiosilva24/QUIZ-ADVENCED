@@ -3,48 +3,88 @@ const { getDB } = require('../db');
 const routeCache = new Map();
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
 
-async function handleQuizRouting(req, res) {
-    const slug = req.params.slug;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function stripImagesDeep(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    for (const k of Object.keys(obj)) {
+        if (typeof obj[k] === 'string' && obj[k].startsWith('data:image/')) {
+            obj[k] = ''; // placeholder — será preenchido pelo prefetch completo
+        } else if (typeof obj[k] === 'object') {
+            stripImagesDeep(obj[k]);
+        }
+    }
+}
 
-    // Fast-path: RAM Cache (bypassa o DB instantaneamente)
+// Obtém dados do cache RAM ou DB, preenchendo o cache se necessário
+async function resolveQuizBySlug(slug) {
+    // Fast-path: RAM cache
     const cached = routeCache.get(slug);
     if (cached && (Date.now() - cached.time < CACHE_TTL)) {
-        res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
-        return res.json(cached.data);
+        return cached.data;
     }
 
+    // Slow-path: DB
+    const db = await getDB();
+    let quiz = await db.get('SELECT id, config_json FROM quizzes WHERE slug = $1 AND is_active = TRUE', [slug]);
+
+    if (!quiz && slug.startsWith('quiz-')) {
+        const id = slug.replace('quiz-', '');
+        if (!isNaN(id)) {
+            quiz = await db.get('SELECT id, config_json FROM quizzes WHERE id = $1 AND is_active = TRUE', [id]);
+        }
+    }
+    if (!quiz) return null;
+
+    const responseData = {
+        quiz_id: quiz.id,
+        config: JSON.parse(quiz.config_json || '{}')
+    };
+    routeCache.set(slug, { time: Date.now(), data: responseData });
+    return responseData;
+}
+
+// ─── Rota full: quiz completo (para o prefetch background e visitors com cache) ─
+async function handleQuizRouting(req, res) {
+    const slug = req.params.slug;
     try {
-        const db = await getDB();
-
-        let quiz = await db.get('SELECT id, config_json FROM quizzes WHERE slug = $1 AND is_active = TRUE', [slug]);
-
-        if (!quiz && slug.startsWith('quiz-')) {
-            const id = slug.replace('quiz-', '');
-            if (!isNaN(id)) {
-                quiz = await db.get('SELECT id, config_json FROM quizzes WHERE id = $1 AND is_active = TRUE', [id]);
-            }
-        }
-
-        if (!quiz) {
-            return res.status(404).json({ error: 'Quiz não encontrado ou inativo.' });
-        }
-
-        // Parse do JSON para enviar bonitinho pro front
+        const data = await resolveQuizBySlug(slug);
+        if (!data) return res.status(404).json({ error: 'Quiz não encontrado ou inativo.' });
         res.setHeader('Content-Type', 'application/json');
-        const responseData = {
-            quiz_id: quiz.id,
-            config: JSON.parse(quiz.config_json || '{}')
-        };
-        
-        // Save to Ram Cache
-        routeCache.set(slug, { time: Date.now(), data: responseData });
-        
         res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
-        return res.json(responseData);
-
+        return res.json(data);
     } catch (error) {
         return res.status(500).json({ error: 'Erro interno no Roteador' });
+    }
+}
+
+// ─── Rota ultra-leve: entrega apenas a 1ª etapa (sem imagens) via RAM cache ──
+// Resposta típica: ~10-20 KB em vez de 1+ MB — renderiza em <100ms
+async function handleQuizFirstStep(req, res) {
+    const slug = req.params.slug;
+    try {
+        const fullData = await resolveQuizBySlug(slug);
+        if (!fullData) return res.status(404).json({ error: 'Quiz não encontrado.' });
+
+        const steps = fullData.config?.steps || [];
+        const firstStep = steps[0] ? JSON.parse(JSON.stringify(steps[0])) : null; // deep clone
+        const settings = fullData.config?.settings || {};
+        const theme = fullData.config?.theme || {};
+
+        // Envia só o necessário para renderizar a 1ª tela sem imagens das etapas extras
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'public, max-age=10, stale-while-revalidate=60');
+        return res.json({
+            quiz_id: fullData.quiz_id,
+            _fast: true,          // flag para o front saber que é resposta parcial
+            config: {
+                settings,
+                theme,
+                steps: firstStep ? [firstStep] : [],
+                totalSteps: steps.length,
+            }
+        });
+    } catch (error) {
+        return res.status(500).json({ error: 'Erro interno no Roteador Fast' });
     }
 }
 
@@ -58,6 +98,7 @@ function warmRouterCache(slug, data) {
 
 module.exports = {
     handleQuizRouting,
+    handleQuizFirstStep,
     clearRouterCache,
     warmRouterCache
 };

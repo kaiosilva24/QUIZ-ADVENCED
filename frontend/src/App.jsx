@@ -155,30 +155,29 @@ function QuizRouter() {
 
   const loadNewQuiz = () => {
     const slug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
-    // Usa rota /fast que omite imagens das etapas 2+ para una carga inicial ultrarrápida
     const fastEndpoint = slug ? `/api/route/${encodeURIComponent(slug)}/fast` : null;
     const normalEndpoint = slug ? `/api/route/${encodeURIComponent(slug)}` : '/api/roundrobin/next';
-    const endpoint = fastEndpoint || normalEndpoint;
     const now = Date.now();
 
-    fetch(endpoint)
-      .then(r => {
-        if (r.status === 404) {
-          // /fast não existe ainda (quiz antigo)? Tenta rota normal
-          if (endpoint.endsWith('/fast')) return fetch(normalEndpoint).then(r2 => r2.ok ? r2.json() : Promise.reject('err'));
-          setError('NO_QUIZ_CONFIGURED');
-          setLoading(false);
-          throw new Error('no_quiz');
+    // Usa o prefetch que foi iniciado no HTML (enquanto o bundle JS carregava)
+    // Se já estiver pronto: zero espera. Se ainda estiver em andamento: aguarda o resto.
+    const prefetchPromise = window.__QUIZ_PREFETCH__ && slug && !slug.startsWith('admin')
+      ? window.__QUIZ_PREFETCH__
+      : fetch(fastEndpoint || normalEndpoint).then(r => r.ok ? r.json() : null);
+
+    // Limpa para não reutilizar em navigate futuros
+    window.__QUIZ_PREFETCH__ = null;
+
+    prefetchPromise
+      .then(data => {
+        if (!data) {
+          // fallback: tenta rota normal
+          return fetch(normalEndpoint).then(r => r.ok ? r.json() : null);
         }
-        if (!r.ok) {
-          setError('SERVER_ERROR');
-          setLoading(false);
-          throw new Error('server_error');
-        }
-        return r.json();
+        return data;
       })
       .then(data => {
-        if (!data) return;
+        if (!data) { setError('NO_QUIZ_CONFIGURED'); setLoading(false); return; }
         const quizId = data.quiz_id || data.id;
         localStorage.setItem(QUIZ_ID_KEY, String(quizId));
         localStorage.setItem(QUIZ_TIME_KEY, now.toString());
@@ -186,22 +185,19 @@ function QuizRouter() {
         setLoading(false);
         trackEvent(quizId, 'start', null, null, 0);
         const firstStep = data?.config?.steps?.[0];
-        if (firstStep?.id) {
-          trackEvent(quizId, 'step_reached', firstStep.id, null, 0);
-        }
-        // Prefetch completo em background após exibir quiz — sem bloquear render
-        if (data._stripped && slug) {
-          setTimeout(() => {
-            fetch(`/api/route/${encodeURIComponent(slug)}`)
-              .then(r => r.ok ? r.json() : null)
-              .then(fullData => {
-                if (fullData) setQuizData(fullData);
-              })
-              .catch(() => {});
-          }, 1200); // aguarda 1.2s para não competir com a renderização inicial
+        if (firstStep?.id) trackEvent(quizId, 'step_reached', firstStep.id, null, 0);
+        // Busca o quiz completo em background imediatamente (has tempo enquanto lendo)
+        if ((data._fast || data._stripped) && slug) {
+          fetch(`/api/route/${encodeURIComponent(slug)}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(fullData => { if (fullData) setQuizData(fullData); })
+            .catch(() => {});
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setError('SERVER_ERROR');
+        setLoading(false);
+      });
   };
 
   // Trava do botão voltar (agora dependendo da configuração)
