@@ -64,7 +64,9 @@ async function getNextRoundRobinQuiz(req, res) {
       const cachedQuiz = rrQuizCache.get(quizId);
       if (cachedQuiz) {
         res.setHeader('Content-Type', 'application/json');
-        return res.json(cachedQuiz);
+        res.setHeader('Cache-Control', 'no-store'); // sempre fresco para o round-robin funcionar
+        // Retorna SÓ os metadados (sem config_json) — frontend busca /fast logo depois
+        return res.json({ id: cachedQuiz.id, quiz_id: cachedQuiz.id, title: cachedQuiz.title, slug: cachedQuiz.slug });
       }
     }
 
@@ -97,12 +99,16 @@ async function getNextRoundRobinQuiz(req, res) {
     let config = {};
     try { config = JSON.parse(quiz.config_json || '{}'); } catch {}
 
-    const responseData = { id: quiz.id, quiz_id: quiz.id, title: quiz.title, slug: quiz.slug, config };
+    const responseData = { id: quiz.id, quiz_id: quiz.id, title: quiz.title, slug: quiz.slug, config: {} };
+    const fullData = { id: quiz.id, quiz_id: quiz.id, title: quiz.title, slug: quiz.slug, config };
     
-    // Save to Ram Cache
-    rrQuizCache.set(quizId, responseData);
+    // Salva dados completos no cache RAM (usado pelo routerController via quiz-ID)
+    rrQuizCache.set(quizId, fullData);
     
-    res.json(responseData);
+    // Retorna SÓ metadados para o browser — sem config_json (1.4MB) 
+    // O front busca imediatamente /api/route/quiz-ID/fast (~10KB) após receber isso
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ id: quiz.id, quiz_id: quiz.id, title: quiz.title, slug: quiz.slug });
   } catch (err) {
     console.error('[RoundRobin] NEXT error:', err);
     res.status(500).json({ error: err.message });
