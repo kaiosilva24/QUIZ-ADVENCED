@@ -159,10 +159,17 @@ function QuizRouter() {
     const now = Date.now();
 
     // Usa o prefetch iniciado no HTML (em paralelo com o bundle JS)
-    const prefetchPromise = window.__QUIZ_PREFETCH__ && slug && !slug.startsWith('admin')
-      ? window.__QUIZ_PREFETCH__
-      : null;
-    window.__QUIZ_PREFETCH__ = null; // limpa para não reutilizar
+    // __QUIZ_SSR__: dados já injetados no HTML pelo servidor (ZERO fetch, mais rápido)
+    // __QUIZ_PREFETCH__: fetch iniciado enquanto JS carregava
+    const ssrData = window.__QUIZ_SSR__;
+    window.__QUIZ_SSR__ = null;
+
+    const prefetchPromise = ssrData
+      ? Promise.resolve(ssrData)
+      : (window.__QUIZ_PREFETCH__ && slug && !slug.startsWith('admin'))
+        ? window.__QUIZ_PREFETCH__
+        : null;
+    window.__QUIZ_PREFETCH__ = null;
 
     const doLoad = (fastPromise) => {
       fastPromise

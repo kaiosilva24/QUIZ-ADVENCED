@@ -89,9 +89,38 @@ app.use(express.static(frontendPath, {
 }));
 
 
-app.get('/{*path}', (req, res, next) => {
+app.get('/{*path}', async (req, res, next) => {
     if (req.path.startsWith('/api/')) return next();
-    res.sendFile(path.join(frontendPath, 'index.html'));
+
+    try {
+        const htmlPath = path.join(frontendPath, 'index.html');
+        let html = require('fs').readFileSync(htmlPath, 'utf-8');
+
+        // Tenta injetar dados da 1ª etapa direto no HTML (SSR-lite)
+        // Elimina o waterfall HTML→JS→API→render
+        const { handleQuizFirstStep: _, ...routerCtrl } = require('./controllers/routerController');
+        const { resolveQuizForSSR } = require('./controllers/routerController');
+
+        if (resolveQuizForSSR) {
+            const slug = req.path.replace(/^\//, '').replace(/\/.*$/, '') || '';
+            const fastData = await resolveQuizForSSR(slug).catch(() => null);
+            if (fastData) {
+                // Injeta no HTML como window.__QUIZ_SSR__ — React usa sem fetch
+                const jsonStr = JSON.stringify(fastData).replace(/<\/script>/gi, '<\\/script>');
+                html = html.replace(
+                    '<script>',
+                    `<script>window.__QUIZ_SSR__=${jsonStr};</script><script>`
+                );
+            }
+        }
+
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.send(html);
+    } catch (e) {
+        // Fallback: serve estático normalmente
+        res.sendFile(path.join(frontendPath, 'index.html'));
+    }
 });
 
 // ─── Global error handler ─────────────────────────────────────────────────────

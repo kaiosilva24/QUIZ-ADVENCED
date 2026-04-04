@@ -96,9 +96,52 @@ function warmRouterCache(slug, data) {
     routeCache.set(slug, { time: Date.now(), data: data });
 }
 
+// ─── SSR helper: resolve quiz da 1ª etapa para injeção no HTML ──────────────
+// Suporta slug direto OU roundrobin (slug vazio = URL raiz)
+async function resolveQuizForSSR(slug) {
+    try {
+        let fullData = null;
+
+        if (slug) {
+            // Slug direto
+            fullData = await resolveQuizBySlug(slug);
+        } else {
+            // Roundrobin: pega o ID do quiz ativo
+            const db = await getDB();
+            const rr = await db.get('SELECT * FROM round_robin ORDER BY id LIMIT 1');
+            if (!rr || !rr.is_active) return null;
+            const quizIds = JSON.parse(rr.quiz_ids || '[]');
+            if (!quizIds.length) return null;
+            const idx = (rr.current_index || 0) % quizIds.length;
+            const quizId = quizIds[idx];
+            fullData = await resolveQuizBySlug(`quiz-${quizId}`);
+        }
+
+        if (!fullData) return null;
+
+        // Retorna só a 1ª etapa (igual ao /fast)
+        const steps = fullData.config?.steps || [];
+        const firstStep = steps[0] ? JSON.parse(JSON.stringify(steps[0])) : null;
+        return {
+            quiz_id: fullData.quiz_id,
+            _fast: true,
+            _ssr: true,
+            config: {
+                settings: fullData.config?.settings || {},
+                theme: fullData.config?.theme || {},
+                steps: firstStep ? [firstStep] : [],
+                totalSteps: steps.length,
+            }
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
 module.exports = {
     handleQuizRouting,
     handleQuizFirstStep,
+    resolveQuizForSSR,
     clearRouterCache,
     warmRouterCache
 };
