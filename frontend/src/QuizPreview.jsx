@@ -2196,14 +2196,19 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       };
 
       const handleCapture = () => {
-        // Validation
+        // Valida apenas campos marcados como obrigatórios
+        // Se block.requiredFields não definido, usa comportamento legado (todos obrigatórios)
         if (!compact) {
-          const requiredFields = fields;
+          const requiredFields = block.requiredFields !== undefined
+            ? block.requiredFields
+            : fields; // legado: se não configurado, todos são obrigatórios
           for (const f of requiredFields) {
-             if (!formValues[f] || !formValues[f].trim()) {
-                setErrorMsg('Por favor, preencha todos os campos obrigatórios.');
-                return;
-             }
+            if (fields.includes(f) && (!formValues[f] || !formValues[f].trim())) {
+              const defaultFieldTitlesLocal = { name: 'Nome', email: 'E-mail', phone: 'Telefone', message: 'Mensagem' };
+              const label = block.labels?.[f] || defaultFieldTitlesLocal[f] || f;
+              setErrorMsg(`Por favor, preencha o campo "${label}".`);
+              return;
+            }
           }
         }
         setErrorMsg('');

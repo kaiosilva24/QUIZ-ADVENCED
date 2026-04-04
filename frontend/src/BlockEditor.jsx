@@ -1521,12 +1521,22 @@ function LeadCaptureEditor({ block, onChange, steps, theme }) {
     <>
       <Section title="Campos do Formulário">
         {all.map(f => (
-          <div key={f} className="space-y-2">
+        <div key={f} className="space-y-2">
             <Toggle label={defaultLabels[f]}
               value={block.fields?.includes(f)}
               onChange={v => onChange({ fields: v ? [...(block.fields || []), f] : (block.fields || []).filter(x => x !== f) })} />
             {block.fields?.includes(f) && (
               <div className="pl-2 border-l-2 border-slate-700/50 mb-2 space-y-2 mt-2">
+                {/* Toggle Obrigatório */}
+                <Toggle
+                  label="Preenchimento obrigatório"
+                  value={(block.requiredFields || []).includes(f)}
+                  onChange={v => onChange({
+                    requiredFields: v
+                      ? [...(block.requiredFields || []), f]
+                      : (block.requiredFields || []).filter(x => x !== f)
+                  })}
+                />
                 <Field label={`Rótulo (${defaultLabels[f]})`}>
                   <Input 
                     value={block.labels?.[f] !== undefined ? block.labels[f] : defaultLabels[f]} 
