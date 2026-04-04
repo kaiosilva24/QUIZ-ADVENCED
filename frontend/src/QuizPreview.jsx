@@ -2243,7 +2243,7 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
               background: block.fieldBg || '#f1f5f9',
               border: `1px solid ${block.fieldBorderColor || '#cbd5e1'}`,
               borderRadius: 10,
-              fontSize: compact ? 10 : 14,
+              fontSize: compact ? 10 : 16, // min 16px evita zoom automático no iOS Safari
               color: block.fieldTextColor || '#0f172a',
               width: '100%',
               outline: 'none',
