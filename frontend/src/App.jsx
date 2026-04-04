@@ -101,6 +101,7 @@ function QuizRouter() {
   const [loadingConfig, setLoadingConfig] = useState(null);
   const [scores, setScores] = useState({});
   const stepStartTime = React.useRef(Date.now());
+  const pendingFullData = React.useRef(null); // full quiz esperando usuario avancar
 
   // Chaves slug-aware: /novo-quiz e /live não conflitam
   const pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '') || 'root';
@@ -182,11 +183,16 @@ function QuizRouter() {
           trackEvent(quizId, 'start', null, null, 0);
           const firstStep = data?.config?.steps?.[0];
           if (firstStep?.id) trackEvent(quizId, 'step_reached', firstStep.id, null, 0);
-          // Prefetch completo imediatamente em background (usuário lê enquanto carrega)
+          // Prefetch completo em background — mas SÓ aplica quando usuário sair do step 0
+          // Isso evita que o React re-render reset o LCP clock do Lighthouse
           if (data._fast || data._stripped) {
             fetch(`/api/route/quiz-${quizId}`)
               .then(r => r.ok ? r.json() : null)
-              .then(fullData => { if (fullData) setQuizData(fullData); })
+              .then(fullData => {
+                if (!fullData) return;
+                // Guarda em ref — só aplica quando o usuário avançar (não re-renderiza step 0)
+                pendingFullData.current = fullData;
+              })
               .catch(() => {});
           }
         })
@@ -304,12 +310,14 @@ function QuizRouter() {
         setLoadingConfig(cfg);
         setTransitionLoading(true);
         setTimeout(() => {
+          if (pendingFullData.current) { setQuizData(pendingFullData.current); pendingFullData.current = null; }
           setCurrentStep(idx);
           setTransitionLoading(false);
           setLoadingConfig(null);
           window.scrollTo({ top: 0, behavior: 'instant' });
         }, dur);
       } else {
+        if (pendingFullData.current) { setQuizData(pendingFullData.current); pendingFullData.current = null; }
         setCurrentStep(idx);
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
