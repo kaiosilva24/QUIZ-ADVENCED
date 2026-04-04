@@ -307,9 +307,11 @@ function QuizRouter() {
           setCurrentStep(idx);
           setTransitionLoading(false);
           setLoadingConfig(null);
+          window.scrollTo({ top: 0, behavior: 'instant' });
         }, dur);
       } else {
         setCurrentStep(idx);
+        window.scrollTo({ top: 0, behavior: 'instant' });
       }
     }
   };
