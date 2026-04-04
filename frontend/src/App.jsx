@@ -155,49 +155,66 @@ function QuizRouter() {
 
   const loadNewQuiz = () => {
     const slug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '');
-    const fastEndpoint = slug ? `/api/route/${encodeURIComponent(slug)}/fast` : null;
-    const normalEndpoint = slug ? `/api/route/${encodeURIComponent(slug)}` : '/api/roundrobin/next';
     const now = Date.now();
 
-    // Usa o prefetch que foi iniciado no HTML (enquanto o bundle JS carregava)
-    // Se já estiver pronto: zero espera. Se ainda estiver em andamento: aguarda o resto.
+    // Usa o prefetch iniciado no HTML (em paralelo com o bundle JS)
     const prefetchPromise = window.__QUIZ_PREFETCH__ && slug && !slug.startsWith('admin')
       ? window.__QUIZ_PREFETCH__
-      : fetch(fastEndpoint || normalEndpoint).then(r => r.ok ? r.json() : null);
+      : null;
+    window.__QUIZ_PREFETCH__ = null; // limpa para não reutilizar
 
-    // Limpa para não reutilizar em navigate futuros
-    window.__QUIZ_PREFETCH__ = null;
+    const doLoad = (fastPromise) => {
+      fastPromise
+        .then(data => {
+          if (!data) {
+            // sem slug: quiz não encontrado, tenta roundrobin normal como fallback
+            return fetch('/api/roundrobin/next').then(r => r.ok ? r.json() : null);
+          }
+          return data;
+        })
+        .then(data => {
+          if (!data) { setError('NO_QUIZ_CONFIGURED'); setLoading(false); return; }
+          const quizId = String(data.quiz_id || data.id);
+          localStorage.setItem(QUIZ_ID_KEY, quizId);
+          localStorage.setItem(QUIZ_TIME_KEY, now.toString());
+          setQuizData(data);
+          setLoading(false);
+          trackEvent(quizId, 'start', null, null, 0);
+          const firstStep = data?.config?.steps?.[0];
+          if (firstStep?.id) trackEvent(quizId, 'step_reached', firstStep.id, null, 0);
+          // Prefetch completo imediatamente em background (usuário lê enquanto carrega)
+          if (data._fast || data._stripped) {
+            fetch(`/api/route/quiz-${quizId}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(fullData => { if (fullData) setQuizData(fullData); })
+              .catch(() => {});
+          }
+        })
+        .catch(() => { setError('SERVER_ERROR'); setLoading(false); });
+    };
 
-    prefetchPromise
-      .then(data => {
-        if (!data) {
-          // fallback: tenta rota normal
-          return fetch(normalEndpoint).then(r => r.ok ? r.json() : null);
-        }
-        return data;
-      })
-      .then(data => {
-        if (!data) { setError('NO_QUIZ_CONFIGURED'); setLoading(false); return; }
-        const quizId = data.quiz_id || data.id;
-        localStorage.setItem(QUIZ_ID_KEY, String(quizId));
-        localStorage.setItem(QUIZ_TIME_KEY, now.toString());
-        setQuizData(data);
-        setLoading(false);
-        trackEvent(quizId, 'start', null, null, 0);
-        const firstStep = data?.config?.steps?.[0];
-        if (firstStep?.id) trackEvent(quizId, 'step_reached', firstStep.id, null, 0);
-        // Busca o quiz completo em background imediatamente (has tempo enquanto lendo)
-        if ((data._fast || data._stripped) && slug) {
-          fetch(`/api/route/${encodeURIComponent(slug)}`)
-            .then(r => r.ok ? r.json() : null)
-            .then(fullData => { if (fullData) setQuizData(fullData); })
-            .catch(() => {});
-        }
-      })
-      .catch(() => {
-        setError('SERVER_ERROR');
-        setLoading(false);
-      });
+    if (prefetchPromise) {
+      // HTML já iniciou o fetch da 1ª etapa — usa diretamente
+      doLoad(prefetchPromise);
+    } else if (slug) {
+      // Tem slug: vai direto para /fast
+      doLoad(fetch(`/api/route/${encodeURIComponent(slug)}/fast`).then(r => r.ok ? r.json() : null));
+    } else {
+      // Sem slug (A/B roundrobin): primeiro pega o quiz_id, depois carrega /fast
+      doLoad(
+        fetch('/api/roundrobin/next')
+          .then(r => r.ok ? r.json() : null)
+          .then(rrData => {
+            if (!rrData) return null;
+            const qid = rrData.quiz_id || rrData.id;
+            if (!qid) return rrData; // retorna o que tivermos
+            // Troca pelo /fast que é só a 1ª etapa (~10KB)
+            return fetch(`/api/route/quiz-${qid}/fast`)
+              .then(r => r.ok ? r.json() : rrData)
+              .catch(() => rrData);
+          })
+      );
+    }
   };
 
   // Trava do botão voltar (agora dependendo da configuração)
