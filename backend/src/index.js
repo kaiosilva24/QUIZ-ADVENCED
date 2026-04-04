@@ -74,7 +74,18 @@ app.get('/api/route/:slug', handleQuizRouting);
 
 // --- Servir Frontend Estático para TODAS AS OUTRAS rotas ---
 const frontendPath = path.join(__dirname, '../../frontend/dist');
-app.use(express.static(frontendPath));
+// Arquivos com hash no nome (JS/CSS/etc): cache de 1 ano, imutável
+app.use(express.static(frontendPath, {
+  maxAge: '1y',
+  immutable: true,
+  setHeaders(res, filePath) {
+    // index.html nunca deve ser cacheado pelo browser
+    if (filePath.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  }
+}));
+
 
 app.get('/{*path}', (req, res, next) => {
     if (req.path.startsWith('/api/')) return next();

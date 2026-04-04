@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-
-import QuizPreview from './QuizPreview';
+const QuizPreview = React.lazy(() => import('./QuizPreview'));
 
 const API = '/api';
 
@@ -355,16 +354,18 @@ function QuizRouter() {
         );
       })()}
       <div style={{width:'100%',maxWidth:'440px',minHeight:'100vh'}}>
-        <QuizPreview
-          config={quizData.config}
-          stepIdx={currentStep}
-          compact={false}
-          onNavigate={handleNavigate}
-          quizId={quizData.quiz_id || quizData.id}
-          visitorId={getVisitorId()}
-          scores={scores}
-          isLive={true}
-        />
+        <React.Suspense fallback={<div style={{minHeight:'100vh',background:'#020617'}} />}>
+          <QuizPreview
+            config={quizData.config}
+            stepIdx={currentStep}
+            compact={false}
+            onNavigate={handleNavigate}
+            quizId={quizData.quiz_id || quizData.id}
+            visitorId={getVisitorId()}
+            scores={scores}
+            isLive={true}
+          />
+        </React.Suspense>
       </div>
     </div>
   );
