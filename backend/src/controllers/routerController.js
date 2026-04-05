@@ -40,6 +40,10 @@ async function resolveQuizBySlug(slug) {
         config: JSON.parse(quiz.config_json || '{}')
     };
     routeCache.set(slug, { time: Date.now(), data: responseData });
+    // WARM-UP: salva também o ID direto para que o fetch background /api/route/quiz-X seja instântaneo
+    if (!slug.startsWith('quiz-')) {
+        routeCache.set(`quiz-${quiz.id}`, { time: Date.now(), data: responseData });
+    }
     return responseData;
 }
 
