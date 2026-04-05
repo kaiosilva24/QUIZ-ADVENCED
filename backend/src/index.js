@@ -115,6 +115,14 @@ app.get('/{*path}', async (req, res, next) => {
             }
         }
 
+        // Hack definitivo para FCP: o Vite injeta o CSS principal como bloqueante.
+        // Transformamos ele em não-bloqueante para que o spinner inline (que já está no HTML) 
+        // apareça instantaneamente, quebrando o FCP para < 1.5s mesmo em 4G lento.
+        html = html.replace(
+            /<link rel="stylesheet" crossorigin href="([^"]+\.css)">/,
+            '<link rel="preload" as="style" href="$1" onload="this.onload=null;this.rel=\'stylesheet\'"><noscript><link rel="stylesheet" href="$1"></noscript>'
+        );
+
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.send(html);

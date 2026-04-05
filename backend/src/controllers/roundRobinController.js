@@ -120,4 +120,28 @@ function clearRoundRobinCache() {
   rrQuizCache.clear();
 }
 
-module.exports = { getRoundRobin, updateRoundRobin, getNextRoundRobinQuiz, clearRoundRobinCache };
+// Exporta helper para SSR ultra-rápido sem depender de DB req a cada load HTML
+async function resolveNextRoundRobinId() {
+  if (Date.now() - MemRRCache.time < CACHE_TTL && MemRRCache.activeQuizIds.length > 0) {
+    if (!MemRRCache.isActive) return null;
+    const idx = MemRRCache.currentIdx % MemRRCache.activeQuizIds.length;
+    return MemRRCache.activeQuizIds[idx];
+  }
+  // Fallback para DB (só na 1a vez ou quando cache expira)
+  try {
+    const db = await getDB();
+    const rr = await db.get('SELECT * FROM round_robin ORDER BY id LIMIT 1');
+    if (!rr || !rr.is_active) return null;
+    const quizIds = JSON.parse(rr.quiz_ids || '[]');
+    if (quizIds.length === 0) return null;
+    const idx = (rr.current_index || 0) % quizIds.length;
+    
+    // Aproveita para "esquentar" o cache aqui mesmo para os próximos não sofrerem hit
+    MemRRCache = { time: Date.now(), activeQuizIds: quizIds.map(Number), currentIdx: idx, isActive: true };
+    return Number(quizIds[idx]);
+  } catch (e) {
+    return null;
+  }
+}
+
+module.exports = { getRoundRobin, updateRoundRobin, getNextRoundRobinQuiz, clearRoundRobinCache, resolveNextRoundRobinId };

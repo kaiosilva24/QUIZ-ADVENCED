@@ -106,14 +106,10 @@ async function resolveQuizForSSR(slug) {
             // Slug direto
             fullData = await resolveQuizBySlug(slug);
         } else {
-            // Roundrobin: pega o ID do quiz ativo
-            const db = await getDB();
-            const rr = await db.get('SELECT * FROM round_robin ORDER BY id LIMIT 1');
-            if (!rr || !rr.is_active) return null;
-            const quizIds = JSON.parse(rr.quiz_ids || '[]');
-            if (!quizIds.length) return null;
-            const idx = (rr.current_index || 0) % quizIds.length;
-            const quizId = quizIds[idx];
+            // Roundrobin: tenta pegar ultra rápido da RAM (zero DB)
+            const { resolveNextRoundRobinId } = require('./roundRobinController');
+            const quizId = await resolveNextRoundRobinId();
+            if (!quizId) return null;
             fullData = await resolveQuizBySlug(`quiz-${quizId}`);
         }
 
