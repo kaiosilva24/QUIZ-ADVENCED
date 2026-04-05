@@ -80,6 +80,7 @@ const frontendPath = path.join(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath, {
   maxAge: '1y',
   immutable: true,
+  index: false, // CRÍTICO: impede o Express de servir index.html direto, forçando cair no nosso SSR
   setHeaders(res, filePath) {
     // index.html nunca deve ser cacheado pelo browser
     if (filePath.endsWith('index.html')) {
