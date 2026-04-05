@@ -13,7 +13,14 @@ export default defineConfig({
     }
   },
   build: {
-    modulePreload: false,
+    modulePreload: {
+      resolveDependencies: (filename, deps, { hostId, hostType }) => {
+        return deps.filter(dep => {
+          const f = typeof dep === 'string' ? dep : (dep.file || '');
+          return !f.includes('tiptap') && !f.includes('charts') && !f.includes('Admin') && !f.includes('emoji') && !f.includes('dndkit');
+        });
+      }
+    },
     chunkSizeWarningLimit: 8000,
     rollupOptions: {
       output: {
