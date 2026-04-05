@@ -295,7 +295,12 @@ function QuizRouter() {
 
     const activeData = pendingFullData.current || quizData;
     const allSteps = activeData?.config?.steps || [];
-    const idx = allSteps.findIndex(s => String(s.id) === String(nextStepId));
+    
+    let idx = allSteps.findIndex(s => String(s.id) === String(nextStepId));
+    if (nextStepId === '__NEXT__') {
+      idx = currentStep + 1;
+      if (idx >= allSteps.length) idx = -1; // safeguard
+    }
     
     if (scoreTarget) {
       setScores(prev => ({ ...prev, [scoreTarget]: (prev[scoreTarget] || 0) + 1 }));
