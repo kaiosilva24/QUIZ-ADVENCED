@@ -1651,21 +1651,21 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
       if (explicitId) {
         const t = allSteps.find(s => s.id === explicitId);
         if (t && !t.isVariant) return explicitId;
-        if (!t && config?.totalSteps > allSteps.length) return explicitId; // Safamente confia no ID (SSR fast)
+        if (!t && allSteps.length === 1) return explicitId; // Safamente confia no ID (SSR fast)
       }
       while (nextIdx < allSteps.length && allSteps[nextIdx].isVariant) nextIdx++;
       if (nextIdx < allSteps.length) return allSteps[nextIdx].id;
-      if (config?.totalSteps > allSteps.length) return '__NEXT__'; // Avança cegamente (SSR fast)
+      if (allSteps.length === 1) return '__NEXT__'; // Avança cegamente (SSR fast)
       return null;
     }
 
     if (explicitId) {
       const t = allSteps.find(s => s.id === explicitId);
       if (t && !t.isVariant) return explicitId;
-      if (!t && config?.totalSteps > allSteps.length) return explicitId; // Safamente confia no ID (SSR fast)
+      if (!t && allSteps.length === 1) return explicitId; // Safamente confia no ID (SSR fast)
     }
     if (nextIdx < allSteps.length) return allSteps[nextIdx].id;
-    if (config?.totalSteps > allSteps.length) return '__NEXT__'; // Avança cegamente (SSR fast)
+    if (allSteps.length === 1) return '__NEXT__'; // Avança cegamente (SSR fast)
     return null;
   };
 
