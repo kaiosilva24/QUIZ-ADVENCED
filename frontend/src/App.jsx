@@ -283,8 +283,10 @@ function QuizRouter() {
   }, [quizData]);
 
   const handleNavigate = (nextStepId, answerText = null, withLoading = false, scoreTarget = null) => {
-    const steps = quizData?.config?.steps || [];
-    const idx = steps.findIndex(s => s.id === nextStepId);
+    // Em SSR rápido, o quizData só tem 1 step. O nextStepId vai estar no full data.
+    const activeData = pendingFullData.current || quizData;
+    const allSteps = activeData?.config?.steps || [];
+    const idx = allSteps.findIndex(s => String(s.id) === String(nextStepId));
     
     if (scoreTarget) {
       setScores(prev => ({ ...prev, [scoreTarget]: (prev[scoreTarget] || 0) + 1 }));
@@ -293,12 +295,14 @@ function QuizRouter() {
     if (idx >= 0) {
       const timeSpent = Math.round((Date.now() - stepStartTime.current) / 1000);
       const quizId = quizData.quiz_id || quizData.id;
-      const currentStepObj = steps[currentStep];
+      
+      // O currentStepObj pega do activeData para segurança 
+      const currentStepObj = allSteps[currentStep];
 
       let finalAnswer = answerText;
       if (!finalAnswer && currentStepObj && currentStepObj.blocks) {
         const clickedBtn = currentStepObj.blocks.find(
-          b => (b.type === 'button' || b.type === 'arrow_button') && b.nextStep === nextStepId
+          b => (b.type === 'button' || b.type === 'arrow_button') && String(b.nextStep) === String(nextStepId)
         );
         if (clickedBtn && clickedBtn.text) {
           finalAnswer = clickedBtn.text;
@@ -308,7 +312,7 @@ function QuizRouter() {
       trackEvent(quizId, 'step_reached', currentStepObj?.id, finalAnswer, timeSpent);
       stepStartTime.current = Date.now();
 
-      if (idx === steps.length - 1) {
+      if (idx === allSteps.length - 1) {
         trackEvent(quizId, 'finished', nextStepId, null, 0);
         if (window.fbq) window.fbq('track', 'Lead');
       }
