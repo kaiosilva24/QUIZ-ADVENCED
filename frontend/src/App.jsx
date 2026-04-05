@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import QuizPreview from './QuizPreview';
 
-const QuizPreview = React.lazy(() => import('./QuizPreview'));
+// O painel Admin continua lazy, visitantes não baixam o painel
+const Admin = React.lazy(() => import('./Admin'));
 
 const API = '/api';
 
