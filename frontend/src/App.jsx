@@ -104,6 +104,7 @@ function QuizRouter() {
   const [scores, setScores] = useState({});
   const stepStartTime = React.useRef(Date.now());
   const pendingFullData = React.useRef(null); // full quiz esperando usuario avancar
+  const bgFetchPromise = React.useRef(null); // Promessa do fetch background
 
   // Chaves slug-aware: /novo-quiz e /live não conflitam
   const pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '') || 'root';
@@ -195,14 +196,15 @@ function QuizRouter() {
           // Prefetch completo em background — mas SÓ aplica quando usuário sair do step 0
           // Isso evita que o React re-render reset o LCP clock do Lighthouse
           if (data._fast || data._stripped) {
-            fetch(`/api/route/quiz-${quizId}`)
+            bgFetchPromise.current = fetch(`/api/route/quiz-${quizId}`)
               .then(r => r.ok ? r.json() : null)
               .then(fullData => {
-                if (!fullData) return;
+                if (!fullData) return null;
                 // Guarda em ref — só aplica quando o usuário avançar (não re-renderiza step 0)
                 pendingFullData.current = fullData;
+                return fullData;
               })
-              .catch(() => {});
+              .catch(() => null);
           }
         })
         .catch(() => { setError('SERVER_ERROR'); setLoading(false); });
@@ -282,8 +284,15 @@ function QuizRouter() {
       }).catch(() => {});
   }, [quizData]);
 
-  const handleNavigate = (nextStepId, answerText = null, withLoading = false, scoreTarget = null) => {
-    // Em SSR rápido, o quizData só tem 1 step. O nextStepId vai estar no full data.
+  const handleNavigate = async (nextStepId, answerText = null, withLoading = false, scoreTarget = null) => {
+    // Em SSR rápido, o quizData só tem 1 step. 
+    // Se ainda não baixou e a pessoa já clicou, devemos esperar o background load
+    if (quizData._fast && !pendingFullData.current && bgFetchPromise.current) {
+      setTransitionLoading(true); // spinner de carregamento pra n ficar congelado
+      await bgFetchPromise.current;
+      setTransitionLoading(false);
+    }
+
     const activeData = pendingFullData.current || quizData;
     const allSteps = activeData?.config?.steps || [];
     const idx = allSteps.findIndex(s => String(s.id) === String(nextStepId));
