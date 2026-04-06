@@ -123,24 +123,6 @@ async function resolveQuizForSSR(slug) {
         const steps = fullData.config?.steps || [];
         const firstStep = steps[0] ? JSON.parse(JSON.stringify(steps[0])) : null;
 
-        // CRÍTICO: Remove imagens base64 do HTML SSR para manter o HTML < 3KB
-        // Imagens base64 inflam o HTML em ~10KB e criam "Árvore de dependência de rede" no Lighthouse
-        // O React vai hidrátar com as imagens reais após o Background Fetch completar
-        if (firstStep?.blocks) {
-            firstStep.blocks = firstStep.blocks.map(block => {
-                if (block.type === 'image_button_selector' && block.options) {
-                    return {
-                        ...block,
-                        options: block.options.map(opt => ({
-                            ...opt,
-                            imageSrc: opt.imageSrc?.startsWith('data:') ? '' : opt.imageSrc,
-                        }))
-                    };
-                }
-                return block;
-            });
-        }
-
         return {
             quiz_id: fullData.quiz_id,
             _fast: true,
