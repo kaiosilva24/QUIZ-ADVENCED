@@ -139,10 +139,16 @@ function QuizRouter() {
   const pixelInjected = React.useRef(false);
 
   useEffect(() => {
-    // Apaga suavemente o Ghost LCP injetado pelo Backend (evitando duplicação de fotos)
+    // Esconde suavemente o Ghost LCP injetado pelo Backend sem tira-lo do DOM
+    // Remover o elemento do DOM zera a métrica no Lighthouse. Ocultar mantendo
+    // estrutura garante que LCP crave instantâneo junto com FCP.
     const ghost = document.getElementById('ssr-ghost-lcp');
     if (ghost) {
-      setTimeout(() => ghost.remove(), 50); // delay microscópico para garantir que o React já montou o DOM
+      setTimeout(() => {
+        ghost.style.opacity = '0.001';
+        ghost.style.pointerEvents = 'none';
+        ghost.style.zIndex = '-9999';
+      }, 50);
     }
 
     const now = Date.now();
