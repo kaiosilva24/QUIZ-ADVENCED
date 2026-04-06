@@ -199,17 +199,10 @@ function QuizRouter() {
               .then(r => r.ok ? r.json() : null)
               .then(fullData => {
                 if (!fullData) return null;
-                // Guarda em ref para navegação
+                // Guarda em ref para navegação — NUNCA re-renderiza o step 0,
+                // para não arruinar o LCP (Largest Contentful Paint)
+                // como a base64 agora está intocada no SSR, a hidratação causaria destruição e repintura do DOM (CLS) no Lighthouse
                 pendingFullData.current = fullData;
-                // ATUALIZA O ESTADO VIRTUAL: agora é mandatório pois imagens Base64
-                // foram removidas do SSR para ficar rápido. Isso hidrata o front-end.
-                // Como já alocamos o CLS fix (aspect-ratio), isso não afeta o LCP.
-                setQuizData(prev => {
-                   // Apenas atualiza se o usuário ainda está na tela inicial
-                   // Se ele já clicou pra avançar, o handleNavigate já lidará com a transição
-                   if (currentStep === 0) return fullData;
-                   return prev;
-                });
                 return fullData;
               })
               .catch(() => null);
