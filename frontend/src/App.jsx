@@ -93,11 +93,36 @@ function trackEvent(quizId, eventType, stepId = null, answerValue = null, timeSp
     body: JSON.stringify(body)
   }).catch(() => {}); // fire-and-forget
 }
+
 // ─── Componente Roteador de Quizzes por Slug (InLead Style) ──────────────────
 function QuizRouter() {
-  const [quizData, setQuizData] = useState(null);
+  const getInitialSsrData = () => {
+    try {
+      if (typeof window === 'undefined') return null;
+      
+      const params = new URLSearchParams(window.location.search);
+      const forceNew = params.get('novo') === '1';
+      const pathSlug = window.location.pathname.replace(/^\//, '').replace(/\/.*$/, '') || 'root';
+      const QUIZ_ID_KEY = `quiz_saas_lead_quiz_id_${pathSlug}`;
+      const QUIZ_TIME_KEY = `quiz_saas_lead_quiz_time_${pathSlug}`;
+      
+      const savedQuizId = localStorage.getItem(QUIZ_ID_KEY);
+      const savedTime = localStorage.getItem(QUIZ_TIME_KEY);
+      const now = Date.now();
+      
+      // Se há progresso salvo válido, ignoramos o SSR no frontend (mostrando tela de loader) 
+      // para evitar um "piscar" (Flash) da etapa 0 antes de pular para o progresso da etapa X
+      const isValid = !forceNew && savedQuizId && savedTime && (now - parseInt(savedTime)) < 7 * 24 * 60 * 60 * 1000;
+      
+      if (isValid) return null; // Mostra loader esperando progresso
+
+      return window.__QUIZ_SSR__ || null; // Visitante novo ou Lighthouse: zero delay
+    } catch { return null; }
+  };
+  
+  const [quizData, setQuizData] = useState(getInitialSsrData);
   const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!quizData);
   const [currentStep, setCurrentStep] = useState(0);
   const [transitionLoading, setTransitionLoading] = useState(false);
   const [loadingConfig, setLoadingConfig] = useState(null);
