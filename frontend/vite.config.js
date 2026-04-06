@@ -13,6 +13,8 @@ export default defineConfig({
     }
   },
   build: {
+    target: ['es2020', 'chrome96', 'firefox90', 'safari15'],
+
     modulePreload: {
       resolveDependencies: (filename, deps, { hostId, hostType }) => {
         return deps.filter(dep => {
