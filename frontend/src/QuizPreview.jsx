@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 
 import countries from './countries.json';
 
@@ -3472,11 +3472,11 @@ function BlockRenderer({ block, theme, compact, onNavigate, quizId, visitorId, s
                      transition: 'all 0.2s',
                    }}
                  >
-                   {opt.imageSrc && (
-                     <div style={{ width: '100%', aspectRatio: '1/1', background: 'rgba(255,255,255,0.05)' }}>
-                       <img src={opt.imageSrc} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                     </div>
-                   )}
+                    <div style={{ width: '100%', aspectRatio: '1/1', background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                      {opt.imageSrc ? <img src={opt.imageSrc} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                    </div>
+
+
                    <div style={{ padding: compact ? '8px 4px' : '16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: compact ? 4 : 8, textAlign: 'center' }}>
                      {block.showCheckbox && (
                        <div style={{
