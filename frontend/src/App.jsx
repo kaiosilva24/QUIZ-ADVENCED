@@ -139,6 +139,12 @@ function QuizRouter() {
   const pixelInjected = React.useRef(false);
 
   useEffect(() => {
+    // Apaga suavemente o Ghost LCP injetado pelo Backend (evitando duplicação de fotos)
+    const ghost = document.getElementById('ssr-ghost-lcp');
+    if (ghost) {
+      setTimeout(() => ghost.remove(), 50); // delay microscópico para garantir que o React já montou o DOM
+    }
+
     const now = Date.now();
     const params = new URLSearchParams(window.location.search);
     const forceNew = params.get('novo') === '1'; // ?novo=1 limpa cache

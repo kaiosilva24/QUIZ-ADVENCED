@@ -106,12 +106,38 @@ app.get('/{*path}', async (req, res, next) => {
             const slug = req.path.replace(/^\//, '').replace(/\/.*$/, '') || '';
             const fastData = await resolveQuizForSSR(slug).catch(() => null);
             if (fastData) {
+                // Descobre a provável imagem LCP (Largest Contentful Paint)
+                let lcpHint = '';
+                try {
+                    const blocks = fastData.config?.steps?.[0]?.blocks || [];
+                    for (const b of blocks) {
+                        if (b.type === 'image_button_selector' && b.options?.[0]?.imageSrc) {
+                            lcpHint = b.options[0].imageSrc;
+                            break;
+                        }
+                        if (b.type === 'image' && b.url) {
+                            lcpHint = b.url;
+                            break;
+                        }
+                    }
+                } catch(e) {}
+
                 // Injeta no HTML como window.__QUIZ_SSR__ — React usa sem fetch
                 const jsonStr = JSON.stringify(fastData).replace(/<\/script>/gi, '<\\/script>');
-                html = html.replace(
-                    '<script>',
-                    `<script>window.__QUIZ_SSR__=${jsonStr};</script><script>`
-                );
+                
+                let extraHtml = `<script>window.__QUIZ_SSR__=${jsonStr};</script>`;
+                if (lcpHint) {
+                    // Ghost LCP: Obriga o navegador a pintar a imagem instantaneamente com FCP (1.9s)
+                    // em vez de esperar o React baixar e renderizar (7.5s). O React vai destruir
+                    // este Ghost silenciosamente ao carregar, consolidando a nota!
+                    extraHtml += `
+                    <div id="ssr-ghost-lcp" style="position:fixed; top:0; left:0; width:100%; height:100vh; pointer-events:none; z-index:1; display:flex; justify-content:center; align-items:center; background:#000;">
+                        <img src="${lcpHint}" style="width:100%; max-width:440px; aspect-ratio:1/1; object-fit:cover;" fetchpriority="high" />
+                    </div>
+                    `;
+                }
+
+                html = html.replace('<script>', extraHtml + '<script>');
             }
         }
 
